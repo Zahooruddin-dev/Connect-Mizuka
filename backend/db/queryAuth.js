@@ -1,10 +1,4 @@
 const pool = require('./Pool');
-async function loginQuery(email) {
-	const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [
-		email,
-	]);
-	return rows[0] || null;
-}
 async function getUserByEmail(email) {
 	const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [
 		email,
@@ -39,7 +33,6 @@ async function registerQuery(
 	return rows[0];
 }
 module.exports = {
-	loginQuery,
 	registerQuery,
 	getUserByEmail,
   deleteUserQuery,
