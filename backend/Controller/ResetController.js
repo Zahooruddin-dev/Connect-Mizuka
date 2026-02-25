@@ -1,4 +1,4 @@
-const db = require('../db');
+const db = require('../db/queryReset');
 const bcrypt = require('bcrypt');
 async function resetPassword(req, res) {
 	const { email, code, newPassword } = req.body;
