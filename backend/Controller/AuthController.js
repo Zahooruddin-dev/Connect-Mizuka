@@ -66,7 +66,7 @@ async function deleteUser(req, res) {
 		if (!user) {
 			return res.status(401).json({ message: 'Invalid Email or Password' });
 		}
-		const match = await bcypt.compare(password, user.password);
+		const match = await bcypt.compare(password, user.password_hash);
 		if (!match) {
 			return res.status(401).json({ message: 'Invalid Email or Password' });
 		}
@@ -79,5 +79,5 @@ async function deleteUser(req, res) {
 module.exports = {
 	Login,
 	Register,
-	deleteUser
+	deleteUser,
 };

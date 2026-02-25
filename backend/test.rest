@@ -20,7 +20,14 @@ Content-Type: application/json
   "email": "mzkhan886@gmail.com",
   "password": "boombech"
 }
+### DELETE 
+POST http://localhost:3000/api/auth/delete
+Content-Type: application/json
 
+{
+  "email": "mzkhan886@gmail.com",
+  "password": "boombech"
+}
 ### RESET PASSWORD
 
 POST http://localhost:3000/api/auth/request-reset
