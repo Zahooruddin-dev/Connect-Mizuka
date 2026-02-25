@@ -26,8 +26,8 @@ async function requestPasswordReset(req, res) {
 				.status(200)
 				.json({ message: 'If an account exists, a code was send' });
 		}
-		const code = Math.floor(1000000 + Math.random() * 9000000).toString();
-		const expires = new Date(Date.now + 15 * 60000);
+		const code = Math.floor(100000 + Math.random() * 900000).toString();
+		const expires = new Date(Date.now() + 15 * 60000);
 		await db.saveResetCode(email, code, expires);
 		console.log(`Reset Code Sent To ${email}`);
 		console.log(`Reset Code is ${code}`);
