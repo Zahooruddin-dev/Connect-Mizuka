@@ -18,18 +18,24 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 
 io.on('connection', (socket) => {
-	console.log('User connected');
-	socket.on('message Sent', (data) => {
-		console.log('Data Received', data);
-		io.emit('Message_received', data);
+	console.log('User connected', socket.id);
+
+	socket.on('message Sent', (institute_id) => {
+		socket.join(institute_id);
+		console.log('User connected', socket.id, institute_id);
 	});
+
+	socket.on('Send_message', (data) => {
+		console.log('Message for room', data.room);
+		io.to(data.room).emit('Received messaged', data.message);
+	});
+
 	socket.on('Disconnected', () => {
 		console.log('Connection diconnected');
 	});
 });
 
-httpServer.listen(PORT,'0.0.0.0',()=>{
+httpServer.listen(PORT, '0.0.0.0', () => {
 	console.log(`Mizuka engine & socket Listening at ${PORT}`);
-	
-})
+});
 module.exports = app;
