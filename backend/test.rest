@@ -20,3 +20,21 @@ Content-Type: application/json
   "email": "mzkhan886@gmail.com",
   "password": "boombech"
 }
+
+### RESET PASSWORD
+
+POST http://localhost:3000/api/auth/request-reset
+Content-Type: application/json
+
+{
+  "email":"mzkhan886@gmail.com"
+}
+### TEST THE RESET PASSWORD
+POST http://localhost:3000/api/auth/request-reset
+Content-Type: application/json
+
+{
+  "email":"mzkhan886@gmail.com",
+  "code":"461345",
+  "newPassword":"password123"
+}
