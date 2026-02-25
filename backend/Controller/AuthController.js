@@ -6,7 +6,7 @@ async function Login(req, res) {
 	const { email, password } = req.body;
 
 	try {
-		const user = await db.loginQuery(email);
+		const user = await db.getUserByEmail(email);
 		if (!user) {
 			res.status(401).json({ message: 'Invalid email or password' });
 		}
