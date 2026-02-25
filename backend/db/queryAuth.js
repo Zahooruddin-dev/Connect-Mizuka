@@ -7,7 +7,7 @@ async function getUserByEmail(email) {
 }
 async function deleteUserQuery(email) {
 	const { rows } = await pool.query(
-		'DELETE * FROM users WHERE email = $1 RETURNING id',
+		'DELETE FROM users WHERE email = $1 RETURNING id',
 		[email],
 	);
 	return rows[0] || null;
