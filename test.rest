@@ -6,9 +6,9 @@ POST http://localhost:3000/api/auth/register
 Content-Type: application/json
 
 {
-  "email": "first@mizuka.edu",
-  "username":"First Teacher",
-  "password": "password123",
+  "email": "mzkhan886@gmail.com",
+  "username":"Muhammad Zahooruddin Nizamani",
+  "password": "boombech",
   "role":"teacher",
   "institute_id":"1c8fb7e7-5e07-409d-8245-19b4b834028c"
 }
