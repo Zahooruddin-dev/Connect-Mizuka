@@ -12,3 +12,11 @@ Content-Type: application/json
   "role":"teacher",
   "institute_id":"1c8fb7e7-5e07-409d-8245-19b4b834028c"
 }
+### LOGIN 
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "mzkhan886@gmail.com",
+  "password": "boombech"
+}
