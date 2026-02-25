@@ -1,4 +1,5 @@
 const db = require('../db/queryReset');
+const dbAuth = require('../db/queryAuth');
 const userDb = require('../db/queryAuth');
 const bcrypt = require('bcrypt');
 async function resetPassword(req, res) {
@@ -10,7 +11,7 @@ async function resetPassword(req, res) {
 		}
 		const salt = await bcrypt.genSalt(10);
 		const hashedPassword = await bcrypt.hash(newPassword, salt);
-		await db.updateUserPassword(email, hashedPassword);
+		await dbAuth.updateUserPassword(email, hashedPassword);
 		await db.deleteResetCode(email);
 		return res.status(200).json({ message: 'reset password done' });
 	} catch (error) {

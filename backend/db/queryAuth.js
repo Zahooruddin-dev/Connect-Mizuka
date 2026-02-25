@@ -18,6 +18,12 @@ async function deleteUserQuery(email) {
 	);
 	return rows[0] || null;
 }
+async function updateUserPassword(email, hashedPassword) {
+  await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [
+    hashedPassword,
+    email,
+  ]);
+}
 async function registerQuery(
 	username,
 	email,
@@ -36,5 +42,6 @@ module.exports = {
 	loginQuery,
 	registerQuery,
 	getUserByEmail,
-  deleteUserQuery
+  deleteUserQuery,
+  updateUserPassword
 };
