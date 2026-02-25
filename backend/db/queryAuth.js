@@ -11,6 +11,13 @@ async function getUserByEmail(email) {
 	]);
 	return rows[0] || null;
 }
+async function deleteUserQuery(email) {
+	const { rows } = await pool.query(
+		'DELETE * FROM users WHERE email = $1 RETURNING id',
+		[email],
+	);
+	return rows[0] || null;
+}
 async function registerQuery(
 	username,
 	email,
@@ -29,4 +36,5 @@ module.exports = {
 	loginQuery,
 	registerQuery,
 	getUserByEmail,
+  deleteUserQuery
 };

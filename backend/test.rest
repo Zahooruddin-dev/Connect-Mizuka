@@ -35,6 +35,6 @@ Content-Type: application/json
 
 {
   "email":"mzkhan886@gmail.com",
-  "code":"958128",
-  "newPassword":"password123"
+  "code":"581317",
+  "newPassword":"boombech"
 }
