@@ -29,6 +29,7 @@ CREATE TABLE messages (
     channel_id UUID REFERENCES channels(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 CREATE TABLE password_resets (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
@@ -36,3 +37,4 @@ CREATE TABLE password_resets (
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_messages_channel_id ON messages(channel_id);
