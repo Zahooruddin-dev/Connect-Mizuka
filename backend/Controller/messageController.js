@@ -1,25 +1,39 @@
-const db = require('../db/queryMessage')
-async function getChatHistory(req,res) {
-  const {channelId} = req.params
-  try {
-    const chat = await db.getChatHistoryQuery(channelId)
-    res.status(200).json(chat)
-  } catch (error) {
-    res.status(500).json({error:'Failed to load messages'})
-  }
+const db = require('../db/queryMessage');
+async function getChatHistory(req, res) {
+	const { channelId } = req.params;
+	try {
+		const chat = await db.getChatHistoryQuery(channelId);
+		res.status(200).json(chat);
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load messages' });
+	}
 }
-async function getSingleMessage(req,res) {
-  const {messageId} = req.params
-  try {
-    const message = await db.getSingleMessageQuery(messageId)
-    if(!chat) {
-      return res.status(404).json({ error: "Not found" })
-    }
-    res.status(200).json(message)
-  } catch (error) {
-    res.status(500).json({error:'Failed to load messages'})
-  }
+async function getSingleMessage(req, res) {
+	const { messageId } = req.params;
+	try {
+		const message = await db.getSingleMessageQuery(messageId);
+		if (!chat) {
+			return res.status(404).json({ error: 'Not found' });
+		}
+		res.status(200).json(message);
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load messages' });
+	}
+}
+async function deleteMessage(req, res) {
+	const { messageId } = req.params;
+	const { userId } = req.body;
+	try {
+		const result = await db.deleteMessageQuery(messageId, userId);
+		if (!result) {
+			return res
+				.status(403)
+				.json({ error: 'Unauthorized or message not found' });
+		}
+		res.status(200).json({ message: 'Message deleted successfully' });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load messages' });
+	}
 }
 
-
-module.exports={getChatHistory,getSingleMessage}
+module.exports = { getChatHistory, getSingleMessage, deleteMessage };
