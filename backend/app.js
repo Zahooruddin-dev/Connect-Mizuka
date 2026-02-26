@@ -13,6 +13,7 @@ const io = new Server(httpServer, {
 });
 
 const authRoutes = require('./Routes/authRoutes');
+const socketController = require('./Socket-Controllers/messageController')
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -22,9 +23,9 @@ app.use('/api/auth', authRoutes);
 io.on('connection', (socket) => {
   console.log(`✅ Device Connected: ${socket.id}`);
 
-  socket.on('join_institute', (institute_id) => {
-    socket.join(institute_id);
-    console.log(`📍 User ${socket.id} joined room: ${institute_id}`);
+  socket.on('join_institute', (channel_id) => {
+    socket.join(channel_id);
+    console.log(`📍 User ${socket.id} joined room: ${channel_id}`);
   });
 
   socket.on('send_message', (data) => {
