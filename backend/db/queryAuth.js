@@ -13,10 +13,10 @@ async function deleteUserQuery(email) {
 	return rows[0] || null;
 }
 async function updateUserPassword(email, hashedPassword) {
-  await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [
-    hashedPassword,
-    email,
-  ]);
+	await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [
+		hashedPassword,
+		email,
+	]);
 }
 async function registerQuery(
 	username,
@@ -33,13 +33,15 @@ async function registerQuery(
 	return rows[0];
 }
 async function getUserById(userId) {
-	const {rows} = await pool.query('SELECT role FROM users WEHRE id =$1',[userId])
-	return rows[0] || null
+	const { rows } = await pool.query('SELECT role FROM users WHERE id =$1', [
+		userId,
+	]);
+	return rows[0] || null;
 }
 module.exports = {
 	registerQuery,
 	getUserByEmail,
-  deleteUserQuery,
-  updateUserPassword,
-	getUserById
+	deleteUserQuery,
+	updateUserPassword,
+	getUserById,
 };

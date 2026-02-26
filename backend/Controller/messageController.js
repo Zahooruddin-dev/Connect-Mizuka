@@ -40,7 +40,8 @@ async function deleteChannel(req, res) {
 	const { channelId } = req.params;
 	const { userId } = req.body;
 	try {
-		const user = await dbAuth.getUserByEmail(userId);
+		const user = await dbAuth.getUserById(userId);
+    console.log("DEBUG: User object from DB:", user);
 		if (!user || user.role !== 'admin') {
 			return res
 				.status(403)
