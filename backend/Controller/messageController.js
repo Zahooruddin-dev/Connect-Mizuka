@@ -8,3 +8,4 @@ async function getChatHistory(req,res) {
     res.status(500).json({error:'Failed to load messages'})
   }
 }
+module.exports={getChatHistory}
