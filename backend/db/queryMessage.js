@@ -22,6 +22,11 @@ async function deleteMessageQuery(messageId, userId) {
 	const { rows } = await pool.query(query, [messageId, userId]);
 	return rows || null;
 }
+async function deleteChannel(channelId) {
+	const query = `DELETE FROM channels WHER id = $1`;
+	const { rows } = await pool.query(query, [channelId]);
+	return rows || null;
+}
 
 module.exports = {
 	getChatHistoryQuery,
