@@ -29,12 +29,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_message', (data) => {
-    console.log("📩 Message received for relay:", data);
-    
-    io.to(data.room).emit('receive_message', {
-      text: data.message,
-      from: socket.id
-    });
+		socketController.handleSendMessage(socket,io,data)
   });
 
   socket.on('disconnect', () => {
