@@ -13,7 +13,7 @@ async function getChatHistoryQuery(channel_id) {
 async function getSingleMessageQuery(messageId) {
 	const query = `SELECT m.* u.username FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = $1`;
 	const { rows } = await pool.query(query, [messageId]);
-	return rows || null;
+	return rows[0] || null;
 }
 
 async function deleteMessageQuery(messageId, userId) {
