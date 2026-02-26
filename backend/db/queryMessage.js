@@ -9,5 +9,11 @@ async function getChatHistoryQuery(channel_id) {
   const {rows} = await pool.query(query,[channel_id])
   return rows || null 
 }
+async function deleteMessage(messageId, userId) {
+  const query = `DELETE FROM messages where id =$1 AND sender_id =$2
+  RETURNING *`
+  const {rows} = await pool.query(query,[messageId, userId])
+  return rows || null 
+}
 
-module.exports = {getChatHistoryQuery}
+module.exports = {getChatHistoryQuery,deleteMessage}
