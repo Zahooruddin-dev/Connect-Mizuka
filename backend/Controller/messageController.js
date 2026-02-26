@@ -1,4 +1,5 @@
 const db = require('../db/queryMessage');
+const dbAuth = require('../db/queryAuth');
 async function getChatHistory(req, res) {
 	const { channelId } = req.params;
 	try {
@@ -35,5 +36,31 @@ async function deleteMessage(req, res) {
 		res.status(500).json({ error: 'Failed to load messages' });
 	}
 }
+async function deleteChannel(req, res) {
+	const { channelId } = req.params;
+	const { userId } = req.body;
+	try {
+		const user = await dbAuth.getUserByEmail(userId);
+		if (!user || user.role !== 'admin') {
+			return res
+				.status(403)
+				.json({ error: 'Access denied. Admin role required.' });
+		}
+		const result = await db.deleteChannelQuery(channelId, userId);
+		if (!result) {
+			return res
+				.status(403)
+				.json({ error: 'Unauthorized or channel not found' });
+		}
+		res.status(200).json({ message: 'Channel deleted successfully' });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load channel' });
+	}
+}
 
-module.exports = { getChatHistory, getSingleMessage, deleteMessage };
+module.exports = {
+	getChatHistory,
+	getSingleMessage,
+	deleteMessage,
+	deleteChannel,
+};

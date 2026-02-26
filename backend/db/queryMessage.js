@@ -17,13 +17,13 @@ async function getSingleMessageQuery(messageId) {
 }
 
 async function deleteMessageQuery(messageId, userId) {
-	const query = `DELETE FROM messages where id =$1 AND sender_id =$2
+	const query = `DELETE FROM messages WHERE id =$1 AND sender_id =$2
   RETURNING *`;
 	const { rows } = await pool.query(query, [messageId, userId]);
 	return rows || null;
 }
-async function deleteChannel(channelId) {
-	const query = `DELETE FROM channels WHER id = $1`;
+async function deleteChannelQuery(channelId) {
+	const query = `DELETE FROM channels WHERE id = $1`;
 	const { rows } = await pool.query(query, [channelId]);
 	return rows || null;
 }
@@ -32,4 +32,5 @@ module.exports = {
 	getChatHistoryQuery,
 	getSingleMessageQuery,
 	deleteMessageQuery,
+	deleteChannelQuery,
 };
