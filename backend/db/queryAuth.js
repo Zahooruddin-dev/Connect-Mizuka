@@ -32,9 +32,14 @@ async function registerQuery(
 	);
 	return rows[0];
 }
+async function getUserById(userId) {
+	const {rows} = await pool.query('SELECT role FROM users WEHRE id =$1',[userId])
+	return rows[0] || null
+}
 module.exports = {
 	registerQuery,
 	getUserByEmail,
   deleteUserQuery,
-  updateUserPassword
+  updateUserPassword,
+	getUserById
 };
