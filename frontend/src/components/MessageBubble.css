@@ -1,0 +1,112 @@
+.bubble-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 3px 20px;
+  position: relative;
+}
+
+.bubble-row--own {
+  flex-direction: row-reverse;
+}
+
+.bubble-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--teal-300);
+  color: var(--teal-700);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.bubble-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 68%;
+}
+
+.bubble-body--own {
+  align-items: flex-end;
+}
+
+.bubble-username {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--teal-600);
+  padding-left: 4px;
+}
+
+.bubble {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-sm);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bubble--own {
+  background: var(--teal-500);
+  border-color: var(--teal-500);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.bubble-text {
+  font-size: 13.5px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.bubble--own .bubble-text {
+  color: #fff;
+}
+
+.bubble-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  align-self: flex-end;
+  font-family: var(--font-mono);
+}
+
+.bubble--own .bubble-time {
+  color: rgba(255,255,255,0.65);
+}
+
+.bubble-delete {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, transform 0.1s;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.bubble-delete--confirm {
+  background: #b91c1c;
+  color: #fff;
+  border-color: #b91c1c;
+}
+
+.bubble-delete:hover {
+  transform: scale(1.1);
+}
