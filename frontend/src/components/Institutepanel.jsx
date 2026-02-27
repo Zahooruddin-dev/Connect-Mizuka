@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../services/AuthContext'
+import { linkToInstitute } from '../services/api'
 import './InstitutePanel.css'
 
 export default function InstitutePanel({ onClose }) {
-  const { institutes, activeInstitute, addInstitute, removeInstitute, setActiveInstitute } = useAuth()
+  const { user, institutes, activeInstitute, addInstitute, removeInstitute, setActiveInstitute } = useAuth()
   const [adding, setAdding] = useState(false)
   const [newId, setNewId] = useState('')
   const [newLabel, setNewLabel] = useState('')
@@ -29,7 +30,7 @@ export default function InstitutePanel({ onClose }) {
     if (e.target === e.currentTarget) onClose()
   }
 
-  function handleAddSubmit(e) {
+  async function handleAddSubmit(e) {
     e.preventDefault()
     const trimmedId = newId.trim()
     if (!trimmedId) {
@@ -42,13 +43,16 @@ export default function InstitutePanel({ onClose }) {
       return
     }
     setAddLoading(true)
-    setTimeout(() => {
-      addInstitute({ id: trimmedId, label: newLabel.trim() || trimmedId })
-      setNewId('')
-      setNewLabel('')
-      setAdding(false)
-      setAddLoading(false)
-    }, 400)
+    const res = await linkToInstitute(user.id, trimmedId)
+    setAddLoading(false)
+    if (res.message && res.message !== 'User deleted') {
+      setAddError(res.message)
+      return
+    }
+    addInstitute({ id: trimmedId, label: newLabel.trim() || trimmedId })
+    setNewId('')
+    setNewLabel('')
+    setAdding(false)
   }
 
   function handleSelect(institute) {
@@ -59,6 +63,13 @@ export default function InstitutePanel({ onClose }) {
   function handleLeaveConfirm() {
     removeInstitute(leaveTarget.id)
     setLeaveTarget(null)
+  }
+
+  function resetAddForm() {
+    setAdding(false)
+    setAddError('')
+    setNewId('')
+    setNewLabel('')
   }
 
   return (
@@ -169,11 +180,7 @@ export default function InstitutePanel({ onClose }) {
                 <button type="submit" className="ipanel-confirm-btn" disabled={addLoading}>
                   {addLoading ? 'Joining…' : 'Join'}
                 </button>
-                <button
-                  type="button"
-                  className="ipanel-cancel-btn"
-                  onClick={() => { setAdding(false); setAddError(''); setNewId(''); setNewLabel('') }}
-                >
+                <button type="button" className="ipanel-cancel-btn" onClick={resetAddForm}>
                   Cancel
                 </button>
               </div>
