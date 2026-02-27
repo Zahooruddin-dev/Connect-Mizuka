@@ -18,9 +18,9 @@ async function updateUserPassword(email, hashedPassword) {
 		email,
 	]);
 }
-async function linkToInstituteQuery(instituteId, userId) {
+async function linkToInstituteQuery(institute_id, userId) {
 	await pool.query(`UPDATE users SET institute_id = $1 WHERE id = $2`, [
-		instituteId,
+		institute_id,
 		userId,
 	]);
 }
