@@ -1,16 +1,62 @@
-# React + Vite
+# Mizuka Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite chat frontend connecting to the Mizuka backend via REST API and Socket.io.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+cd mizuka-frontend
+npm install
+npm run dev
+```
 
-## React Compiler
+App runs at `http://localhost:5173`  
+Backend expected at `http://localhost:3000`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Directory Structure
 
-## Expanding the ESLint configuration
+```
+mizuka-frontend/
+├── index.html
+├── vite.config.js
+├── package.json
+└── src/
+    ├── main.jsx              # Entry point
+    ├── App.jsx               # Root: auth state, channel selection
+    ├── components/
+    │   ├── LoginScreen.jsx   # Username entry screen
+    │   ├── LoginScreen.css
+    │   ├── Sidebar.jsx       # Channel list + user footer
+    │   ├── Sidebar.css
+    │   ├── ChatArea.jsx      # Socket logic, message state, fetch
+    │   ├── ChatArea.css
+    │   ├── ChatHeader.jsx    # Channel name + delete channel
+    │   ├── ChatHeader.css
+    │   ├── MessageList.jsx   # Renders messages + typing indicator
+    │   ├── MessageList.css
+    │   ├── MessageItem.jsx   # Single message bubble + delete
+    │   ├── MessageItem.css
+    │   ├── MessageInput.jsx  # Textarea, send, typing emit
+    │   └── MessageInput.css
+    ├── services/
+    │   ├── socket.js         # Socket.io client singleton
+    │   └── api.js            # Axios REST calls
+    ├── utils/
+    │   ├── auth.js           # localStorage auth helpers
+    │   └── time.js           # Time/date formatters
+    └── styles/
+        ├── global.css        # CSS variables, resets, scrollbar
+        └── app.css           # Top-level layout
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Socket Events
+
+| Direction | Event | Payload |
+|---|---|---|
+| Emit | `join_institute` | `{ channelId }` |
+| Emit | `send_message` | `{ channelId, content, userId, username }` |
+| Emit | `typing` | `{ channelId, username }` |
+| Emit | `stop_typing` | `{ channelId, username }` |
+| Listen | `receive_message` | message object |
+| Listen | `Display_typing` | `{ username }` |
+| Listen | `stop_typing` | `{ username }` |
