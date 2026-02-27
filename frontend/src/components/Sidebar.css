@@ -43,9 +43,75 @@
   50% { opacity: 0.4; }
 }
 
+.sidebar-institute-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s;
+  background: none;
+}
+
+.sidebar-institute-btn:hover {
+  background: var(--bg-hover);
+}
+
+.sidebar-institute-btn:focus-visible {
+  outline: 2px solid var(--teal-500);
+  outline-offset: -2px;
+}
+
+.sidebar-institute-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.sidebar-institute-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.sidebar-institute-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-institute-hint {
+  font-size: 10px;
+  color: var(--text-ghost);
+}
+
+.sidebar-institute-chevron {
+  color: var(--text-ghost);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.sidebar-institute-btn:hover .sidebar-institute-chevron {
+  color: var(--text-muted);
+}
+
 .sidebar-section {
   flex: 1;
-  padding: 20px 10px 10px;
+  padding: 16px 10px 10px;
   overflow-y: auto;
 }
 
@@ -92,6 +158,11 @@
   font-weight: 500;
 }
 
+.sidebar-channel-btn:focus-visible {
+  outline: 2px solid var(--teal-500);
+  outline-offset: -2px;
+}
+
 .sidebar-hash {
   color: var(--text-ghost);
   font-family: var(--font-mono);
@@ -101,6 +172,15 @@
 
 .sidebar-channel-btn.active .sidebar-hash {
   color: var(--teal-500);
+}
+
+.sidebar-no-channels {
+  font-size: 12px;
+  color: var(--text-ghost);
+  text-align: center;
+  padding: 20px 8px;
+  line-height: 1.6;
+  font-style: italic;
 }
 
 .sidebar-footer {
@@ -148,9 +228,10 @@
   text-overflow: ellipsis;
 }
 
-.sidebar-user-status {
+.sidebar-user-role {
   font-size: 11px;
-  color: var(--teal-500);
+  color: var(--teal-600);
+  text-transform: capitalize;
 }
 
 .sidebar-logout {
@@ -165,4 +246,9 @@
 .sidebar-logout:hover {
   color: #f87171;
   background: rgba(248, 113, 113, 0.1);
+}
+
+.sidebar-logout:focus-visible {
+  outline: 2px solid var(--teal-500);
+  outline-offset: 2px;
 }
