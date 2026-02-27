@@ -49,13 +49,13 @@ export const resetPassword = async (email, code, newPassword) => {
   }
 }
 
-export const fetchMessages = (channelId, limit = 20) =>
-  api.get(`/messages/${channelId}`, { params: { limit } })
+export const fetchMessages = (channelId, limit = 20, offset = 0) =>
+  api.get(`/messages/${channelId}`, { params: { limit, offset } })
 
-export const deleteMessage = (messageId) =>
-  api.delete(`/messages/message/${messageId}`)
+export const deleteMessage = (messageId, userId) =>
+  api.delete(`/messages/message/${messageId}`, { data: { userId } })
 
-export const deleteChannel = (channelId) =>
-  api.delete(`/channels/${channelId}`)
+export const deleteChannel = (channelId, userId) =>
+  api.delete(`/messages/channel/${channelId}`, { data: { userId } })
 
 export default api

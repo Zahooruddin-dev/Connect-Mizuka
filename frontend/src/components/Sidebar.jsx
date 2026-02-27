@@ -1,10 +1,8 @@
 import './Sidebar.css'
 
 const CHANNELS = [
-  { id: 'general', label: 'general' },
-  { id: 'design', label: 'design' },
-  { id: 'engineering', label: 'engineering' },
-  { id: 'random', label: 'random' }
+  { id: 'c1111111-1111-1111-1111-111111111111', label: 'main hallway' },
+  { id: 'c2222222-2222-2222-2222-222222222222', label: 'faculty lounge' }
 ]
 
 function Sidebar({ activeChannel, onChannelSelect, user, onLogout }) {
@@ -24,7 +22,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout }) {
             <li key={ch.id}>
               <button
                 className={`sidebar-channel-btn ${activeChannel === ch.id ? 'active' : ''}`}
-                onClick={() => onChannelSelect(ch.id)}
+                onClick={() => onChannelSelect(ch)}
               >
                 <span className="sidebar-hash">#</span>
                 <span>{ch.label}</span>
@@ -41,7 +39,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout }) {
           </div>
           <div className="sidebar-user-info">
             <span className="sidebar-username">{user.username}</span>
-            <span className="sidebar-user-status">online</span>
+            <span className="sidebar-user-role">{user.role || 'member'}</span>
           </div>
         </div>
         <button className="sidebar-logout" onClick={onLogout} title="Logout">

@@ -5,9 +5,18 @@ import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
 import './styles/app.css'
 
+const DEFAULT_CHANNEL = {
+  id: 'c1111111-1111-1111-1111-111111111111',
+  label: 'main hallway'
+}
+
 function App() {
   const { user, logout } = useAuth()
-  const [activeChannel, setActiveChannel] = useState('general')
+  const [activeChannel, setActiveChannel] = useState(DEFAULT_CHANNEL)
+
+  const handleChannelSelect = (channel) => {
+    setActiveChannel(channel)
+  }
 
   if (!user) {
     return <LoginPage />
@@ -16,14 +25,15 @@ function App() {
   return (
     <div className="app-layout">
       <Sidebar
-        activeChannel={activeChannel}
-        onChannelSelect={setActiveChannel}
+        activeChannel={activeChannel.id}
+        onChannelSelect={handleChannelSelect}
         user={user}
         onLogout={logout}
       />
       <ChatArea
-        key={activeChannel}
-        channelId={activeChannel}
+        key={activeChannel.id}
+        channelId={activeChannel.id}
+        channelLabel={activeChannel.label}
         user={user}
       />
     </div>
