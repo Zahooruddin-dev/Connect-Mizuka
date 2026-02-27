@@ -16,7 +16,7 @@ function ChatArea({ channelId, user }) {
     setMessages([])
     setTypingUsers([])
 
-    socket.emit('join_institute', { channelId })
+    socket.emit('join_institute', channelId)
 
     fetchMessages(channelId)
       .then(res => {
@@ -36,40 +36,40 @@ function ChatArea({ channelId, user }) {
       )
     }
 
-    const handleStopTyping = ({ username }) => {
-      setTypingUsers(prev => prev.filter(u => u !== username))
+    const handleHideTyping = () => {
+      setTypingUsers([])
     }
 
     socket.on('receive_message', handleReceive)
     socket.on('Display_typing', handleDisplayTyping)
-    socket.on('stop_typing', handleStopTyping)
+    socket.on('hide_typing', handleHideTyping)
 
     return () => {
       socket.off('receive_message', handleReceive)
       socket.off('Display_typing', handleDisplayTyping)
-      socket.off('stop_typing', handleStopTyping)
+      socket.off('hide_typing', handleHideTyping)
     }
   }, [channelId])
 
   const handleSend = useCallback((content) => {
     socket.emit('send_message', {
-      channelId,
+      channel_id: channelId,
       content,
-      userId: user.userId,
+      userId: user.id,
       username: user.username
     })
   }, [channelId, user])
 
   const handleTyping = useCallback(() => {
     socket.emit('typing', {
-      channelId,
+      channel_id: channelId,
       username: user.username
     })
   }, [channelId, user])
 
   const handleStopTyping = useCallback(() => {
     socket.emit('stop_typing', {
-      channelId,
+      channel_id: channelId,
       username: user.username
     })
   }, [channelId, user])
@@ -95,7 +95,7 @@ function ChatArea({ channelId, user }) {
         <MessageList
           messages={messages}
           typingUsers={typingUsers.filter(u => u !== user.username)}
-          currentUserId={user.userId}
+          currentUserId={user.id}
           onMessageDeleted={handleMessageDeleted}
         />
       )}
