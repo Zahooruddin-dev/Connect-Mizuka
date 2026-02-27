@@ -49,6 +49,15 @@ export const resetPassword = async (email, code, newPassword) => {
   }
 }
 
+export const linkToInstitute = async (userId, instituteId) => {
+  try {
+    const res = await api.post('/auth/link-to-institute', { userId, institute_id: instituteId })
+    return res.data
+  } catch (err) {
+    return err.response?.data || { message: 'Network error' }
+  }
+}
+
 export const fetchMessages = (channelId, limit = 20, offset = 0) =>
   api.get(`/messages/${channelId}`, { params: { limit, offset } })
 
