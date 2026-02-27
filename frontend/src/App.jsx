@@ -1,30 +1,16 @@
-import { useState, useEffect } from 'react'
-import { getAuth, clearAuth } from './utils/auth'
-import LoginScreen from './components/LoginScreen'
+import { useState } from 'react'
+import { useAuth } from './services/AuthContext'
+import LoginPage from './pages/LoginPage'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
 import './styles/app.css'
 
 function App() {
-  const [user, setUser] = useState(null)
+  const { user, logout } = useAuth()
   const [activeChannel, setActiveChannel] = useState('general')
 
-  useEffect(() => {
-    const saved = getAuth()
-    if (saved) setUser(saved)
-  }, [])
-
-  const handleLogin = (userData) => {
-    setUser(userData)
-  }
-
-  const handleLogout = () => {
-    clearAuth()
-    setUser(null)
-  }
-
   if (!user) {
-    return <LoginScreen onLogin={handleLogin} />
+    return <LoginPage />
   }
 
   return (
@@ -33,7 +19,7 @@ function App() {
         activeChannel={activeChannel}
         onChannelSelect={setActiveChannel}
         user={user}
-        onLogout={handleLogout}
+        onLogout={logout}
       />
       <ChatArea
         key={activeChannel}
