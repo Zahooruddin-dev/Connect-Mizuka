@@ -42,6 +42,7 @@ async function Login(req, res) {
 }
 async function Register(req, res) {
 	const { username, email, password, role, institute_id } = req.body;
+	const instId = institute_id === '' ? null : institute_id;
 	try {
 		const password_hash = await bcypt.hash(password, 10);
 		const newUser = await db.registerQuery(
@@ -49,7 +50,7 @@ async function Register(req, res) {
 			email,
 			password_hash,
 			role,
-			institute_id,
+			instId,
 		);
 		res.status(201).json({ message: 'New user registered', user: newUser });
 	} catch (error) {
