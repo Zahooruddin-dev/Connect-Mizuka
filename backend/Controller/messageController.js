@@ -2,8 +2,10 @@ const db = require('../db/queryMessage');
 const dbAuth = require('../db/queryAuth');
 async function getChatHistory(req, res) {
 	const { channelId } = req.params;
+  const limit = parseInt(req.query.limit) || 20
+  const offset = parseInt(req.query.offset) || 0
 	try {
-		const chat = await db.getChatHistoryQuery(channelId);
+		const chat = await db.getChatHistoryQuery(channelId,limit,offset);
 		res.status(200).json(chat);
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to load messages' });
