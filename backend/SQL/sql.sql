@@ -38,3 +38,5 @@ CREATE TABLE password_resets (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_messages_channel_id ON messages(channel_id);
+
+ALTER TABLE users ALTER COLUMN institute_id DROP NOT NULL;

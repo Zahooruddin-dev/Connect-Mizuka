@@ -1,0 +1,85 @@
+import { useState } from 'react'
+import { useAuth } from '../services/AuthContext'
+import './InstituteGate.css'
+
+export default function InstituteGate() {
+  const { user, logout, addInstitute } = useAuth()
+  const [instituteId, setInstituteId] = useState('')
+  const [label, setLabel] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  function handleJoin(e) {
+    e.preventDefault()
+    const trimmedId = instituteId.trim()
+    const trimmedLabel = label.trim()
+    if (!trimmedId) {
+      setError('Institute ID is required')
+      return
+    }
+    setLoading(true)
+    setTimeout(() => {
+      addInstitute({ id: trimmedId, label: trimmedLabel || trimmedId })
+      setLoading(false)
+    }, 400)
+  }
+
+  return (
+    <div className="gate-shell">
+      <div className="gate-glow" aria-hidden="true" />
+      <div className="gate-card">
+        <div className="gate-brand">
+          <span className="gate-brand-m">M</span>
+          <span className="gate-brand-text">izuka</span>
+        </div>
+
+        <div className="gate-welcome">
+          <div className="gate-avatar" aria-hidden="true">
+            {user.username[0].toUpperCase()}
+          </div>
+          <p className="gate-greeting">Hey, <strong>{user.username}</strong></p>
+          <p className="gate-sub">
+            You're not part of any institute yet. Enter an Institute ID to join one and start chatting.
+          </p>
+        </div>
+
+        {error && <p className="gate-error" role="alert">{error}</p>}
+
+        <form className="gate-form" onSubmit={handleJoin} noValidate>
+          <label className="gate-label" htmlFor="gate-institute-id">Institute ID</label>
+          <input
+            id="gate-institute-id"
+            className="gate-input"
+            type="text"
+            value={instituteId}
+            onChange={e => { setInstituteId(e.target.value); setError('') }}
+            placeholder="e.g. 1c8fb7e7-5e07-409d-…"
+            required
+            autoFocus
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <label className="gate-label" htmlFor="gate-label">Nickname <span className="gate-optional">(optional)</span></label>
+          <input
+            id="gate-label"
+            className="gate-input"
+            type="text"
+            value={label}
+            onChange={e => setLabel(e.target.value)}
+            placeholder="e.g. Bonaventure high school"
+            autoComplete="off"
+          />
+          <button className="gate-btn" type="submit" disabled={loading}>
+            {loading ? 'Joining…' : 'Join institute'}
+          </button>
+        </form>
+
+        <div className="gate-footer">
+          <button className="gate-logout-link" onClick={logout}>
+            Sign out
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

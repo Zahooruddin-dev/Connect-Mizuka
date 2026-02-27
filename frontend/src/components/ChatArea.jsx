@@ -6,7 +6,7 @@ import MessageInput from './MessageInput'
 import ChatHeader from './ChatHeader'
 import './ChatArea.css'
 
-function ChatArea({ channelId, user }) {
+function ChatArea({ channelId, channelLabel, user }) {
   const [messages, setMessages] = useState([])
   const [typingUsers, setTypingUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,7 +27,14 @@ function ChatArea({ channelId, user }) {
       .finally(() => setLoading(false))
 
     const handleReceive = (msg) => {
-      setMessages(prev => [...prev, msg])
+      const normalised = {
+        id: msg.id,
+        content: msg.text ?? msg.content,
+        sender_id: msg.from ?? msg.sender_id,
+        username: msg.username,
+        created_at: msg.timestamp ?? msg.created_at
+      }
+      setMessages(prev => [...prev, normalised])
     }
 
     const handleDisplayTyping = ({ username }) => {
@@ -54,8 +61,8 @@ function ChatArea({ channelId, user }) {
   const handleSend = useCallback((content) => {
     socket.emit('send_message', {
       channel_id: channelId,
-      content,
-      userId: user.id,
+      message: content,
+      sender_id: user.id,
       username: user.username
     })
   }, [channelId, user])
@@ -75,7 +82,7 @@ function ChatArea({ channelId, user }) {
   }, [channelId, user])
 
   const handleMessageDeleted = useCallback((id) => {
-    setMessages(prev => prev.filter(m => (m._id || m.id) !== id))
+    setMessages(prev => prev.filter(m => (m.id || m._id) !== id))
   }, [])
 
   const handleChannelDeleted = useCallback(() => {
@@ -84,7 +91,11 @@ function ChatArea({ channelId, user }) {
 
   return (
     <div className="chat-area">
-      <ChatHeader channelId={channelId} onChannelDeleted={handleChannelDeleted} />
+      <ChatHeader
+        channelId={channelId}
+        channelLabel={channelLabel}
+        onChannelDeleted={handleChannelDeleted}
+      />
       {loading ? (
         <div className="chat-loading">
           <div className="chat-loading-dots">
