@@ -1,39 +1,36 @@
 import { useState } from 'react'
 import { useAuth } from './services/AuthContext'
 import LoginPage from './pages/LoginPage'
+import InstituteGate from './components/Institutegate'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
 import './styles/app.css'
 
-const DEFAULT_CHANNEL = {
-  id: 'c1111111-1111-1111-1111-111111111111',
-  label: 'main hallway'
-}
-
 function App() {
-  const { user, logout } = useAuth()
-  const [activeChannel, setActiveChannel] = useState(DEFAULT_CHANNEL)
-
-  const handleChannelSelect = (channel) => {
-    setActiveChannel(channel)
-  }
+  const { user, institutes, activeInstitute } = useAuth()
+  const [activeChannel, setActiveChannel] = useState(null)
 
   if (!user) {
     return <LoginPage />
   }
 
+  if (institutes.length === 0 || !activeInstitute) {
+    return <InstituteGate />
+  }
+
+  const effectiveChannel = activeChannel || { id: activeInstitute.id, label: 'general' }
+
   return (
     <div className="app-layout">
       <Sidebar
-        activeChannel={activeChannel.id}
-        onChannelSelect={handleChannelSelect}
+        activeChannel={effectiveChannel.id}
+        onChannelSelect={setActiveChannel}
         user={user}
-        onLogout={logout}
       />
       <ChatArea
-        key={activeChannel.id}
-        channelId={activeChannel.id}
-        channelLabel={activeChannel.label}
+        key={effectiveChannel.id}
+        channelId={effectiveChannel.id}
+        channelLabel={effectiveChannel.label}
         user={user}
       />
     </div>
