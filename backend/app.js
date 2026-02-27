@@ -7,14 +7,14 @@ require('dotenv').config();
 const app = express();
 const httpServer = createServer(app); // Wraps Express to handle WebSockets
 const io = new Server(httpServer, {
-  cors: {
-    origin: '*', // Allows all origins for development
-  },
+	cors: {
+		origin: '*', // Allows all origins for development
+	},
 });
 
 const authRoutes = require('./Routes/authRoutes');
 const messageRoutes = require('./Routes/messageRoutes');
-const socketController = require('./Socket-Controllers/messageController')
+const socketController = require('./Socket-Controllers/messageController');
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -23,24 +23,24 @@ app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 
 io.on('connection', (socket) => {
-  console.log(`✅ Device Connected: ${socket.id}`);
+	console.log(` Device Connected: ${socket.id}`);
 
-  socket.on('join_institute', (channel_id) => {
-    socket.join(channel_id);
-    console.log(`📍 User ${socket.id} joined room: ${channel_id}`);
-  });
+	socket.on('join_institute', (channel_id) => {
+		socket.join(channel_id);
+		console.log(`User ${socket.id} joined room: ${channel_id}`);
+	});
 
-  socket.on('send_message', (data) => {
-		socketController.handleSendMessage(socket,io,data)
-  });
+	socket.on('send_message', (data) => {
+		socketController.handleSendMessage(socket, io, data);
+	});
 
-  socket.on('disconnect', () => {
-    console.log(`❌ Device Disconnected: ${socket.id}`);
-  });
+	socket.on('disconnect', () => {
+		console.log(` Device Disconnected: ${socket.id}`);
+	});
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Mizuka Engine Live on Port ${PORT}`);
+	console.log(` Mizuka Engine Live on Port ${PORT}`);
 });
 
 module.exports = app;
