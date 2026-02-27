@@ -18,6 +18,12 @@ async function updateUserPassword(email, hashedPassword) {
 		email,
 	]);
 }
+async function linkToInstituteQuery(instituteId, userId) {
+	await pool.query(`UPDATE users SET institute_id = $1 WHERE id = $2`, [
+		instituteId,
+		userId,
+	]);
+}
 async function registerQuery(
 	username,
 	email,
@@ -44,4 +50,5 @@ module.exports = {
 	deleteUserQuery,
 	updateUserPassword,
 	getUserById,
+	linkToInstituteQuery,
 };

@@ -77,6 +77,23 @@ async function deleteUser(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+async function linkToInstitute(req, res) {
+	const {userId,institute_id} = req.body;
+	try {
+		const user = await db.getUserByEmail(email);
+		if (!user) {
+			return res.status(401).json({ message: 'Invalid Email or Password' });
+		}
+		const match = await bcypt.compare(password, user.password_hash);
+		if (!match) {
+			return res.status(401).json({ message: 'Invalid Email or Password' });
+		}
+		const deleted = await db.deleteUserQuery(email);
+		res.status(200).json({ message: 'User deleted', deleted });
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+}
 module.exports = {
 	Login,
 	Register,
