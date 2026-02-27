@@ -33,6 +33,14 @@ io.on('connection', (socket) => {
 	socket.on('send_message', (data) => {
 		socketController.handleSendMessage(socket, io, data);
 	});
+	socket.on('typing', (data) => {
+		socket.to(data.channel_id).emit('Display_typing', {
+			username: data.username,
+		});
+	});
+	socket.on('stop_typing', (data) => {
+		socket.to(data.channel_id).emit('hide_typing');
+	});
 
 	socket.on('disconnect', () => {
 		console.log(` Device Disconnected: ${socket.id}`);
