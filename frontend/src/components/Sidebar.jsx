@@ -1,56 +1,112 @@
+import { useState } from 'react'
+import { useAuth } from '../services/AuthContext'
+import InstitutePanel from './InstitutePanel'
 import './Sidebar.css'
 
-const CHANNELS = [
-  { id: 'c1111111-1111-1111-1111-111111111111', label: 'main hallway' },
-  { id: 'c2222222-2222-2222-2222-222222222222', label: 'faculty lounge' }
-]
+const CHANNELS_BY_INSTITUTE = {
+  'c1111111-1111-1111-1111-111111111111': [
+    { id: 'c1111111-1111-1111-1111-111111111111', label: 'main hallway' }
+  ],
+  'c2222222-2222-2222-2222-222222222222': [
+    { id: 'c2222222-2222-2222-2222-222222222222', label: 'faculty lounge' }
+  ]
+}
+
+function getChannels(instituteId) {
+  return CHANNELS_BY_INSTITUTE[instituteId] || [
+    { id: instituteId, label: 'general' }
+  ]
+}
 
 function Sidebar({ activeChannel, onChannelSelect, user, onLogout }) {
+  const { activeInstitute } = useAuth()
+  const [panelOpen, setPanelOpen] = useState(false)
+
+  const channels = activeInstitute ? getChannels(activeInstitute.id) : []
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <span className="sidebar-brand">
-          <span className="sidebar-brand-m">M</span>izuka
-        </span>
-        <span className="sidebar-status" />
-      </div>
-
-      <div className="sidebar-section">
-        <span className="sidebar-section-label">Channels</span>
-        <ul className="sidebar-channels">
-          {CHANNELS.map(ch => (
-            <li key={ch.id}>
-              <button
-                className={`sidebar-channel-btn ${activeChannel === ch.id ? 'active' : ''}`}
-                onClick={() => onChannelSelect(ch)}
-              >
-                <span className="sidebar-hash">#</span>
-                <span>{ch.label}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="sidebar-footer">
-        <div className="sidebar-user">
-          <div className="sidebar-avatar">
-            {user.username[0].toUpperCase()}
-          </div>
-          <div className="sidebar-user-info">
-            <span className="sidebar-username">{user.username}</span>
-            <span className="sidebar-user-role">{user.role || 'member'}</span>
-          </div>
+    <>
+      <aside className="sidebar" aria-label="Navigation">
+        <div className="sidebar-header">
+          <span className="sidebar-brand" aria-label="Mizuka">
+            <span className="sidebar-brand-m" aria-hidden="true">M</span>izuka
+          </span>
+          <span className="sidebar-status" aria-hidden="true" />
         </div>
-        <button className="sidebar-logout" onClick={onLogout} title="Logout">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16,17 21,12 16,7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
+
+        <button
+          className="sidebar-institute-btn"
+          onClick={() => setPanelOpen(true)}
+          aria-label="Manage institutes"
+          aria-haspopup="dialog"
+        >
+          <span className="sidebar-institute-icon" aria-hidden="true">
+            {activeInstitute ? activeInstitute.label[0].toUpperCase() : '+'}
+          </span>
+          <span className="sidebar-institute-info">
+            <span className="sidebar-institute-label">
+              {activeInstitute ? activeInstitute.label : 'No institute'}
+            </span>
+            <span className="sidebar-institute-hint">click to manage</span>
+          </span>
+          <svg className="sidebar-institute-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
           </svg>
         </button>
-      </div>
-    </aside>
+
+        <div className="sidebar-section">
+          {channels.length > 0 ? (
+            <>
+              <span className="sidebar-section-label" id="channels-label">Channels</span>
+              <ul className="sidebar-channels" aria-labelledby="channels-label" role="list">
+                {channels.map(ch => (
+                  <li key={ch.id} role="listitem">
+                    <button
+                      className={`sidebar-channel-btn ${activeChannel === ch.id ? 'active' : ''}`}
+                      onClick={() => onChannelSelect(ch)}
+                      aria-current={activeChannel === ch.id ? 'page' : undefined}
+                    >
+                      <span className="sidebar-hash" aria-hidden="true">#</span>
+                      <span>{ch.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="sidebar-no-channels">
+              Select or join an institute to see channels.
+            </p>
+          )}
+        </div>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-user">
+            <div className="sidebar-avatar" aria-hidden="true">
+              {user.username[0].toUpperCase()}
+            </div>
+            <div className="sidebar-user-info">
+              <span className="sidebar-username">{user.username}</span>
+              <span className="sidebar-user-role">{user.role || 'member'}</span>
+            </div>
+          </div>
+          <button
+            className="sidebar-logout"
+            onClick={onLogout}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16,17 21,12 16,7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      {panelOpen && <InstitutePanel onClose={() => setPanelOpen(false)} />}
+    </>
   )
 }
 
