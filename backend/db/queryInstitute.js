@@ -1,5 +1,5 @@
 const pool = require('./Pool');
-async function createInstitute(name) {
+async function createInstituteQuery(name) {
 	const { rows } = await pool.query(
 		`
     INSERT INTO institutes (name) VALUES ($1) RETURNING id,name`,
@@ -7,7 +7,7 @@ async function createInstitute(name) {
 	);
 	return rows[0];
 }
-async function createDefaultChannel(newInstituteId) {
+async function createDefaultChannelQuery(newInstituteId) {
 	const { rows } = await pool.query(
 		`
     INSERT INTO channels (name,institute_id, is_private) VALUES ($1,$2,$3) `,
@@ -15,7 +15,7 @@ async function createDefaultChannel(newInstituteId) {
 	);
 	return rows[0];
 }
-async function linkInstituteToAdmin(newInstituteId, adminId) {
+async function linkToAdminQuery(newInstituteId, adminId) {
 	const { rows } = await pool.query(
 		`
     UPDATE users SET institute_id = $1 WHERE id =$2`,
@@ -23,4 +23,4 @@ async function linkInstituteToAdmin(newInstituteId, adminId) {
 	);
 	return rows[0];
 }
-module.exports = { createInstitute, createDefaultChannel,linkInstituteToAdmin };
+module.exports = { createInstituteQuery, createDefaultChannelQuery,linkToAdminQuery };
