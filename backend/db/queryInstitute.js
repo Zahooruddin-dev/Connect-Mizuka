@@ -15,4 +15,12 @@ async function createDefaultChannel(newInstituteId) {
 	);
 	return rows[0];
 }
-module.exports = { createInstitute, createDefaultChannel };
+async function linkInstituteToAdmin(newInstituteId, adminId) {
+	const { rows } = await pool.query(
+		`
+    UPDATE users SET institute_id = $1 WHERE id =$2`,
+		[newInstituteId, adminId],
+	);
+	return rows[0];
+}
+module.exports = { createInstitute, createDefaultChannel,linkInstituteToAdmin };
