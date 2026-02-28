@@ -14,6 +14,7 @@ const io = new Server(httpServer, {
 
 const authRoutes = require('./Routes/authRoutes');
 const messageRoutes = require('./Routes/messageRoutes');
+const instituteRoutes = require('./Routes/messageRoutes');
 const socketController = require('./Socket-Controllers/messageController');
 const PORT = process.env.PORT || 3000;
 
@@ -21,6 +22,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/institute', instituteRoutes);
 
 io.on('connection', (socket) => {
 	console.log(` Device Connected: ${socket.id}`);
