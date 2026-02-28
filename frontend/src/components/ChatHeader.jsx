@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../services/AuthContext'
 import { deleteChannel } from '../services/api'
-import './ChatHeader.css'
+import './styles/ChatHeader.css'
 
 function ChatHeader({ channelId, channelLabel, onChannelDeleted }) {
   const { user } = useAuth()

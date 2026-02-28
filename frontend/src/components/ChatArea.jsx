@@ -4,7 +4,7 @@ import { fetchMessages } from '../services/api'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import ChatHeader from './ChatHeader'
-import './ChatArea.css'
+import './styles/ChatArea.css'
 
 function ChatArea({ channelId, channelLabel, user }) {
   const [messages, setMessages] = useState([])

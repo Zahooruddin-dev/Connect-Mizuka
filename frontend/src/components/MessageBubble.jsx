@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { formatTime } from '../utils/dateFormat'
-import './MessageBubble.css'
+import './styles/MessageBubble.css'
 
 export default function MessageBubble({ message, isOwn, onDelete }) {
   const [hovered, setHovered] = useState(false)

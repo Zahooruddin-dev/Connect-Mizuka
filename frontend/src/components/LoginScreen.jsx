@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { setAuth } from '../utils/auth'
-import './LoginScreen.css'
+import './styles/LoginScreen.css'
 
 function LoginScreen({ onLogin }) {
   const [username, setUsername] = useState('')

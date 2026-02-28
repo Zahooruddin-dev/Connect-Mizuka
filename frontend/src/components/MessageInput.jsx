@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
-import './MessageInput.css'
+import './styles/MessageInput.css'
 
 function MessageInput({ onSend, onTyping, onStopTyping }) {
   const [text, setText] = useState('')

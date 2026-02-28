@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatTime } from '../utils/time'
 import { deleteMessage } from '../services/api'
-import './MessageItem.css'
+import './styles/MessageItem.css'
 
 function MessageItem({ message, currentUserId, onDeleted }) {
   const [deleting, setDeleting] = useState(false)

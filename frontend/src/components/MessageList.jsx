@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import MessageItem from './MessageItem'
-import './MessageList.css'
+import './styles/MessageList.css'
 
 function MessageList({ messages, typingUsers, currentUserId, onMessageDeleted }) {
   const bottomRef = useRef(null)

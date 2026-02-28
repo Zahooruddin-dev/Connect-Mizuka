@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../services/AuthContext'
 import InstitutePanel from './Institutepanel'
-import './Sidebar.css'
+import './styles/Sidebar.css'
 
 const CHANNELS_BY_INSTITUTE = {
   'c1111111-1111-1111-1111-111111111111': [

@@ -1,5 +1,5 @@
 import React from 'react'
-import './DateDivider.css'
+import './styles/DateDivider.css'
 
 export default function DateDivider({ label }) {
   return (
