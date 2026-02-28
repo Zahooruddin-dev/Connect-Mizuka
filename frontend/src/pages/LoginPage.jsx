@@ -6,7 +6,7 @@ import {
 	requestPasswordReset,
 	resetPassword,
 } from '../services/api';
-import './LoginPage.css';
+import '../styles/LoginPage.css';
 
 const VIEWS = {
 	LOGIN: 'login',

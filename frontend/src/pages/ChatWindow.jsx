@@ -6,7 +6,7 @@ import MessageInput from '../components/MessageInput'
 import TypingIndicator from '../components/TypingIndicator'
 import DateDivider from '../components/DateDivider'
 import { formatDate, isSameDay } from '../utils/dateFormat'
-import './ChatWindow.css'
+import '../styles/ChatWindow.css'
 
 export default function ChatWindow({ channelId }) {
   const { user } = useAuth()
