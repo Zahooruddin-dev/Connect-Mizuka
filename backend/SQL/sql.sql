@@ -40,3 +40,11 @@ CREATE TABLE password_resets (
 CREATE INDEX idx_messages_channel_id ON messages(channel_id);
 
 ALTER TABLE users ALTER COLUMN institute_id DROP NOT NULL;
+CREATE TABLE user_institutes (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    institute_id UUID REFERENCES institutes(id) ON DELETE CASCADE,
+    role TEXT CHECK (role IN ('admin', 'member', 'teacher')),
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, institute_id)
+);
+ALTER TABLE users DROP COLUMN institute_id;

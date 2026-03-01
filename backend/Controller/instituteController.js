@@ -28,7 +28,7 @@ async function createInstitute(req, res) {
 	}
 }
 async function getGlobalKey(req, res) {
-	const { instituteId, adminId } = req.body;
+	const { instituteId, adminId } = req.params;
 	try {
 		const user = await dbAuth.getUserById(adminId);
 		if (!user || user.role !== 'admin') {
