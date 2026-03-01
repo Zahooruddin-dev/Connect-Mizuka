@@ -39,11 +39,23 @@ async function verifyAdminOfInstitute(adminId, instituteId) {
 	);
 	return rows[0];
 }
+async function getAdminInstitutes(adminId) {
+	const { rows } = await pool.query(
+		`
+    SELECT i.id, i.name,ui.role 
+    FROM institutes i JOIN user_institutes ui 
+    ON i.id = ui.institute_id 
+    WHERE ui.user_id = $1 AND ui.role = 'admin'`,
+		[adminId],
+	);
+	return rows[0];
+}
 
 module.exports = {
 	createInstituteQuery,
 	createDefaultChannelQuery,
 	linkToAdminQuery,
 	getInstituteByIdQuery,
-  verifyAdminOfInstitute
+	verifyAdminOfInstitute,
+  getAdminInstitutes,
 };
