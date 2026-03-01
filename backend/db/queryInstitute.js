@@ -23,4 +23,13 @@ async function linkToAdminQuery(newInstituteId, adminId) {
 	);
 	return rows[0];
 }
-module.exports = { createInstituteQuery, createDefaultChannelQuery,linkToAdminQuery };
+async function getInstituteById(instituteId) {
+	const { rows } = await pool.query(
+		`
+    SELECT id,name FROM institutes WHERE id =$1`,
+		[instituteId],
+	);
+	return rows[0];
+}
+
+module.exports = { createInstituteQuery, createDefaultChannelQuery,linkToAdminQuery,getInstituteById };
