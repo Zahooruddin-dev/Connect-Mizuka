@@ -23,7 +23,7 @@ async function linkToAdminQuery(newInstituteId, adminId) {
 	);
 	return rows[0];
 }
-async function getInstituteById(instituteId) {
+async function getInstituteByIdQuery(instituteId) {
 	const { rows } = await pool.query(
 		`
     SELECT id,name FROM institutes WHERE id =$1`,
@@ -32,4 +32,4 @@ async function getInstituteById(instituteId) {
 	return rows[0];
 }
 
-module.exports = { createInstituteQuery, createDefaultChannelQuery,linkToAdminQuery,getInstituteById };
+module.exports = { createInstituteQuery, createDefaultChannelQuery,linkToAdminQuery,getInstituteByIdQuery };
