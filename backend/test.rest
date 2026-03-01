@@ -1,2 +1,10 @@
 ### Get chat history
 GET http://localhost:3000/api/messages/1c8fb7e7-5e07-409d-8245-19b4b834028c
+###
+POST http://localhost:3000/api/institute/create
+Content-Type: application/json
+
+{
+  "name": "Mizuka High School",
+  "adminId": "c7efe75a-8306-4b9b-8550-20f90ec8e62c"
+}

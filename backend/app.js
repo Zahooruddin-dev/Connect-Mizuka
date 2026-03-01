@@ -14,7 +14,7 @@ const io = new Server(httpServer, {
 
 const authRoutes = require('./Routes/authRoutes');
 const messageRoutes = require('./Routes/messageRoutes');
-const instituteRoutes = require('./Routes/messageRoutes');
+const instituteRoutes = require('./Routes/instituteRoutes');
 const socketController = require('./Socket-Controllers/messageController');
 const PORT = process.env.PORT || 3000;
 
