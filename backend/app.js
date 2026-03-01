@@ -15,6 +15,7 @@ const io = new Server(httpServer, {
 const authRoutes = require('./Routes/authRoutes');
 const messageRoutes = require('./Routes/messageRoutes');
 const instituteRoutes = require('./Routes/instituteRoutes');
+const channelRoutes = require('./Routes/channelRoutes');
 const socketController = require('./Socket-Controllers/messageController');
 const PORT = process.env.PORT || 3000;
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/institute', instituteRoutes);
+app.use('/api/channel', channelRoutes);
 
 io.on('connection', (socket) => {
 	console.log(` Device Connected: ${socket.id}`);

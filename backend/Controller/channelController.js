@@ -1,4 +1,5 @@
 const db = require('../db/queryChannel');
+const dbAuth = require('../db/queryAuth');
 
 async function createChannel(req, res) {
 	const { name, institute_id, is_private, adminId } = req.body;
