@@ -31,5 +31,19 @@ async function getInstituteByIdQuery(instituteId) {
 	);
 	return rows[0];
 }
+async function verifyAdminOfInstitute(adminId, instituteId) {
+	const { rows } = await pool.query(
+		`
+    SELECT role FROM user_institutes WHERE user_id = 1$ AND institute_id = $2 AND role = 'admin'`,
+		[adminId, instituteId],
+	);
+	return rows[0];
+}
 
-module.exports = { createInstituteQuery, createDefaultChannelQuery,linkToAdminQuery,getInstituteByIdQuery };
+module.exports = {
+	createInstituteQuery,
+	createDefaultChannelQuery,
+	linkToAdminQuery,
+	getInstituteByIdQuery,
+  verifyAdminOfInstitute
+};
