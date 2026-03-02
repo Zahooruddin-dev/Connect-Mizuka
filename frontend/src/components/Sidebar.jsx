@@ -78,7 +78,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin }) {
                       aria-current={activeChannel === ch.id ? 'page' : undefined}
                     >
                       <span className="sidebar-hash" aria-hidden="true">#</span>
-                      <span>{ch.label}</span>
+                      <span>{ch.name}</span>
                     </button>
                   </li>
                 ))}
