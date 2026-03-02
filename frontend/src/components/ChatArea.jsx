@@ -16,7 +16,14 @@ function ChatArea({ channelId, channelLabel, user }) {
     setMessages([])
     setTypingUsers([])
 
-    socket.emit('join_institute', { channel_id: channelId })
+    // send the channel id string so server can join the correct room
+    if (socket.connected) {
+      socket.emit('join_institute', channelId)
+    } else {
+      socket.once('connect', () => {
+        socket.emit('join_institute', channelId)
+      })
+    }
 
     fetchMessages(channelId)
       .then(res => {
@@ -34,7 +41,11 @@ function ChatArea({ channelId, channelLabel, user }) {
         username: msg.username,
         created_at: msg.timestamp ?? msg.created_at
       }
-      setMessages(prev => [...prev, normalised])
+      setMessages(prev => {
+        // avoid duplicates (maybe triggered twice somehow)
+        if (prev.some(m => m.id === normalised.id)) return prev
+        return [...prev, normalised]
+      })
     }
 
     const handleDisplayTyping = ({ username }) => {

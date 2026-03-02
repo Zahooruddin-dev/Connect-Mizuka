@@ -1,9 +1,13 @@
 import { io } from 'socket.io-client'
 
-const socket = io('http://localhost:5173', {
-  transports: ['websocket'],
+// connect to backend socket.io server (default backend port 3000)
+const SOCKET_URL ='http://localhost:3000'
+
+const socket = io(SOCKET_URL, {
+  transports: ['websocket', 'polling'],
   reconnectionAttempts: 5,
-  reconnectionDelay: 1000
+  reconnectionDelay: 1000,
+  autoConnect: true,
 })
 
 export default socket
