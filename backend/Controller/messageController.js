@@ -50,7 +50,6 @@ async function deleteChannel(req, res) {
 				.json({ error: 'Access denied. Admin role required.' });
 		}
 
-		// fetch channel to know its institute
 		const channel = await db.getChannelById(channelId);
 		if (!channel) {
 			return res.status(404).json({ error: 'Channel not found' });

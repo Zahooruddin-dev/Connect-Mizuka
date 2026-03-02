@@ -1,5 +1,6 @@
 const db = require('../db/queryChannel');
 const dbAuth = require('../db/queryAuth');
+const dbChannel = require('../db/queryChannel');
 const dbInstitute = require('../db/queryInstitute');
 
 async function createChannel(req, res) {
@@ -60,9 +61,22 @@ async function getChannelById(req, res) {
 		res.status(500).json({ error: 'Failed to load channel' });
 	}
 }
+async function deleteChannelById(req, res) {
+	const { channelId } = req.params;
+	try {
+		const channel = await dbChannel.deleteChannelQuery(channelId);
+		if (!channel) {
+			return res.status(404).json({ error: 'Channel not found' });
+		}
+		res.status(200).json({ channel });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load channel' });
+	}
+}
 
 module.exports = {
 	createChannel,
 	getChannelsForInstitute,
 	getChannelById,
+  deleteChannelById
 };

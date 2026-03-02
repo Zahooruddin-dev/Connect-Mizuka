@@ -36,5 +36,5 @@ module.exports={
   createChannelQuery,
   getChannelsByInstitute,
   getChannelById,
-  deleteChannelQuery
+  deleteChannelQuery,
 }
