@@ -16,12 +16,13 @@ async function createDefaultChannelQuery(newInstituteId) {
 	return rows[0];
 }
 async function linkToAdminQuery(newInstituteId, adminId) {
-	const { rows } = await pool.query(
-		`
-    UPDATE users SET institute_id = $1 WHERE id =$2`,
-		[newInstituteId, adminId],
-	);
-	return rows[0];
+  const { rows } = await pool.query(
+    `INSERT INTO user_institutes (user_id, institute_id, role) 
+     VALUES ($1, $2, $3) 
+     RETURNING *`,
+    [adminId, newInstituteId, 'admin']
+  );
+  return rows[0];
 }
 async function getInstituteByIdQuery(instituteId) {
 	const { rows } = await pool.query(
