@@ -35,7 +35,7 @@ async function getInstituteByIdQuery(instituteId) {
 async function verifyAdminOfInstitute(adminId, instituteId) {
 	const { rows } = await pool.query(
 		`
-    SELECT role FROM user_institutes WHERE user_id = 1$ AND institute_id = $2 AND role = 'admin'`,
+    SELECT role FROM user_institutes WHERE user_id = $1 AND institute_id = $2 AND role = 'admin'`,
 		[adminId, instituteId],
 	);
 	return rows[0] || null;

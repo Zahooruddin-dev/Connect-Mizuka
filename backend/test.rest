@@ -5,17 +5,17 @@ POST http://localhost:3000/api/institute/create
 Content-Type: application/json
 
 {
-  "name": "Mizuka High School",
-  "adminId": "8ef44a8b-c24e-4730-8a6f-e042cba65e56"
+  "name": "Bonaventure High School",
+  "adminId": "c7efe75a-8306-4b9b-8550-20f90ec8e62c"
 }
 ### Create a New Private Channel (Admin Only)
 POST http://localhost:3000/api/channel/create
 Content-Type: application/json
 
 {
-  "name": "Faculty Secret Lounge",
+  "name": "Damily Secret Lounge",
   "institute_id": "e158fe90-00ad-4b99-9416-9fa64e2fd967",
-  "adminId": "8ef44a8b-c24e-4730-8a6f-e042cba65e56",
+  "adminId": "c7efe75a-8306-4b9b-8550-20f90ec8e62c",
   "is_private": true
 }
 
