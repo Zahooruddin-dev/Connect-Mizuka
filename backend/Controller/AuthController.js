@@ -56,7 +56,6 @@ async function Register(req, res) {
 			email,
 			password_hash,
 			role,
-			instId,
 		);
 		// if an institute_id was provided, insert into the junction table
 		if (instId) {
