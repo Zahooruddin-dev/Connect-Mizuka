@@ -1,17 +1,100 @@
 
 
-# Mizuka Chat Engine v3.0 - Multi-Tenant Backend
+# Mizuka Chat Engine Backend
 
-This backend supports a **Many-to-Many Relationship** model. A single user can now be an Admin in one institute and a Member in another, verified by a central junction table.
+This repository contains the backend for the Mizuka multi-tenant chat engine. It provides REST endpoints, socket handlers, and database queries to support
+users, institutes, channels, and real-time messaging. The server is built with Express and PostgreSQL (via the `pg` pool) and is designed for
+multi-institute deployments where users may belong to multiple organizations with different roles.
 
 ---
 
-## 1. Required Database Migration (Neon Console)
+## 🔧 Prerequisites
 
-Run this to move from a single `institute_id` column to a secure relationship table.
+- Node.js 18+ (LTS recommended)
+- PostgreSQL database (Neon, local, or managed)
+- npm/Yarn
+
+---
+
+## 🚀 Getting Started
+
+1. **Clone the repository**
+   ```bash
+   git clone <repo-url> && cd Connect-Mizuka/backend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   Copy `.env.example` (if present) to `.env` and update values:
+   ```text
+   PORT=4000
+   DATABASE_URL=postgres://user:pass@host:port/dbname
+   JWT_SECRET=your_secret_here
+   ```
+
+4. **Run the server**
+   ```bash
+   npm run server        # starts with nodemon
+   npm start             # production mode
+   ```
+
+5. **Run tests** (if applicable)
+   ```bash
+   npm test
+   ```
+
+---
+
+## 🗂️ Folder Structure
+
+```
+backend/
+├─ app.js                 # entrée point
+├─ Controller/            # express controllers for each resource
+├─ db/                    # database pool and query helpers
+├─ Routes/                # express routers
+├─ Socket-Controllers/    # socket.io event handlers
+└─ SQL/                   # raw SQL examples
+```
+
+---
+
+## 📦 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` – create a new user
+- `POST /api/auth/login` – login and receive a JWT
+- `POST /api/auth/link-to-institute` – add member relationship
+- `GET  /api/auth/my-memberships/:userId` – list institutes for user
+- `POST /api/auth/reset-password` – password reset flow (see `ResetController`)
+
+### Institutes (Admin only)
+- `POST /api/institute/create` – create institute + general channel
+- `GET  /api/institute/dashboard/:adminId` – list institutes and invite keys
+
+### Channels
+- `POST /api/channel/create` – create channel (admin check)
+- `GET  /api/channel/:id` – fetch channel info
+
+### Messages
+- `POST /api/message/send` – store message and emit via socket
+- `GET  /api/message/history/:channelId` – load channel history
+
+> _Refer to controller source files for complete route definitions and required parameters._
+
+---
+
+## 🛠️ Database Migration
+
+The backend now uses a junction table `user_institutes` instead of a single `institute_id` on
+`users`. Run the following SQL once:
 
 ```sql
--- 1. Create the Junction Table
+-- create junction table for many-to-many relationships
 CREATE TABLE user_institutes (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     institute_id UUID REFERENCES institutes(id) ON DELETE CASCADE,
@@ -20,77 +103,57 @@ CREATE TABLE user_institutes (
     PRIMARY KEY (user_id, institute_id)
 );
 
--- 2. (Optional) Cleanup: Only do this once code no longer references users.institute_id
+-- remove the old column when safe
 -- ALTER TABLE users DROP COLUMN institute_id;
-
 ```
 
----
-
-## 2. Updated API Reference (REST)
-
-### **Administrative Actions (Admin Only)**
-
-* **Create Institute** (`POST /api/institute/create`)
-* **Body:** `{ "name": "School Name", "adminId": "UUID" }`
-* **Logic:** Executes a transaction to (1) Create Institute, (2) Create "General Hallway" channel, (3) Link Admin in `user_institutes`.
-
-
-* **Admin Dashboard** (`GET /api/institute/dashboard/:adminId`)
-* **Logic:** Returns all institutes managed by this specific admin, including their **Global Invite Keys** (IDs).
-
-
-* **Create Channel** (`POST /api/channel/create`)
-* **Body:** `{ "name", "institute_id", "adminId", "is_private" }`
-* **Security:** Backend verifies if `adminId` is registered as an `'admin'` for that specific `institute_id` before inserting.
-
-
+This allows a single user to hold different roles in different institutes.
 
 ---
 
-### **Onboarding & Joining**
+## 🔐 Security Model
 
-* **Join Institute** (`POST /api/auth/link-to-institute`)
-* **Body:** `{ "userId": "UUID", "instituteId": "UUID" }`
-* **Behavior:** Inserts a record into `user_institutes` with `role: 'member'`.
+All administrative actions are protected by a **double-lock** mechanism:
+1. Verify the `adminId` corresponds to a valid user.
+2. Confirm the user has an `'admin'` role for the target `institute_id` in `user_institutes`.
 
-
-* **Check Membership** (`GET /api/auth/my-memberships/:userId`)
-* **Logic:** Returns all institutes the user currently belongs to.
-
-
+This prevents cross-institute privilege escalation.
 
 ---
 
-## 3. Security Design: The "Double-Lock"
+## 💬 Socket.io Contract
 
-Every administrative request now validates two things:
+| Event             | Direction | Payload                                                         | Notes                               |
+|-------------------|-----------|-----------------------------------------------------------------|-------------------------------------|
+| `join_institute`  | client→srv| `{ channel_id }`                                                 | join a UUID room                    |
+| `send_message`    | client→srv| `{ channel_id, message, sender_id, username }`                  | field named `message`              |
+| `receive_message` | srv→client| `{ id, text, from, timestamp }`                                 | uses `text` instead of `message`   |
 
-1. **Identity:** Is the `adminId` valid?
-2. **Authority:** Does the `user_institutes` table confirm this user is an `'admin'` for **this specific** `institute_id`?
-
-This prevents "Cross-Institute" attacks where an admin from School A tries to delete channels in School B.
-
----
-
-## 4. Frontend Integration Flow
-
-1. **Auth Check:** User logs in.
-2. **Fetch Institutes:** Frontend calls `GET /api/auth/my-memberships/:userId`.
-3. **Gatekeeping:**
-* If array is empty: Show `InstituteGate` (Enter Invite Code).
-* If array has items: Load Sidebar with Institute Switcher.
-
-
-4. **Admin UI:** If `role === 'admin'` for the active institute, show "Create Channel" and "Invite Key" buttons.
+Socket logic lives in `Socket-Controllers/messageController.js`.
 
 ---
 
-## 5. Socket.io Event Contract
+## 🧪 Testing
 
-| Event | Type | Payload | Notes |
-| --- | --- | --- | --- |
-| `join_institute` | **Emit** | `channel_id` | Joins a specific UUID room. |
-| `send_message` | **Emit** | `{ channel_id, message, sender_id, username }` | Note: Uses `message` not `content`. |
-| `receive_message` | **Listen** | `{ id, text, from, timestamp }` | Note: Uses `text` not `content`. |
+- Use the included Postman collection (`test.rest`) or your preferred REST client.
+- Example SQL files can be found under `SQL/sql.sql` for manual database seeding.
+
+---
+
+## 📝 Notes
+
+- Make sure to keep `.env` values secure.
+- When modifying database schema, always test on a development branch (Neon supports
+  branch-based migrations).
+
+---
+
+## 🤝 Contributing
+
+Issues and PRs welcome! Please follow the existing code style and add tests where
+appropriate.
+
+---
+
+_Last updated: March 2026_
 
