@@ -5,7 +5,7 @@ import './styles/MessageItem.css'
 
 function MessageItem({ message, currentUserId, onDeleted }) {
   const [deleting, setDeleting] = useState(false)
-
+  
   const senderId = message.sender_id || message.userId || message.user_id
   const isMine = senderId === currentUserId
 

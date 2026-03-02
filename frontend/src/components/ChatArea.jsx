@@ -33,21 +33,19 @@ function ChatArea({ channelId, channelLabel, user }) {
       .catch(() => setMessages([]))
       .finally(() => setLoading(false))
 
-    const handleReceive = (msg) => {
-      const normalised = {
-        id: msg.id,
-        content: msg.text ?? msg.content,
-        sender_id: msg.from ?? msg.sender_id,
-        username: msg.username,
-        created_at: msg.timestamp ?? msg.created_at
-      }
-      setMessages(prev => {
-        // avoid duplicates (maybe triggered twice somehow)
-        if (prev.some(m => m.id === normalised.id)) return prev
-        return [...prev, normalised]
-      })
-    }
+ const handleReceive = (msg) => {
+  // Don't process your own echoed messages — already added optimistically
+  if (msg.from === user.id || msg.sender_id === user.id) return
 
+  const normalised = {
+    id: msg.id,
+    content: msg.text ?? msg.content,
+    sender_id: msg.from ?? msg.sender_id,
+    username: msg.username,
+    created_at: msg.timestamp ?? msg.created_at
+  }
+  setMessages(prev => [...prev, normalised])
+}
     const handleDisplayTyping = ({ username }) => {
       setTypingUsers(prev =>
         prev.includes(username) ? prev : [...prev, username]
@@ -68,15 +66,25 @@ function ChatArea({ channelId, channelLabel, user }) {
       socket.off('hide_typing', handleHideTyping)
     }
   }, [channelId])
+const handleSend = useCallback((content) => {
+  const tempMessage = {
+    id: Date.now().toString(), // temp id
+    content,
+    sender_id: user.id,
+    username: user.username,
+    created_at: new Date().toISOString()
+  }
+  
+  // Add immediately so UI feels instant
+  setMessages(prev => [...prev, tempMessage])
 
-  const handleSend = useCallback((content) => {
-    socket.emit('send_message', {
-      channel_id: channelId,
-      message: content,
-      sender_id: user.id,
-      username: user.username
-    })
-  }, [channelId, user])
+  socket.emit('send_message', {
+    channel_id: channelId,
+    message: content,
+    sender_id: user.id,
+    username: user.username
+  })
+}, [channelId, user])
 
   const handleTyping = useCallback(() => {
     socket.emit('typing', {
