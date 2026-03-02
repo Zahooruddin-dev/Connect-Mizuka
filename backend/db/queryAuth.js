@@ -18,11 +18,14 @@ async function updateUserPassword(email, hashedPassword) {
 		email,
 	]);
 }
-async function linkToInstituteQuery(institute_id, userId) {
-	await pool.query(`UPDATE users SET institute_id = $1 WHERE id = $2`, [
-		institute_id,
-		userId,
-	]);
+async function linkToInstituteQuery(userId, institute_id, role = 'member') {
+	// insert a record into the junction table. role defaults to member.
+	const { rows } = await pool.query(
+		`INSERT INTO user_institutes (user_id, institute_id, role)
+		 VALUES ($1, $2, $3) RETURNING *`,
+		[userId, institute_id, role]
+	);
+	return rows[0] || null;
 }
 async function registerQuery(
 	username,
@@ -44,6 +47,17 @@ async function getUserById(userId) {
 	]);
 	return rows[0] || null;
 }
+
+async function getUserMemberships(userId) {
+	const { rows } = await pool.query(
+		`SELECT ui.institute_id AS id, i.name, ui.role
+		 FROM user_institutes ui
+		 JOIN institutes i ON i.id = ui.institute_id
+		 WHERE ui.user_id = $1`,
+		[userId],
+	);
+	return rows || [];
+}
 module.exports = {
 	registerQuery,
 	getUserByEmail,
@@ -51,4 +65,5 @@ module.exports = {
 	updateUserPassword,
 	getUserById,
 	linkToInstituteQuery,
+	getUserMemberships,
 };

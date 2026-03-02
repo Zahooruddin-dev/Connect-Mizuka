@@ -5,6 +5,7 @@ import {
 	register,
 	requestPasswordReset,
 	resetPassword,
+	fetchMemberships,
 } from '../services/api';
 import '../styles/LoginPage.css';
 
@@ -41,7 +42,13 @@ export default function LoginPage() {
 		const res = await login(form.email, form.password);
 		setLoading(false);
 		if (res.token) {
-			authLogin(res.user, res.token);
+			// if server didn't include memberships, fetch separately
+			let userObj = res.user;
+			if (!userObj.memberships) {
+				const mem = await fetchMemberships(userObj.id);
+				userObj.memberships = mem.memberships || [];
+			}
+			authLogin(userObj, res.token);
 		} else {
 			setError(res.message || 'Login failed');
 		}

@@ -92,9 +92,18 @@ export const fetchChannel = async (channelId) => {
   }
 }
 
-export const createChannel = async (adminId, instituteId, name) => {
+export const fetchChannelsByInstitute = async (instituteId) => {
   try {
-    const res = await api.post('/channel/create', { adminId, institute_id: instituteId, name })
+    const res = await api.get(`/channel/institute/${instituteId}`)
+    return res.data
+  } catch (err) {
+    return err.response?.data || { message: 'Network error' }
+  }
+}
+
+export const createChannel = async (adminId, instituteId, name, isPrivate = false) => {
+  try {
+    const res = await api.post('/channel/create', { adminId, institute_id: instituteId, name, is_private: isPrivate })
     return res.data
   } catch (err) {
     return err.response?.data || { message: 'Network error' }

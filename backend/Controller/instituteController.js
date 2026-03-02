@@ -16,10 +16,11 @@ async function createInstitute(req, res) {
 		}
 		const newInst = await db.createInstituteQuery(name);
 		await db.createDefaultChannelQuery(newInst.id);
-		await db.linkToAdminQuery(newInst.id, adminId);
+		const membership = await db.linkToAdminQuery(newInst.id, adminId);
 		res.status(201).json({
 			message: 'Institute created and admin linked successfully',
 			institute: newInst,
+			membership,
 		});
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to create institute' });
@@ -48,8 +49,8 @@ async function getGlobalKey(req, res) {
 async function getAdminDashboard(req, res) {
 	const { adminId } = req.params;
 	try {
-		const institute = await db.getAdminInstitutes(adminId);
-		if (!institute) {
+		const institutes = await db.getAdminInstitutes(adminId);
+		if (!institutes || institutes.length === 0) {
 			return res
 				.status(404)
 				.json({ message: 'No institutes found for this admin' });

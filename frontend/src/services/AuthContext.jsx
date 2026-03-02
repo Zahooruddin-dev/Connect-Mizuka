@@ -1,152 +1,125 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
-import { fetchMemberships } from './api'
+import React, { createContext, useContext, useState } from 'react';
 
-const AuthContext = createContext(null)
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('mizuka_user')
-    return stored ? JSON.parse(stored) : null
-  })
+	const [user, setUser] = useState(() => {
+		const stored = localStorage.getItem('mizuka_user');
+		return stored ? JSON.parse(stored) : null;
+	});
 
-  const [token, setToken] = useState(() => localStorage.getItem('mizuka_token') || null)
+	const [token, setToken] = useState(
+		() => localStorage.getItem('mizuka_token') || null,
+	);
 
-  const [institutes, setInstitutes] = useState(() => {
-    const stored = localStorage.getItem('mizuka_institutes')
-    return stored ? JSON.parse(stored) : []
-  })
+	const [institutes, setInstitutes] = useState(() => {
+		const stored = localStorage.getItem('mizuka_institutes');
+		return stored ? JSON.parse(stored) : [];
+	});
 
-  const [activeInstitute, setActiveInstituteState] = useState(() => {
-    const stored = localStorage.getItem('mizuka_active_institute')
-    return stored ? JSON.parse(stored) : null
-  })
+	const [activeInstitute, setActiveInstituteState] = useState(() => {
+		const stored = localStorage.getItem('mizuka_active_institute');
+		return stored ? JSON.parse(stored) : null;
+	});
 
-  const [channels, setChannels] = useState(() => {
-    const stored = localStorage.getItem('mizuka_channels')
-    return stored ? JSON.parse(stored) : {}
-  })
+	function login(userData, tokenValue) {
+		setUser(userData);
+		setToken(tokenValue);
+		localStorage.setItem('mizuka_user', JSON.stringify(userData));
+		localStorage.setItem('mizuka_token', tokenValue);
 
-  const persistInstitutes = (list) => {
-    localStorage.setItem('mizuka_institutes', JSON.stringify(list))
-    setInstitutes(list)
-  }
+		// handle memberships array if provided by backend
+		if (Array.isArray(userData.memberships)) {
+			const items = userData.memberships.map((m) => ({
+				id: m.id,
+				label: m.name || m.id,
+				role: m.role,
+			}));
+			setInstitutes(items);
+			localStorage.setItem('mizuka_institutes', JSON.stringify(items));
+			if (items.length > 0) {
+				setActiveInstituteState(items[0]);
+				localStorage.setItem(
+					'mizuka_active_institute',
+					JSON.stringify(items[0]),
+				);
+			}
+		}
+	}
 
-  const persistActive = (inst) => {
-    localStorage.setItem('mizuka_active_institute', JSON.stringify(inst))
-    setActiveInstituteState(inst)
-  }
+	function logout() {
+		setUser(null);
+		setToken(null);
+		setInstitutes([]);
+		setActiveInstituteState(null);
+		localStorage.removeItem('mizuka_user');
+		localStorage.removeItem('mizuka_token');
+		localStorage.removeItem('mizuka_institutes');
+		localStorage.removeItem('mizuka_active_institute');
+	}
 
-  const persistChannels = (map) => {
-    localStorage.setItem('mizuka_channels', JSON.stringify(map))
-    setChannels(map)
-  }
+	function addInstitute(institute) {
+		setInstitutes((prev) => {
+			const already = prev.find((i) => i.id === institute.id);
+			if (already) return prev;
+			const updated = [...prev, institute];
+			localStorage.setItem('mizuka_institutes', JSON.stringify(updated));
+			return updated;
+		});
+		if (!activeInstitute) {
+			setActiveInstituteState(institute);
+			localStorage.setItem(
+				'mizuka_active_institute',
+				JSON.stringify(institute),
+			);
+		}
+	}
 
-  const refreshMemberships = useCallback(async (userId) => {
-    const res = await fetchMemberships(userId)
-    if (Array.isArray(res)) {
-      const mapped = res.map(m => ({
-        id: m.institute_id || m.id,
-        label: m.name || m.institute_name || m.institute_id || m.id,
-        role: m.role,
-        channels: Array.isArray(m.channels) ? m.channels : []
-      }))
-      persistInstitutes(mapped)
+	function removeInstitute(instituteId) {
+		setInstitutes((prev) => {
+			const updated = prev.filter((i) => i.id !== instituteId);
+			localStorage.setItem('mizuka_institutes', JSON.stringify(updated));
+			return updated;
+		});
+		if (activeInstitute?.id === instituteId) {
+			const remaining = institutes.filter((i) => i.id !== instituteId);
+			const next = remaining.length > 0 ? remaining[0] : null;
+			setActiveInstituteState(next);
+			localStorage.setItem('mizuka_active_institute', JSON.stringify(next));
+		}
+	}
 
-      const channelMap = {}
-      mapped.forEach(inst => {
-        if (inst.channels.length > 0) channelMap[inst.id] = inst.channels
-      })
-      persistChannels(channelMap)
+	function setActiveInstitute(institute) {
+		setActiveInstituteState(institute);
+		localStorage.setItem('mizuka_active_institute', JSON.stringify(institute));
+	}
 
-      const stored = localStorage.getItem('mizuka_active_institute')
-      const currentActive = stored ? JSON.parse(stored) : null
-      if (!currentActive && mapped.length > 0) {
-        persistActive(mapped[0])
-      } else if (currentActive) {
-        const stillExists = mapped.find(i => i.id === currentActive.id)
-        if (stillExists) persistActive(stillExists)
-        else if (mapped.length > 0) persistActive(mapped[0])
-        else persistActive(null)
-      }
-    }
-  }, [])
+	function isActiveAdmin() {
+		if (!activeInstitute) return false;
+		const record = institutes.find((i) => i.id === activeInstitute.id);
+		return record?.role === 'admin';
+	}
 
-  async function login(userData, tokenValue) {
-    setUser(userData)
-    setToken(tokenValue)
-    localStorage.setItem('mizuka_user', JSON.stringify(userData))
-    localStorage.setItem('mizuka_token', tokenValue)
-    await refreshMemberships(userData.id)
-  }
-
-  function logout() {
-    setUser(null)
-    setToken(null)
-    setInstitutes([])
-    setActiveInstituteState(null)
-    setChannels({})
-    localStorage.removeItem('mizuka_user')
-    localStorage.removeItem('mizuka_token')
-    localStorage.removeItem('mizuka_institutes')
-    localStorage.removeItem('mizuka_active_institute')
-    localStorage.removeItem('mizuka_channels')
-  }
-
-  function addInstitute(institute) {
-    setInstitutes(prev => {
-      const already = prev.find(i => i.id === institute.id)
-      if (already) return prev
-      const updated = [...prev, institute]
-      localStorage.setItem('mizuka_institutes', JSON.stringify(updated))
-      return updated
-    })
-    setActiveInstituteState(prev => {
-      if (!prev) {
-        localStorage.setItem('mizuka_active_institute', JSON.stringify(institute))
-        return institute
-      }
-      return prev
-    })
-  }
-
-  function removeInstitute(instituteId) {
-    setInstitutes(prev => {
-      const updated = prev.filter(i => i.id !== instituteId)
-      localStorage.setItem('mizuka_institutes', JSON.stringify(updated))
-      if (activeInstitute?.id === instituteId) {
-        const next = updated.length > 0 ? updated[0] : null
-        localStorage.setItem('mizuka_active_institute', JSON.stringify(next))
-        setActiveInstituteState(next)
-      }
-      return updated
-    })
-  }
-
-  function setActiveInstitute(institute) {
-    persistActive(institute)
-  }
-
-  function setInstituteChannels(instituteId, chList) {
-    setChannels(prev => {
-      const updated = { ...prev, [instituteId]: chList }
-      localStorage.setItem('mizuka_channels', JSON.stringify(updated))
-      return updated
-    })
-  }
-
-  return (
-    <AuthContext.Provider value={{
-      user, token,
-      institutes, activeInstitute, channels,
-      login, logout,
-      addInstitute, removeInstitute, setActiveInstitute,
-      setInstituteChannels, refreshMemberships
-    }}>
-      {children}
-    </AuthContext.Provider>
-  )
+	return (
+		<AuthContext.Provider
+			value={{
+				user,
+				token,
+				institutes,
+				activeInstitute,
+				login,
+				logout,
+				addInstitute,
+				removeInstitute,
+				setActiveInstitute,
+				isActiveAdmin,
+			}}
+		>
+			{children}
+		</AuthContext.Provider>
+	);
 }
 
 export function useAuth() {
-  return useContext(AuthContext)
+	return useContext(AuthContext);
 }

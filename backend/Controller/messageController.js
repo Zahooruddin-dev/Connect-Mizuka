@@ -1,5 +1,6 @@
 const db = require('../db/queryMessage');
 const dbAuth = require('../db/queryAuth');
+const dbInstitute = require('../db/queryInstitute');
 async function getChatHistory(req, res) {
 	const { channelId } = req.params;
   const limit = parseInt(req.query.limit) || 20
@@ -43,13 +44,27 @@ async function deleteChannel(req, res) {
 	const { userId } = req.body;
 	try {
 		const user = await dbAuth.getUserById(userId);
-    console.log("DEBUG: User object from DB:", user);
 		if (!user || user.role !== 'admin') {
 			return res
 				.status(403)
 				.json({ error: 'Access denied. Admin role required.' });
 		}
-		const result = await db.deleteChannelQuery(channelId, userId);
+
+		// fetch channel to know its institute
+		const channel = await db.getChannelById(channelId);
+		if (!channel) {
+			return res.status(404).json({ error: 'Channel not found' });
+		}
+
+		const isAdminHere = await dbInstitute.verifyAdminOfInstitute(
+			userId,
+			channel.institute_id,
+		);
+		if (!isAdminHere) {
+			return res.status(403).json({ error: 'Not admin of this institute' });
+		}
+
+		const result = await db.deleteChannelQuery(channelId);
 		if (!result) {
 			return res
 				.status(403)

@@ -14,10 +14,10 @@ async function createChannel(req, res) {
 		if (!user || user.role !== 'admin') {
 			return res.status(403).json({
 				message:
-					'Access Denied: Only users with the Admin role can create institutes.',
+					'Access Denied: Only users with the Admin role can create channels.',
 			});
 		}
-		const isAuthorized = dbInstitute.verifyAdminOfInstitute(
+		const isAuthorized = await dbInstitute.verifyAdminOfInstitute(
 			adminId,
 			institute_id,
 		);
@@ -38,6 +38,31 @@ async function createChannel(req, res) {
 	}
 }
 
+async function getChannelsForInstitute(req, res) {
+	const { instituteId } = req.params;
+	try {
+		const channels = await db.getChannelsByInstitute(instituteId);
+		res.status(200).json({ channels });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load channels' });
+	}
+}
+
+async function getChannelById(req, res) {
+	const { channelId } = req.params;
+	try {
+		const channel = await db.getChannelById(channelId);
+		if (!channel) {
+			return res.status(404).json({ error: 'Channel not found' });
+		}
+		res.status(200).json({ channel });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load channel' });
+	}
+}
+
 module.exports = {
 	createChannel,
+	getChannelsForInstitute,
+	getChannelById,
 };

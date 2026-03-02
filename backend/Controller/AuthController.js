@@ -8,32 +8,38 @@ async function Login(req, res) {
 	try {
 		const user = await db.getUserByEmail(email);
 		if (!user) {
-			res.status(401).json({ message: 'Invalid email or password' });
+			return res.status(401).json({ message: 'Invalid email or password' });
 		}
 		const match = await bcypt.compare(password, user.password_hash);
 		if (!match) {
-			res.status(401).json({ message: 'Invalid email or password' });
+			return res.status(401).json({ message: 'Invalid email or password' });
 		}
+
+		// fetch memberships from junction table
+		const memberships = await db.getUserMemberships(user.id);
+
 		const token = jwt.sign(
 			{
 				id: user.id,
-				email: user.role,
+				email: user.email,
+				role: user.role,
 				username: user.username,
 				createdAt: user.created_at,
-				institute_id: user.institute_id,
 			},
 			process.env.JWT_SECRET,
 			{ expiresIn: '1d' },
 		);
+
 		res.status(200).json({
 			message: 'Login Successful',
 			token,
 			user: {
 				id: user.id,
-				email: user.role,
+				email: user.email,
 				username: user.username,
 				createdAt: user.created_at,
-				institute_id: user.institute_id,
+				role: user.role,
+				memberships,
 			},
 		});
 	} catch (error) {
@@ -52,6 +58,10 @@ async function Register(req, res) {
 			role,
 			instId,
 		);
+		// if an institute_id was provided, insert into the junction table
+		if (instId) {
+			await db.linkToInstituteQuery(newUser.id, instId, role === 'admin' ? 'admin' : 'member');
+		}
 		res.status(201).json({ message: 'New user registered', user: newUser });
 	} catch (error) {
 		if (error.code === '23505') {
@@ -80,8 +90,21 @@ async function deleteUser(req, res) {
 async function linkToInstitute(req, res) {
 	const { userId, institute_id } = req.body;
 	try {
-		const link = await db.linkToInstituteQuery(userId, institute_id);
-		res.status(200).json({ message: 'User deleted', link });
+		const link = await db.linkToInstituteQuery(userId, institute_id, 'member');
+		res.status(200).json({
+			message: 'Linked to institute',
+			membership: link,
+		});
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+}
+
+async function myMemberships(req, res) {
+	const { userId } = req.params;
+	try {
+		const memberships = await db.getUserMemberships(userId);
+		res.status(200).json({ memberships });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
