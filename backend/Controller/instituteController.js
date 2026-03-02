@@ -14,14 +14,12 @@ async function createInstitute(req, res) {
 					'Access Denied: Only users with the Admin role can create institutes.',
 			});
 		}
-		const instituteCreation = await db.createInstituteQuery(name);
-		const defaultChannelInstitute = await db.createDefaultChannelQuery(
-			instituteCreation.id,
-		);
-		const linkToAdmin = await db.linkToAdminQuery(instituteCreation.id);
+		const newInst = await db.createInstituteQuery(name);
+		await db.createDefaultChannelQuery(newInst.id);
+		await db.linkToAdminQuery(newInst.id, adminId);
 		res.status(201).json({
-			message: 'Institute and default channel created',
-			instituteCreation,
+			message: 'Institute created and admin linked successfully',
+			institute: newInst,
 		});
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to create institute' });
@@ -67,5 +65,5 @@ async function getAdminDashboard(req, res) {
 module.exports = {
 	createInstitute,
 	getGlobalKey,
-  getAdminDashboard
+	getAdminDashboard,
 };
