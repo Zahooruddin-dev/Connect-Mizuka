@@ -19,6 +19,22 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin }) {
     }
   }, [activeInstitute])
 
+  // Listen for channel deletions elsewhere in the app and update local list
+  useEffect(() => {
+    const handler = (e) => {
+      const id = e?.detail?.channelId
+      if (!id) return
+      setChannels(prev => prev.filter(c => String(c.id) !== String(id)))
+      // If the deleted channel is currently active, clear selection
+      if (String(activeChannel) === String(id) && typeof onChannelSelect === 'function') {
+        onChannelSelect(null)
+      }
+    }
+
+    window.addEventListener('channelDeleted', handler)
+    return () => window.removeEventListener('channelDeleted', handler)
+  }, [activeChannel, onChannelSelect])
+
   return (
     <>
       <aside className="sidebar" aria-label="Navigation">

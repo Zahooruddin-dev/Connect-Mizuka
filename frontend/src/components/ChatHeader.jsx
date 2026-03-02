@@ -23,6 +23,14 @@ function ChatHeader({ channelId, channelLabel, onChannelDeleted }) {
         return
       }
       onChannelDeleted(channelId)
+      // notify other components in this window to remove the channel
+      try {
+        window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId } }))
+      } catch (e) {
+        // ignore if dispatch fails in odd environments
+      }
+      setDeleting(false)
+      setShowConfirm(false)
     } catch {
       setError('Failed to delete channel')
       setDeleting(false)
