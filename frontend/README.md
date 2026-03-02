@@ -110,7 +110,7 @@ mizuka-frontend/
         └── app.css                     ← .app-layout flex container
 ```
 
-> Files not listed (`LoginScreen`, `MessageBubble`, `TypingIndicator`, `DateDivider`, `ChatWindow`, `useChat`, `auth.js`) are legacy scaffolding not used in the active render tree.
+> Files not listed (`LoginScreen`, `MessageBubble`, `TypingIndicator`, `DateDivider`, `ChatWindow`, `useChat`, `auth.js`) are legacy scaffolding not used in the active render tree. Do not mount `ChatWindow` — use `ChatArea` exclusively, or you will get duplicate socket listeners.
 
 ---
 
@@ -202,7 +202,7 @@ main.jsx
 
 ### Channel Switching
 
-When a channel is clicked in `Sidebar`, `App` updates `activeChannel` with the full `{ id, label }` object. Because `ChatArea` carries `key={channelId}`, React **fully unmounts and remounts** it on every switch — cleaning up socket listeners, re-emitting `join_institute`, and re-fetching history from scratch.
+When a channel is clicked in `Sidebar`, `App` updates `activeChannel` with the full `{ id, label }` object. Because `ChatArea` carries `key={channelId}`, React **fully unmounts and remounts** it on every switch — cleaning up socket listeners, emitting `leave_institute` for the old room, re-emitting `join_institute` for the new room, and re-fetching history from scratch.
 
 ### Institute Switching
 
@@ -246,6 +246,8 @@ api.register() → POST /api/auth/register  { institute_id: '' }
   └── Success → switch to LOGIN view with success message
 ```
 
+> **Note:** The `users` table has a `role` check constraint. Only `'member'` and `'admin'` are valid values. The register form must not send any other role string, or the insert will fail with a constraint violation.
+
 ### First login — no institute
 
 ```
@@ -253,7 +255,7 @@ User logs in → institutes[] is empty → App renders <InstituteGate>
 
 User pastes Institute UUID + optional nickname
   └── api.linkToInstitute(user.id, instituteId)
-        └── POST /api/auth/link-to-institute → backend UPDATE users SET institute_id
+        └── POST /api/auth/link-to-institute → backend inserts into user_institutes
         └── On success → AuthContext.addInstitute({ id, label })
               └── Persists: mizuka_institutes, mizuka_active_institute
               └── App re-renders → gate disappears → chat shown
@@ -306,6 +308,8 @@ User types → MessageInput.handleChange()
 User presses Enter or clicks Send
   ├── Clear idle timer, emit 'stop_typing'
   └── ChatArea.handleSend()
+        ├── Adds message OPTIMISTICALLY to local state immediately
+        │     { id: `temp-${Date.now()}`, content, sender_id, username, created_at }
         └── socket.emit('send_message', {
               channel_id,
               message,      ← backend destructures as 'message' not 'content'
@@ -318,10 +322,14 @@ User presses Enter or clicks Send
 
 ```
 Backend saves to DB, broadcasts:
-  { id, text, from, timestamp }    ← different field names to REST
+  { id, text, from, username, timestamp, channel_id }
         │
         ▼
-ChatArea.handleReceive() normalises:
+ChatArea.handleReceive() filters:
+  ├── Drops if msg.channel_id !== current channelId  (cross-channel guard)
+  └── Drops if msg.from === user.id                  (own message, already added optimistically)
+
+Then normalises:
   {
     id:         msg.id,
     content:    msg.text     ?? msg.content,
@@ -331,21 +339,39 @@ ChatArea.handleReceive() normalises:
   }
         │
         ▼
-setMessages(prev => [...prev, normalised])
+setMessages(prev => {
+  if (prev.some(m => m.id === normalised.id)) return prev  // deduplicate
+  return [...prev, normalised]
+})
   └── MessageList scrolls to bottom → MessageItem renders
 ```
 
 ### Typing indicators
 
 ```
-Remote user starts typing → backend emits 'Display_typing' { username }
-  └── username added to typingUsers[]
+Remote user starts typing → backend emits 'Display_typing' { username, channel_id }
+  └── Ignored if channel_id !== current channelId
+  └── Otherwise: username added to typingUsers[]
 
-Remote user stops / sends → backend emits 'hide_typing'
-  └── typingUsers[] cleared
+Remote user stops / sends → backend emits 'hide_typing' { channel_id }
+  └── Ignored if channel_id !== current channelId
+  └── Otherwise: typingUsers[] cleared
 
 Local user is always filtered: typingUsers.filter(u => u !== user.username)
 ```
+
+### Room lifecycle
+
+```
+ChatArea mounts (channelId changes)
+  └── emit 'join_institute', channelId   ← raw UUID string
+
+ChatArea unmounts (channel switch or logout)
+  └── emit 'leave_institute', channelId  ← explicitly leaves the old socket room
+  └── All three socket listeners removed via socket.off()
+```
+
+> **Critical:** Always pass `channelId` as the raw UUID string to `join_institute` and `leave_institute`. Passing an object will join/leave a room literally named `[object Object]`.
 
 ---
 
@@ -370,7 +396,7 @@ Four views in one component controlled by a `view` state string. All views share
 | `RESET_REQ` | email | `api.requestPasswordReset()` | Switch to RESET_CONFIRM |
 | `RESET_CONFIRM` | code, newPassword | `api.resetPassword()` | Message → switch to LOGIN |
 
-No `institute_id` field. Register sends `''` which the backend accepts as `NULL`.
+No `institute_id` field. Register sends `''` which the backend accepts as `NULL`. Role dropdown only offers `member` and `admin` — these are the only values allowed by the database constraint.
 
 ### `src/components/InstituteGate.jsx`
 
@@ -403,7 +429,13 @@ Side-sheet that slides in from the left over the sidebar. Keyboard: Escape close
 
 Owns all socket listeners and message state for the active channel. Key props: `channelId`, `channelLabel`, `user`.
 
-On mount: resets state → emits `join_institute` → fetches history → registers three socket listeners. Cleanup removes all listeners. All socket emit functions are `useCallback`-memoised.
+**On mount:** resets state → emits `join_institute` → fetches history → registers three socket listeners.
+
+**On unmount / channel change:** emits `leave_institute` for the old room → removes all three socket listeners.
+
+All socket emit functions are `useCallback`-memoised. An `activeChannelRef` guards against stale fetch responses arriving after a fast channel switch.
+
+**Optimistic sends:** `handleSend` adds the message to local state immediately with a `temp-` prefixed id before emitting to the server. The server's `receive_message` echo is dropped for the sender's own messages (filtered by `sender_id`), preventing duplicates.
 
 **Critical:** `send_message` payload must use `message` and `sender_id` — these are the field names the backend socket controller destructures.
 
@@ -417,7 +449,7 @@ Renders all `MessageItem` components then a typing indicator row. Auto-scrolls t
 
 ### `src/components/MessageItem.jsx`
 
-Detects ownership via `message.sender_id || message.userId || message.user_id` compared to `currentUserId`. Own messages are right-aligned teal bubbles with a hover-reveal delete button. Others' messages are left-aligned with a sender name above. Delete calls `deleteMessage(msgId, currentUserId)` which sends `{ userId }` in the DELETE body.
+Detects ownership via `message.sender_id || message.userId || message.user_id` compared to `currentUserId`. Own messages are right-aligned teal bubbles with a hover-reveal delete button. Others' messages are left-aligned with a sender name above and an avatar showing the first letter of `username`. Delete calls `deleteMessage(msgId, currentUserId)` which sends `{ userId }` in the DELETE body.
 
 ### `src/components/MessageInput.jsx`
 
@@ -478,7 +510,8 @@ One rule: `.app-layout { display: flex; height: 100vh; width: 100vw; overflow: h
 
 | Event | Payload | Where |
 |---|---|---|
-| `join_institute` | `channelId` (raw UUID string — not an object) | `ChatArea` on mount |
+| `join_institute` | `channelId` (raw UUID string) | `ChatArea` on mount |
+| `leave_institute` | `channelId` (raw UUID string) | `ChatArea` cleanup on unmount / channel change |
 | `send_message` | `{ channel_id, message, sender_id, username }` | `ChatArea.handleSend` |
 | `typing` | `{ channel_id, username }` | `MessageInput` on first keystroke |
 | `stop_typing` | `{ channel_id, username }` | `MessageInput` after 2s idle or on send |
@@ -487,9 +520,9 @@ One rule: `.app-layout { display: flex; height: 100vh; width: 100vw; overflow: h
 
 | Event | Payload | Handler |
 |---|---|---|
-| `receive_message` | `{ id, text, from, timestamp }` | Normalised → appended to `messages[]` |
-| `Display_typing` | `{ username }` | Added to `typingUsers[]` |
-| `hide_typing` | *(none)* | `typingUsers[]` cleared |
+| `receive_message` | `{ id, text, from, username, timestamp, channel_id }` | Filtered by channel, deduplicated, normalised → appended to `messages[]` |
+| `Display_typing` | `{ username, channel_id }` | Filtered by channel → added to `typingUsers[]` |
+| `hide_typing` | `{ channel_id }` | Filtered by channel → `typingUsers[]` cleared |
 
 ---
 
@@ -505,9 +538,7 @@ All requests go to `http://localhost:3000/api`. JWT sent as `Authorization: Bear
 | POST | `/auth/register` | `{ username, email, password, role, institute_id }` | `{ user }` |
 | POST | `/auth/request-reset` | `{ email }` | `{ message }` |
 | POST | `/auth/reset-password` | `{ email, code, newPassword }` | `{ message: 'reset password done' }` |
-| POST | `/auth/link-to-institute` | `{ userId, institute_id }` | `{ message: 'User deleted', link }` |
-
-> `link-to-institute` returns `message: 'User deleted'` on success — this is the backend's string, the user is not deleted. The frontend treats any message other than `'User deleted'` as an error.
+| POST | `/auth/link-to-institute` | `{ userId, institute_id }` | `{ message, membership }` |
 
 ### Messages — `/api/messages/`
 
@@ -554,8 +585,9 @@ All four are removed on `logout()`.
   id:        "uuid",
   text:      "hello world",      // ← 'text' not 'content'
   from:      "uuid",             // ← 'from' not 'sender_id'
-  timestamp: "2025-03-12T…"      // ← 'timestamp' not 'created_at'
-  // username not included in broadcast
+  username:  "hiroshi",          // ← included since backend fix
+  timestamp: "2025-03-12T…",     // ← 'timestamp' not 'created_at'
+  channel_id: "uuid"             // ← used for cross-channel filtering
 }
 ```
 
@@ -566,12 +598,22 @@ All four are removed on `logout()`.
   id:         "uuid",
   content:    "hello world",     // resolved: text ?? content
   sender_id:  "uuid",            // resolved: from ?? sender_id
-  username:   "hiroshi",         // present for history; undefined for live msgs
+  username:   "hiroshi",
   created_at: "2025-03-12T…"     // resolved: timestamp ?? created_at
 }
 ```
 
-> Live socket messages don't include `username` because the backend socket controller doesn't attach it to the broadcast. Usernames will be blank on live messages until the page refreshes and history is re-fetched. To fix permanently, add `username` to the `receive_message` emit in the backend socket controller.
+### Optimistic (own sent messages)
+
+```js
+{
+  id:         "temp-1712345678900",   // temporary — replaced on next history fetch
+  content:    "hello world",
+  sender_id:  "uuid",
+  username:   "hiroshi",
+  created_at: "2025-03-12T…"
+}
+```
 
 ---
 
@@ -613,6 +655,30 @@ Fix: `socket.js` must connect to `http://localhost:5173` with `transports: ['web
 
 ---
 
+### Messages appearing in wrong channel
+
+Messages sent in channel A briefly appear in channel B when switching quickly.
+
+Root cause: the socket was never leaving the old room on channel switch, so both rooms' `receive_message` events fired. Fixed by emitting `leave_institute` in `ChatArea`'s cleanup function, and by including `channel_id` in every socket event payload so the frontend can filter any stale events that slip through.
+
+---
+
+### Typing indicator showing in all channels
+
+A user typing in channel A causes the typing indicator to flash in channel B.
+
+Root cause: `Display_typing` and `hide_typing` previously carried no channel context, so they fired globally. Fixed by including `channel_id` in both events on the backend, and checking it before updating `typingUsers[]` in `ChatArea`.
+
+---
+
+### Duplicate messages / `?` avatar on own messages
+
+Own sent messages appeared twice — once with the correct avatar and once with `?`.
+
+Root cause: the server echoes `receive_message` back to the sender, but the sender also adds the message optimistically. The duplicate check kept the first (incomplete) copy. Fixed by: (1) adding messages optimistically with full user data in `handleSend`, and (2) dropping `receive_message` events where `msg.from === user.id`.
+
+---
+
 ### Messages not reaching the DB
 
 The message appears to send but nothing is saved. The backend socket controller destructures `const { channel_id, sender_id, message } = data`. If the frontend sends `content` or `userId` instead, the values arrive as `undefined` and the DB insert silently fails.
@@ -635,6 +701,14 @@ The `receive_message` event uses `text`, `from`, `timestamp` but `MessageItem` r
 
 ---
 
+### Register fails with constraint violation
+
+`new row for relation "users" violates check constraint "users_role_check"`.
+
+The `users` table only allows `role IN ('member', 'admin')`. Sending any other string (e.g. `'teacher'`, `'moderator'`) from the register form will cause this error. Keep the role select to those two values only. Per-institute roles (teacher, moderator, etc.) belong in the `user_institutes` junction table, not on the `users` row.
+
+---
+
 ### Delete fails with 403
 
 Axios DELETE requests need `{ data: { userId } }` to send a body — using `{ body: ... }` is silently ignored by axios. Also verify `deleteChannel` is hitting `/messages/channel/:channelId` not `/channels/:channelId` (a path that doesn't exist on this backend).
@@ -651,7 +725,7 @@ Axios DELETE requests need `{ data: { userId } }` to send a body — using `{ bo
 
 Messages emit but `receive_message` never fires. `join_institute` was called with `{ channelId }` (an object) instead of `channelId` (the raw string). The backend does `socket.join(channel_id)` where the argument is used directly — passing an object makes it join a room literally named `[object Object]`.
 
-Always emit: `socket.emit('join_institute', channelId)` — the raw UUID string.
+Always emit: `socket.emit('join_institute', channelId)` — the raw UUID string. Same applies to `leave_institute`.
 
 ---
 
@@ -663,3 +737,7 @@ Backend fix in `AuthController.js`:
 ```js
 const link = await db.linkToInstituteQuery(institute_id, userId)
 ```
+
+---
+
+_Last updated: March 2026_
