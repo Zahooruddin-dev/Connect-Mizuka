@@ -7,9 +7,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('mizuka_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
@@ -22,9 +20,9 @@ export const login = async (email, password) => {
   }
 }
 
-export const register = async (username, email, password, role, institute_id) => {
+export const register = async (username, email, password, role) => {
   try {
-    const res = await api.post('/auth/register', { username, email, password, role, institute_id })
+    const res = await api.post('/auth/register', { username, email, password, role })
     return res.data
   } catch (err) {
     return err.response?.data || { message: 'Network error' }
@@ -52,6 +50,51 @@ export const resetPassword = async (email, code, newPassword) => {
 export const linkToInstitute = async (userId, instituteId) => {
   try {
     const res = await api.post('/auth/link-to-institute', { userId, institute_id: instituteId })
+    return res.data
+  } catch (err) {
+    return err.response?.data || { message: 'Network error' }
+  }
+}
+
+export const fetchMemberships = async (userId) => {
+  try {
+    const res = await api.get(`/auth/my-memberships/${userId}`)
+    return res.data
+  } catch (err) {
+    return err.response?.data || { message: 'Network error' }
+  }
+}
+
+export const fetchInstituteDashboard = async (adminId) => {
+  try {
+    const res = await api.get(`/institute/dashboard/${adminId}`)
+    return res.data
+  } catch (err) {
+    return err.response?.data || { message: 'Network error' }
+  }
+}
+
+export const createInstitute = async (adminId, name) => {
+  try {
+    const res = await api.post('/institute/create', { adminId, name })
+    return res.data
+  } catch (err) {
+    return err.response?.data || { message: 'Network error' }
+  }
+}
+
+export const fetchChannel = async (channelId) => {
+  try {
+    const res = await api.get(`/channel/${channelId}`)
+    return res.data
+  } catch (err) {
+    return err.response?.data || { message: 'Network error' }
+  }
+}
+
+export const createChannel = async (adminId, instituteId, name) => {
+  try {
+    const res = await api.post('/channel/create', { adminId, institute_id: instituteId, name })
     return res.data
   } catch (err) {
     return err.response?.data || { message: 'Network error' }
