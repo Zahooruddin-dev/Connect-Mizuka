@@ -114,4 +114,5 @@ module.exports = {
 	Register,
 	deleteUser,
 	linkToInstitute,
+	myMemberships,
 };
