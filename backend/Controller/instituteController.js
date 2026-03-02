@@ -46,7 +46,26 @@ async function getGlobalKey(req, res) {
 		res.status(500).json({ error: 'Failed to get institute id' });
 	}
 }
+
+async function getAdminDashboard(req, res) {
+	const { adminId } = req.params;
+	try {
+		const institute = await db.getAdminInstitutes(adminId);
+		if (!institute) {
+			return res
+				.status(404)
+				.json({ message: 'No institutes found for this admin' });
+		}
+		res.status(200).json({
+			managedInstitutes: institutes,
+		});
+	} catch (error) {
+		res.status(500).json({ message: 'Error loading dashboard' });
+	}
+}
+
 module.exports = {
 	createInstitute,
-  getGlobalKey
+	getGlobalKey,
+  getAdminDashboard
 };
