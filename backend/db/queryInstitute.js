@@ -43,12 +43,13 @@ async function getAdminInstitutes(adminId) {
 	const { rows } = await pool.query(
 		`
     SELECT i.id, i.name,ui.role 
-    FROM institutes i JOIN user_institutes ui 
+    FROM institutes i 
+    JOIN user_institutes ui 
     ON i.id = ui.institute_id 
     WHERE ui.user_id = $1 AND ui.role = 'admin'`,
 		[adminId],
 	);
-	return rows[0];
+	return rows;
 }
 
 module.exports = {
