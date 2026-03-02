@@ -4,7 +4,7 @@ import { fetchMessages } from '../services/api'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import ChatHeader from './ChatHeader'
-import './styles/ChatArea.css'
+import './ChatArea.css'
 
 function ChatArea({ channelId, channelLabel, user }) {
   const [messages, setMessages] = useState([])
@@ -16,7 +16,7 @@ function ChatArea({ channelId, channelLabel, user }) {
     setMessages([])
     setTypingUsers([])
 
-    socket.emit('join_institute', channelId)
+    socket.emit('join_institute', { channel_id: channelId })
 
     fetchMessages(channelId)
       .then(res => {
