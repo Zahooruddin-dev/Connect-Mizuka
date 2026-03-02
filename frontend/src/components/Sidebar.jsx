@@ -1,28 +1,62 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../services/AuthContext'
+import { fetchInstituteDashboard, createChannel } from '../services/api'
 import InstitutePanel from './Institutepanel'
-import './styles/Sidebar.css'
+import './Sidebar.css'
 
-const CHANNELS_BY_INSTITUTE = {
-  'c1111111-1111-1111-1111-111111111111': [
-    { id: 'c1111111-1111-1111-1111-111111111111', label: 'main hallway' }
-  ],
-  'c2222222-2222-2222-2222-222222222222': [
-    { id: 'c2222222-2222-2222-2222-222222222222', label: 'faculty lounge' }
-  ]
-}
-
-function getChannels(instituteId) {
-  return CHANNELS_BY_INSTITUTE[instituteId] || [
-    { id: instituteId, label: 'general' }
-  ]
-}
-
-function Sidebar({ activeChannel, onChannelSelect, user, onLogout }) {
-  const { activeInstitute } = useAuth()
+function Sidebar({ activeChannel, onChannelSelect }) {
+  const { user, activeInstitute, channels, setInstituteChannels, logout } = useAuth()
   const [panelOpen, setPanelOpen] = useState(false)
+  const [showCreateChannel, setShowCreateChannel] = useState(false)
+  const [newChannelName, setNewChannelName] = useState('')
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createError, setCreateError] = useState('')
 
-  const channels = activeInstitute ? getChannels(activeInstitute.id) : []
+  const isAdmin = user?.role === 'admin'
+  const instituteChannels = activeInstitute ? (channels[activeInstitute.id] || []) : []
+
+  useEffect(() => {
+    if (!activeInstitute || !user) return
+    if (channels[activeInstitute.id]?.length > 0) return
+
+    fetchInstituteDashboard(user.id).then(data => {
+      if (!Array.isArray(data)) return
+      data.forEach(inst => {
+        const instId = inst.institute_id || inst.id
+        if (instId !== activeInstitute.id) return
+        const chList = Array.isArray(inst.channels) ? inst.channels.map(c => ({
+          id: c.id,
+          label: c.name || c.label || c.id
+        })) : []
+        setInstituteChannels(activeInstitute.id, chList)
+      })
+    })
+  }, [activeInstitute?.id])
+
+  async function handleCreateChannel(e) {
+    e.preventDefault()
+    const name = newChannelName.trim()
+    if (!name) return
+    setCreateLoading(true)
+    setCreateError('')
+    const res = await createChannel(user.id, activeInstitute.id, name)
+    setCreateLoading(false)
+    if (res.id || res.channel?.id) {
+      const raw = res.channel || res
+      const updated = [...instituteChannels, { id: raw.id, label: raw.name || name }]
+      setInstituteChannels(activeInstitute.id, updated)
+      setNewChannelName('')
+      setShowCreateChannel(false)
+    } else {
+      setCreateError(res.message || 'Failed to create channel')
+    }
+  }
+
+  function cancelCreateChannel() {
+    setShowCreateChannel(false)
+    setNewChannelName('')
+    setCreateError('')
+  }
 
   return (
     <>
@@ -55,28 +89,76 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout }) {
         </button>
 
         <div className="sidebar-section">
-          {channels.length > 0 ? (
+          {activeInstitute ? (
             <>
-              <span className="sidebar-section-label" id="channels-label">Channels</span>
-              <ul className="sidebar-channels" aria-labelledby="channels-label" role="list">
-                {channels.map(ch => (
-                  <li key={ch.id} role="listitem">
+              <div className="sidebar-section-header">
+                <span className="sidebar-section-label" id="channels-label">Channels</span>
+                {isAdmin && (
+                  <button
+                    className="sidebar-add-channel-btn"
+                    onClick={() => setShowCreateChannel(v => !v)}
+                    aria-label="Create new channel"
+                    title="Create channel"
+                    aria-expanded={showCreateChannel}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {showCreateChannel && (
+                <form className="sidebar-create-channel" onSubmit={handleCreateChannel} noValidate>
+                  {createError && <p className="sidebar-create-error" role="alert">{createError}</p>}
+                  <input
+                    className="sidebar-create-input"
+                    type="text"
+                    value={newChannelName}
+                    onChange={e => { setNewChannelName(e.target.value); setCreateError('') }}
+                    placeholder="channel-name"
+                    autoFocus
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-label="New channel name"
+                  />
+                  <div className="sidebar-create-actions">
                     <button
-                      className={`sidebar-channel-btn ${activeChannel === ch.id ? 'active' : ''}`}
-                      onClick={() => onChannelSelect(ch)}
-                      aria-current={activeChannel === ch.id ? 'page' : undefined}
+                      type="submit"
+                      className="sidebar-create-confirm"
+                      disabled={createLoading || !newChannelName.trim()}
                     >
-                      <span className="sidebar-hash" aria-hidden="true">#</span>
-                      <span>{ch.label}</span>
+                      {createLoading ? '…' : 'Create'}
                     </button>
-                  </li>
-                ))}
-              </ul>
+                    <button type="button" className="sidebar-create-cancel" onClick={cancelCreateChannel}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {instituteChannels.length > 0 ? (
+                <ul className="sidebar-channels" aria-labelledby="channels-label" role="list">
+                  {instituteChannels.map(ch => (
+                    <li key={ch.id} role="listitem">
+                      <button
+                        className={`sidebar-channel-btn ${activeChannel === ch.id ? 'active' : ''}`}
+                        onClick={() => onChannelSelect(ch)}
+                        aria-current={activeChannel === ch.id ? 'page' : undefined}
+                      >
+                        <span className="sidebar-hash" aria-hidden="true">#</span>
+                        <span>{ch.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="sidebar-no-channels">No channels yet.</p>
+              )}
             </>
           ) : (
-            <p className="sidebar-no-channels">
-              Select or join an institute to see channels.
-            </p>
+            <p className="sidebar-no-channels">Select or join an institute to see channels.</p>
           )}
         </div>
 
@@ -92,7 +174,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout }) {
           </div>
           <button
             className="sidebar-logout"
-            onClick={onLogout}
+            onClick={logout}
             aria-label="Sign out"
             title="Sign out"
           >
