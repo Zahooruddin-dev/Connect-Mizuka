@@ -5,7 +5,7 @@ import MessageBubble from '../components/MessageBubble';
 import MessageInput from '../components/MessageInput';
 import TypingIndicator from '../components/TypingIndicator';
 import DateDivider from '../components/DateDivider';
-import { formatDate, isSameDay } from '../utils/dateFormat';
+import { formatDate, isSameDay } from '../utils/dataFormat';
 import '../styles/ChatWindow.css';
 
 export default function ChatWindow({ channelId }) {

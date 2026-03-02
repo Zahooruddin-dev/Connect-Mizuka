@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import socket from '../services/socket';
 import { fetchMessages } from '../services/api';
 import MessageList from './MessageList';
@@ -11,31 +11,49 @@ function ChatArea({ channelId, channelLabel, user }) {
 	const [typingUsers, setTypingUsers] = useState([]);
 	const [loading, setLoading] = useState(true);
 
+	// Track which channel the current socket listeners are bound to
+	// so we can ignore stale events that arrive after a channel switch
+	const activeChannelRef = useRef(channelId);
+
 	useEffect(() => {
+		activeChannelRef.current = channelId;
+
 		setLoading(true);
 		setMessages([]);
 		setTypingUsers([]);
 
-		// send the channel id string so server can join the correct room
+		// ── JOIN new room ──────────────────────────────────────────
+		const joinRoom = () => socket.emit('join_institute', channelId);
+
 		if (socket.connected) {
-			socket.emit('join_institute', channelId);
+			joinRoom();
 		} else {
-			socket.once('connect', () => {
-				socket.emit('join_institute', channelId);
-			});
+			socket.once('connect', joinRoom);
 		}
 
+		// ── FETCH history ──────────────────────────────────────────
 		fetchMessages(channelId)
 			.then((res) => {
+				// Only apply if we're still on this channel
+				if (activeChannelRef.current !== channelId) return;
 				const data = Array.isArray(res.data)
 					? res.data
 					: res.data.messages || [];
 				setMessages(data);
 			})
-			.catch(() => setMessages([]))
-			.finally(() => setLoading(false));
+			.catch(() => {
+				if (activeChannelRef.current === channelId) setMessages([]);
+			})
+			.finally(() => {
+				if (activeChannelRef.current === channelId) setLoading(false);
+			});
 
+		// ── SOCKET HANDLERS ────────────────────────────────────────
 		const handleReceive = (msg) => {
+			// Drop events that don't belong to the currently-viewed channel
+			if (msg.channel_id && msg.channel_id !== channelId) return;
+
+			// Drop our own messages — we already add them optimistically
 			if (msg.from === user.id || msg.sender_id === user.id) return;
 
 			const normalised = {
@@ -45,15 +63,24 @@ function ChatArea({ channelId, channelLabel, user }) {
 				username: msg.username,
 				created_at: msg.timestamp ?? msg.created_at,
 			};
-			setMessages((prev) => [...prev, normalised]);
+
+			setMessages((prev) => {
+				if (prev.some((m) => m.id === normalised.id)) return prev;
+				return [...prev, normalised];
+			});
 		};
-		const handleDisplayTyping = ({ username }) => {
+
+		const handleDisplayTyping = ({ username, channel_id }) => {
+			// Only show typing for the active channel
+			if (channel_id && channel_id !== channelId) return;
 			setTypingUsers((prev) =>
 				prev.includes(username) ? prev : [...prev, username],
 			);
 		};
 
-		const handleHideTyping = () => {
+		const handleHideTyping = ({ channel_id } = {}) => {
+			// Only clear typing for the active channel
+			if (channel_id && channel_id !== channelId) return;
 			setTypingUsers([]);
 		};
 
@@ -61,23 +88,26 @@ function ChatArea({ channelId, channelLabel, user }) {
 		socket.on('Display_typing', handleDisplayTyping);
 		socket.on('hide_typing', handleHideTyping);
 
+		// ── CLEANUP: leave room + remove listeners ─────────────────
 		return () => {
+			socket.emit('leave_institute', channelId); // leave the old room
 			socket.off('receive_message', handleReceive);
 			socket.off('Display_typing', handleDisplayTyping);
 			socket.off('hide_typing', handleHideTyping);
+			socket.off('connect', joinRoom); // prevent stale once-listener
 		};
-	}, [channelId]);
+	}, [channelId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+	// ── SEND (optimistic) ──────────────────────────────────────────
 	const handleSend = useCallback(
 		(content) => {
 			const tempMessage = {
-				id: Date.now().toString(), // temp id
+				id: `temp-${Date.now()}`,
 				content,
 				sender_id: user.id,
 				username: user.username,
 				created_at: new Date().toISOString(),
 			};
-
-			// Add immediately so UI feels instant
 			setMessages((prev) => [...prev, tempMessage]);
 
 			socket.emit('send_message', {
@@ -90,6 +120,7 @@ function ChatArea({ channelId, channelLabel, user }) {
 		[channelId, user],
 	);
 
+	// ── TYPING ─────────────────────────────────────────────────────
 	const handleTyping = useCallback(() => {
 		socket.emit('typing', {
 			channel_id: channelId,
@@ -104,6 +135,7 @@ function ChatArea({ channelId, channelLabel, user }) {
 		});
 	}, [channelId, user]);
 
+	// ── LOCAL DELETES ──────────────────────────────────────────────
 	const handleMessageDeleted = useCallback((id) => {
 		setMessages((prev) => prev.filter((m) => (m.id || m._id) !== id));
 	}, []);

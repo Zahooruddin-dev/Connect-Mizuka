@@ -5,10 +5,10 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
-const httpServer = createServer(app); // Wraps Express to handle WebSockets
+const httpServer = createServer(app);
 const io = new Server(httpServer, {
 	cors: {
-		origin: '*', // Allows all origins for development
+		origin: '*',
 	},
 });
 
@@ -27,32 +27,42 @@ app.use('/api/institute', instituteRoutes);
 app.use('/api/channel', channelRoutes);
 
 io.on('connection', (socket) => {
-	console.log(` Device Connected: ${socket.id}`);
+	console.log(`Device Connected: ${socket.id}`);
 
 	socket.on('join_institute', (channel_id) => {
 		socket.join(channel_id);
-		console.log(`User ${socket.id} joined room: ${channel_id}`);
+		console.log(`Socket ${socket.id} joined room: ${channel_id}`);
+	});
+
+	socket.on('leave_institute', (channel_id) => {
+		socket.leave(channel_id);
+		console.log(`Socket ${socket.id} left room: ${channel_id}`);
 	});
 
 	socket.on('send_message', (data) => {
 		socketController.handleSendMessage(socket, io, data);
 	});
+
 	socket.on('typing', (data) => {
 		socket.to(data.channel_id).emit('Display_typing', {
 			username: data.username,
+			channel_id: data.channel_id, 
 		});
 	});
+
 	socket.on('stop_typing', (data) => {
-		socket.to(data.channel_id).emit('hide_typing');
+		socket.to(data.channel_id).emit('hide_typing', {
+			channel_id: data.channel_id, 
+		});
 	});
 
 	socket.on('disconnect', () => {
-		console.log(` Device Disconnected: ${socket.id}`);
+		console.log(`Device Disconnected: ${socket.id}`);
 	});
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {
-	console.log(` Mizuka Engine Live on Port ${PORT}`);
+	console.log(`Mizuka Engine Live on Port ${PORT}`);
 });
 
 module.exports = app;
