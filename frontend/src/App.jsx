@@ -35,7 +35,7 @@ function App() {
 			<ChatArea
 				key={effectiveChannel.id}
 				channelId={effectiveChannel.id}
-				channelLabel={effectiveChannel.label}
+				channelLabel={effectiveChannel.name}
 				user={user}
 			/>
 		</div>
