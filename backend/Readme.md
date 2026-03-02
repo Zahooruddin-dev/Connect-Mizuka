@@ -1,15 +1,27 @@
 
-# Mizuka Chat Engine v2.0 - Backend README
 
-This engine supports a Flexible Enrollment model. Users can register a standalone account and connect to a specific institute later using a UUID.
+# Mizuka Chat Engine v3.0 - Multi-Tenant Backend
 
-## 1. Required Database Migration
+This backend supports a **Many-to-Many Relationship** model. A single user can now be an Admin in one institute and a Member in another, verified by a central junction table.
 
-To allow users to register without being forced into an institute immediately, run this command in your Postgres console:
+---
+
+## 1. Required Database Migration (Neon Console)
+
+Run this to move from a single `institute_id` column to a secure relationship table.
 
 ```sql
--- Allow institute_id to be empty (NULL)
-ALTER TABLE users ALTER COLUMN institute_id DROP NOT NULL;
+-- 1. Create the Junction Table
+CREATE TABLE user_institutes (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    institute_id UUID REFERENCES institutes(id) ON DELETE CASCADE,
+    role TEXT CHECK (role IN ('admin', 'member', 'teacher')),
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, institute_id)
+);
+
+-- 2. (Optional) Cleanup: Only do this once code no longer references users.institute_id
+-- ALTER TABLE users DROP COLUMN institute_id;
 
 ```
 
@@ -17,72 +29,68 @@ ALTER TABLE users ALTER COLUMN institute_id DROP NOT NULL;
 
 ## 2. Updated API Reference (REST)
 
-### **Authentication & Onboarding**
+### **Administrative Actions (Admin Only)**
 
-* **Registration** (`POST /api/auth/register`)
-* **Body:** `{ "username", "email", "password", "role", "institute_id": "" }`
-* **Behavior:** Creates user with `institute_id` as `NULL`.
+* **Create Institute** (`POST /api/institute/create`)
+* **Body:** `{ "name": "School Name", "adminId": "UUID" }`
+* **Logic:** Executes a transaction to (1) Create Institute, (2) Create "General Hallway" channel, (3) Link Admin in `user_institutes`.
 
 
-* **Link Institute** (`PATCH /api/auth/link-institute`)
+* **Admin Dashboard** (`GET /api/institute/dashboard/:adminId`)
+* **Logic:** Returns all institutes managed by this specific admin, including their **Global Invite Keys** (IDs).
+
+
+* **Create Channel** (`POST /api/channel/create`)
+* **Body:** `{ "name", "institute_id", "adminId", "is_private" }`
+* **Security:** Backend verifies if `adminId` is registered as an `'admin'` for that specific `institute_id` before inserting.
+
+
+
+---
+
+### **Onboarding & Joining**
+
+* **Join Institute** (`POST /api/auth/link-to-institute`)
 * **Body:** `{ "userId": "UUID", "instituteId": "UUID" }`
-* **Behavior:** Updates the user record to join a school.
-* **Requirement:** Show a "Join School" screen if `user.institute_id` is null after login.
+* **Behavior:** Inserts a record into `user_institutes` with `role: 'member'`.
 
 
-
-### **Messaging & History**
-
-* **Get History** (`GET /api/messages/channel/:channelId`)
-* **Query Params:** `limit` (default 20), `offset` (default 0).
-* **Logic:** Returns messages from newest to oldest based on the offset.
-
-
-* **Delete Message** (`DELETE /api/messages/message/:messageId`)
-* **Body:** `{ "userId": "UUID" }`
-* **Logic:** Only allows deletion if `userId` matches `sender_id`.
-
-
-* **Delete Channel** (`DELETE /api/messages/channel/:channelId`)
-* **Body:** `{ "userId": "UUID" }`
-* **Logic:** Only allows deletion if the user role in the database is "admin".
+* **Check Membership** (`GET /api/auth/my-memberships/:userId`)
+* **Logic:** Returns all institutes the user currently belongs to.
 
 
 
 ---
 
-## 3. Socket.io Events (Real-Time)
+## 3. Security Design: The "Double-Lock"
 
-| Event | Type | Payload | Use Case |
+Every administrative request now validates two things:
+
+1. **Identity:** Is the `adminId` valid?
+2. **Authority:** Does the `user_institutes` table confirm this user is an `'admin'` for **this specific** `institute_id`?
+
+This prevents "Cross-Institute" attacks where an admin from School A tries to delete channels in School B.
+
+---
+
+## 4. Frontend Integration Flow
+
+1. **Auth Check:** User logs in.
+2. **Fetch Institutes:** Frontend calls `GET /api/auth/my-memberships/:userId`.
+3. **Gatekeeping:**
+* If array is empty: Show `InstituteGate` (Enter Invite Code).
+* If array has items: Load Sidebar with Institute Switcher.
+
+
+4. **Admin UI:** If `role === 'admin'` for the active institute, show "Create Channel" and "Invite Key" buttons.
+
+---
+
+## 5. Socket.io Event Contract
+
+| Event | Type | Payload | Notes |
 | --- | --- | --- | --- |
-| `join_institute` | **Emit** | `channel_id` | Subscribes to a specific chat room. |
-| `send_message` | **Emit** | `{ channel_id, content, sender_id, username }` | Broadcasts live text. |
-| `receive_message` | **Listen** | `{ id, content, username, created_at }` | Updates the UI message list. |
-| `typing` | **Emit** | `{ channel_id, username }` | Triggers the active indicator. |
-| `Display_typing` | **Listen** | `{ username }` | Shows who is currently active. |
-| `hide_typing` | **Listen** | (none) | Removes the indicator. |
-
----
-
-## 4. Frontend Integration Checklist
-
-To accommodate the independent user logic, your React frontend should follow this gatekeeping flow:
-
-1. **Auth Check:** Is there a token/user? If no, show `LoginPage`.
-2. **Institute Check:** Does `user.institute_id` exist?
-* **No:** Redirect to `OnboardingScreen` to request a School ID.
-* **Yes:** Proceed to `Dashboard` (Sidebar + ChatArea).
-
-
-3. **Socket Connection:** Only `connect()` and `emit('join_institute')` once the user has a valid `institute_id`.
-
----
-
-## 5. Ready-to-Use Test IDs
-
-* **Public Hallway:** `c1111111-1111-1111-1111-111111111111`
-* **Faculty Lounge:** `c2222222-2222-2222-2222-222222222222`
-* **IT Helpdesk:** `c3333333-3333-3333-3333-333333333333`
-* **Executive Board:** `c4444444-4444-4444-4444-444444444444`
-
+| `join_institute` | **Emit** | `channel_id` | Joins a specific UUID room. |
+| `send_message` | **Emit** | `{ channel_id, message, sender_id, username }` | Note: Uses `message` not `content`. |
+| `receive_message` | **Listen** | `{ id, text, from, timestamp }` | Note: Uses `text` not `content`. |
 
