@@ -57,6 +57,13 @@ async function getUserMemberships(userId) {
 	);
 	return rows || [];
 }
+async function getUserInfoQuery(userId) {
+	const { rows } = await pool.query(
+		`SELECT * FROM users WHERE id=$!`,
+		[userId],
+	);
+	return rows[0] || null;
+}
 module.exports = {
 	registerQuery,
 	getUserByEmail,
@@ -65,4 +72,5 @@ module.exports = {
 	getUserById,
 	linkToInstituteQuery,
 	getUserMemberships,
+	getUserInfoQuery,
 };

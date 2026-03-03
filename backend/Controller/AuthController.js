@@ -59,7 +59,11 @@ async function Register(req, res) {
 		);
 		// if an institute_id was provided, insert into the junction table
 		if (instId) {
-			await db.linkToInstituteQuery(newUser.id, instId, role === 'admin' ? 'admin' : 'member');
+			await db.linkToInstituteQuery(
+				newUser.id,
+				instId,
+				role === 'admin' ? 'admin' : 'member',
+			);
 		}
 		res.status(201).json({ message: 'New user registered', user: newUser });
 	} catch (error) {
@@ -108,10 +112,20 @@ async function myMemberships(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+async function getUserInfo(req, res) {
+	const { userId } = req.params;
+	try {
+		const user = await db.getUserInfoQuery(userId);
+		res.status(200).json({ user });
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+}
 module.exports = {
 	Login,
 	Register,
 	deleteUser,
 	linkToInstitute,
 	myMemberships,
+	getUserInfo,
 };
