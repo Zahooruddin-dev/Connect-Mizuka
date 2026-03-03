@@ -1,52 +1,68 @@
 .ipanel-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 12, 10, 0.7);
-  backdrop-filter: blur(4px);
-  z-index: 100;
+  background: rgba(5, 12, 10, 0.65);
+  backdrop-filter: blur(3px);
+  z-index: 1300;
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
 }
 
 .ipanel {
-  width: 320px;
+  width: 300px;
   height: 100vh;
+  height: 100dvh;
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  animation: ipanel-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
+  animation: ipanel-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 6px 0 40px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes ipanel-slide-in {
-  from { transform: translateX(-100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
 
 .ipanel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 18px 16px;
+  padding: 18px 14px 16px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ipanel-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ipanel-header-icon {
+  color: var(--teal-500);
 }
 
 .ipanel-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
 }
 
 .ipanel-close {
-  color: var(--text-ghost);
-  padding: 6px;
-  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--text-ghost);
+  background: none;
+  border: none;
+  cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
 
@@ -57,24 +73,51 @@
 
 .ipanel-close:focus-visible {
   outline: 2px solid var(--teal-500);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 .ipanel-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 12px;
+  overflow-x: hidden;
+  padding: 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+.ipanel-body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.ipanel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ipanel-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.ipanel-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 16px 24px;
+}
+
+.ipanel-empty-icon {
+  color: var(--text-ghost);
+  opacity: 0.35;
+}
+
 .ipanel-empty {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-ghost);
   text-align: center;
-  padding: 24px 0;
   font-style: italic;
+  line-height: 1.6;
 }
 
 .ipanel-list {
@@ -82,14 +125,19 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  padding: 0;
 }
 
 .ipanel-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  border-radius: var(--radius-sm);
+  gap: 3px;
+  border-radius: 9px;
+}
+
+.ipanel-item:hover .ipanel-leave-btn {
+  opacity: 1;
 }
 
 .ipanel-item-btn {
@@ -97,9 +145,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 10px;
-  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  border-radius: 9px;
   text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
   transition: background 0.15s;
   min-width: 0;
 }
@@ -109,7 +160,7 @@
 }
 
 .ipanel-item-btn.active {
-  background: rgba(20, 184, 166, 0.1);
+  background: rgba(20, 184, 166, 0.08);
 }
 
 .ipanel-item-btn:focus-visible {
@@ -118,21 +169,22 @@
 }
 
 .ipanel-item-icon {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 10px;
   background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #fff;
+  transition: background 0.2s;
 }
 
 .ipanel-item-btn.active .ipanel-item-icon {
-  background: linear-gradient(135deg, var(--teal-700), var(--teal-400));
+  background: linear-gradient(135deg, var(--teal-600), var(--teal-400));
 }
 
 .ipanel-item-info {
@@ -140,6 +192,7 @@
   flex-direction: column;
   min-width: 0;
   flex: 1;
+  gap: 1px;
 }
 
 .ipanel-item-label {
@@ -149,6 +202,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .ipanel-item-id {
@@ -158,32 +212,40 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .ipanel-active-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--teal-400);
-  background: rgba(20, 184, 166, 0.12);
-  padding: 2px 7px;
+  background: rgba(20, 184, 166, 0.1);
+  border: 1px solid rgba(20, 184, 166, 0.2);
+  padding: 2px 7px 2px 5px;
   border-radius: 99px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ipanel-leave-btn {
-  color: var(--text-ghost);
-  padding: 8px;
-  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--text-ghost);
+  background: none;
+  border: none;
+  cursor: pointer;
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
-}
-
-.ipanel-item:hover .ipanel-leave-btn {
-  opacity: 1;
+  flex-shrink: 0;
 }
 
 .ipanel-leave-btn:hover {
@@ -193,8 +255,8 @@
 
 .ipanel-leave-btn:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--teal-500);
-  outline-offset: 2px;
+  outline: 2px solid #f87171;
+  outline-offset: 1px;
 }
 
 .ipanel-add-btn {
@@ -202,14 +264,17 @@
   align-items: center;
   gap: 8px;
   padding: 9px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: 9px;
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
   transition: background 0.15s, color 0.15s;
   width: 100%;
   text-align: left;
-  margin-top: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-top: 2px;
 }
 
 .ipanel-add-btn:hover {
@@ -223,21 +288,28 @@
 }
 
 .ipanel-add-form {
-  margin-top: 12px;
+  margin-top: 10px;
   padding: 14px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   gap: 0;
+  animation: form-fade-in 0.15s ease;
+}
+
+@keyframes form-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .ipanel-add-heading {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  letter-spacing: -0.2px;
 }
 
 .ipanel-add-error {
@@ -245,15 +317,16 @@
   color: #f87171;
   background: rgba(248, 113, 113, 0.08);
   border: 1px solid rgba(248, 113, 113, 0.2);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   padding: 8px 10px;
   margin-bottom: 10px;
+  line-height: 1.4;
 }
 
 .ipanel-label {
   display: block;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -278,12 +351,13 @@
   padding: 9px 11px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   color: var(--text-primary);
   font-size: 12px;
   font-family: var(--font-mono);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .ipanel-input::placeholder {
@@ -292,7 +366,7 @@
 
 .ipanel-input:focus {
   border-color: var(--teal-500);
-  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
 }
 
 .ipanel-add-actions {
@@ -305,11 +379,13 @@
   flex: 1;
   padding: 9px;
   background: var(--teal-600);
-  color: var(--text-primary);
+  color: #fff;
   font-size: 13px;
   font-weight: 600;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s, transform 0.1s;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
 .ipanel-confirm-btn:hover:not(:disabled) {
@@ -331,12 +407,14 @@
   background: var(--bg-hover);
   color: var(--text-secondary);
   font-size: 13px;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
   transition: background 0.15s;
 }
 
 .ipanel-cancel-btn:hover {
-  background: var(--border-strong);
+  background: var(--border);
 }
 
 .ipanel-cancel-btn:focus-visible {
@@ -347,37 +425,51 @@
 .ipanel-leave-modal {
   position: fixed;
   inset: 0;
-  background: rgba(5, 12, 10, 0.75);
-  z-index: 200;
+  background: rgba(5, 12, 10, 0.7);
+  z-index: 1400;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
+  animation: backdrop-fade 0.15s ease;
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .ipanel-leave-card {
   width: 100%;
-  max-width: 340px;
+  max-width: 320px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  padding: 28px 28px 24px;
-  box-shadow: var(--shadow-md);
-  animation: gate-card-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: card-pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+}
+
+@keyframes card-pop-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .ipanel-leave-title {
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
 .ipanel-leave-sub {
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.6;
+  margin-bottom: 4px;
 }
 
 .ipanel-leave-sub strong {
@@ -387,23 +479,26 @@
 
 .ipanel-leave-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .ipanel-leave-confirm {
   flex: 1;
   padding: 10px;
-  background: rgba(248, 113, 113, 0.15);
+  background: rgba(248, 113, 113, 0.12);
   color: #f87171;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .ipanel-leave-confirm:hover {
-  background: rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.22);
+  border-color: rgba(248, 113, 113, 0.35);
 }
 
 .ipanel-leave-confirm:focus-visible {
@@ -416,13 +511,16 @@
   padding: 10px;
   background: var(--bg-hover);
   color: var(--text-secondary);
-  font-size: 14px;
-  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
   transition: background 0.15s;
 }
 
 .ipanel-leave-cancel:hover {
-  background: var(--border-strong);
+  background: var(--border);
 }
 
 .ipanel-leave-cancel:focus-visible {
@@ -430,54 +528,8 @@
   outline-offset: 2px;
 }
 
-.ipanel-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 8px;
-}
-
-.ipanel-create-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 10px;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  transition: background 0.15s, color 0.15s;
-  width: 100%;
-  text-align: left;
-}
-
-.ipanel-create-btn:hover {
-  background: var(--bg-hover);
-  color: var(--teal-400);
-}
-
-.ipanel-create-btn:focus-visible {
-  outline: 2px solid var(--teal-500);
-  outline-offset: 2px;
-}
-
-.ipanel-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 4px 0;
-}
-
-.ipanel-form-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-.ipanel-item-role {
-  font-size: 10px;
-  color: var(--teal-600);
-  text-transform: capitalize;
-  font-weight: 500;
+@media (max-width: 480px) {
+  .ipanel {
+    width: 100vw;
+  }
 }

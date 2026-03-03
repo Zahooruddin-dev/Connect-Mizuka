@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { X, LogOut, Plus, Building2, Check } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { linkToInstitute } from '../services/api';
 import './styles/InstitutePanel.css';
@@ -85,93 +86,67 @@ export default function InstitutePanel({ onClose }) {
 
 	return (
 		<div
-			className='ipanel-backdrop'
+			className="ipanel-backdrop"
 			onClick={handleBackdropClick}
-			role='dialog'
-			aria-modal='true'
-			aria-label='Manage institutes'
+			role="dialog"
+			aria-modal="true"
+			aria-label="Manage institutes"
 		>
-			<div className='ipanel' ref={panelRef}>
-				<div className='ipanel-header'>
-					<h2 className='ipanel-title'>Institutes</h2>
+			<div className="ipanel" ref={panelRef}>
+				<div className="ipanel-header">
+					<div className="ipanel-header-left">
+						<Building2 size={16} strokeWidth={1.5} className="ipanel-header-icon" aria-hidden="true" />
+						<h2 className="ipanel-title">Institutes</h2>
+					</div>
 					<button
-						className='ipanel-close'
+						className="ipanel-close"
 						onClick={onClose}
-						aria-label='Close panel'
+						aria-label="Close panel"
 						ref={firstFocusRef}
 					>
-						<svg
-							width='16'
-							height='16'
-							viewBox='0 0 24 24'
-							fill='none'
-							stroke='currentColor'
-							strokeWidth='2'
-							strokeLinecap='round'
-							strokeLinejoin='round'
-							aria-hidden='true'
-						>
-							<line x1='18' y1='6' x2='6' y2='18' />
-							<line x1='6' y1='6' x2='18' y2='18' />
-						</svg>
+						<X size={16} strokeWidth={2} aria-hidden="true" />
 					</button>
 				</div>
 
-				<div className='ipanel-body'>
+				<div className="ipanel-body">
 					{institutes.length === 0 ? (
-						<p className='ipanel-empty'>
-							You haven't joined any institutes yet.
-						</p>
+						<div className="ipanel-empty-state">
+							<Building2 size={36} strokeWidth={1} className="ipanel-empty-icon" aria-hidden="true" />
+							<p className="ipanel-empty">You haven't joined any institutes yet.</p>
+						</div>
 					) : (
-						<ul
-							className='ipanel-list'
-							role='listbox'
-							aria-label='Your institutes'
-						>
+						<ul className="ipanel-list" role="listbox" aria-label="Your institutes">
 							{institutes.map((inst) => (
-								<li key={inst.id} className='ipanel-item'>
+								<li key={inst.id} className="ipanel-item">
 									<button
-										className={`ipanel-item-btn ${activeInstitute?.id === inst.id ? 'active' : ''}`}
+										className={`ipanel-item-btn${activeInstitute?.id === inst.id ? ' active' : ''}`}
 										onClick={() => handleSelect(inst)}
-										role='option'
+										role="option"
 										aria-selected={activeInstitute?.id === inst.id}
 									>
-										<span className='ipanel-item-icon' aria-hidden='true'>
+										<span className="ipanel-item-icon" aria-hidden="true">
 											{inst.label[0].toUpperCase()}
 										</span>
-										<span className='ipanel-item-info'>
-											<span className='ipanel-item-label'>{inst.label}</span>
+										<span className="ipanel-item-info">
+											<span className="ipanel-item-label">{inst.label}</span>
 											{inst.label !== inst.id && (
-												<span className='ipanel-item-id'>{inst.id}</span>
+												<span className="ipanel-item-id">{inst.id}</span>
 											)}
 										</span>
 										{activeInstitute?.id === inst.id && (
-											<span className='ipanel-active-badge' aria-hidden='true'>
+											<span className="ipanel-active-badge" aria-hidden="true">
+												<Check size={10} strokeWidth={3} />
 												active
 											</span>
 										)}
 									</button>
 									<button
-										className='ipanel-leave-btn'
+										className="ipanel-leave-btn"
 										onClick={() => setLeaveTarget(inst)}
 										aria-label={`Leave ${inst.label}`}
-										title='Leave institute'
+										title="Leave institute"
 									>
-										<svg
-											width='14'
-											height='14'
-											viewBox='0 0 24 24'
-											fill='none'
-											stroke='currentColor'
-											strokeWidth='2'
-											strokeLinecap='round'
-											strokeLinejoin='round'
-											aria-hidden='true'
-										>
-											<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
-											<polyline points='16,17 21,12 16,7' />
-											<line x1='21' y1='12' x2='9' y2='12' />
-										</svg>
+										<LogOut size={14} strokeWidth={2} aria-hidden="true" />
 									</button>
 								</li>
 							))}
@@ -179,78 +154,46 @@ export default function InstitutePanel({ onClose }) {
 					)}
 
 					{!adding ? (
-						<button className='ipanel-add-btn' onClick={() => setAdding(true)}>
-							<svg
-								width='14'
-								height='14'
-								viewBox='0 0 24 24'
-								fill='none'
-								stroke='currentColor'
-								strokeWidth='2.5'
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								aria-hidden='true'
-							>
-								<line x1='12' y1='5' x2='12' y2='19' />
-								<line x1='5' y1='12' x2='19' y2='12' />
-							</svg>
-							Add institute
+						<button className="ipanel-add-btn" onClick={() => setAdding(true)}>
+							<Plus size={14} strokeWidth={2.5} aria-hidden="true" />
+							Join an institute
 						</button>
 					) : (
-						<form
-							className='ipanel-add-form'
-							onSubmit={handleAddSubmit}
-							noValidate
-						>
-							<p className='ipanel-add-heading'>Join a new institute</p>
+						<form className="ipanel-add-form" onSubmit={handleAddSubmit} noValidate>
+							<p className="ipanel-add-heading">Join a new institute</p>
 							{addError && (
-								<p className='ipanel-add-error' role='alert'>
-									{addError}
-								</p>
+								<p className="ipanel-add-error" role="alert">{addError}</p>
 							)}
-							<label className='ipanel-label' htmlFor='new-inst-id'>
-								Institute ID
-							</label>
+							<label className="ipanel-label" htmlFor="new-inst-id">Institute ID</label>
 							<input
-								id='new-inst-id'
-								className='ipanel-input'
-								type='text'
+								id="new-inst-id"
+								className="ipanel-input"
+								type="text"
 								value={newId}
-								onChange={(e) => {
-									setNewId(e.target.value);
-									setAddError('');
-								}}
-								placeholder='Paste the UUID here'
+								onChange={(e) => { setNewId(e.target.value); setAddError(''); }}
+								placeholder="Paste the UUID here"
 								required
 								autoFocus
-								autoComplete='off'
+								autoComplete="off"
 								spellCheck={false}
 							/>
-							<label className='ipanel-label' htmlFor='new-inst-label'>
-								Nickname <span className='ipanel-optional'>(optional)</span>
+							<label className="ipanel-label" htmlFor="new-inst-label">
+								Nickname <span className="ipanel-optional">(optional)</span>
 							</label>
 							<input
-								id='new-inst-label'
-								className='ipanel-input'
-								type='text'
+								id="new-inst-label"
+								className="ipanel-input"
+								type="text"
 								value={newLabel}
 								onChange={(e) => setNewLabel(e.target.value)}
-								placeholder='e.g. Springfield High'
-								autoComplete='off'
+								placeholder="e.g. Springfield High"
+								autoComplete="off"
 							/>
-							<div className='ipanel-add-actions'>
-								<button
-									type='submit'
-									className='ipanel-confirm-btn'
-									disabled={addLoading}
-								>
+							<div className="ipanel-add-actions">
+								<button type="submit" className="ipanel-confirm-btn" disabled={addLoading}>
 									{addLoading ? 'Joining…' : 'Join'}
 								</button>
-								<button
-									type='button'
-									className='ipanel-cancel-btn'
-									onClick={resetAddForm}
-								>
+								<button type="button" className="ipanel-cancel-btn" onClick={resetAddForm}>
 									Cancel
 								</button>
 							</div>
@@ -261,29 +204,22 @@ export default function InstitutePanel({ onClose }) {
 
 			{leaveTarget && (
 				<div
-					className='ipanel-leave-modal'
-					role='alertdialog'
-					aria-modal='true'
-					aria-label='Confirm leaving institute'
+					className="ipanel-leave-modal"
+					role="alertdialog"
+					aria-modal="true"
+					aria-label="Confirm leaving institute"
 				>
-					<div className='ipanel-leave-card'>
-						<p className='ipanel-leave-title'>Leave institute?</p>
-						<p className='ipanel-leave-sub'>
+					<div className="ipanel-leave-card">
+						<p className="ipanel-leave-title">Leave institute?</p>
+						<p className="ipanel-leave-sub">
 							You'll be removed from <strong>{leaveTarget.label}</strong> and
-							won't see its channels until you rejoin. No data will be deleted
-							on the server.
+							won't see its channels until you rejoin.
 						</p>
-						<div className='ipanel-leave-actions'>
-							<button
-								className='ipanel-leave-confirm'
-								onClick={handleLeaveConfirm}
-							>
+						<div className="ipanel-leave-actions">
+							<button className="ipanel-leave-confirm" onClick={handleLeaveConfirm}>
 								Leave
 							</button>
-							<button
-								className='ipanel-leave-cancel'
-								onClick={() => setLeaveTarget(null)}
-							>
+							<button className="ipanel-leave-cancel" onClick={() => setLeaveTarget(null)}>
 								Keep it
 							</button>
 						</div>
