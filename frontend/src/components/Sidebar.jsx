@@ -3,11 +3,13 @@ import { Hash, Plus, LogOut, ChevronDown, X, Building2 } from 'lucide-react'
 import { useAuth } from '../services/AuthContext'
 import { fetchChannelsByInstitute, createChannel } from '../services/api'
 import InstitutePanel from './Institutepanel'
+import CreateChannelModal from './CreateChannelModal'
 import './styles/Sidebar.css'
 
 function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onClose, isOpen }) {
   const { activeInstitute } = useAuth()
   const [panelOpen, setPanelOpen] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [channels, setChannels] = useState([])
 
   useEffect(() => {
@@ -33,15 +35,13 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
     return () => window.removeEventListener('channelDeleted', handler)
   }, [activeChannel, onChannelSelect])
 
-  const handleAddChannel = async () => {
-    const name = prompt('New channel name')
-    if (!name) return
+  async function handleCreateChannel(name) {
     const res = await createChannel(user.id, activeInstitute.id, name)
     if (res.channel) {
       setChannels(prev => [...prev, res.channel])
-    } else {
-      alert(res.message || 'Failed to create')
+      return {}
     }
+    return { error: res.message || 'Failed to create channel' }
   }
 
   return (
@@ -108,7 +108,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
                     className="sidebar-add-channel-btn"
                     title="Create channel"
                     aria-label="Create channel"
-                    onClick={handleAddChannel}
+                    onClick={() => setCreateModalOpen(true)}
                   >
                     <Plus size={13} strokeWidth={2.5} />
                   </button>
@@ -170,7 +170,16 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
         </div>
       </aside>
 
-      {panelOpen && <InstitutePanel onClose={() => setPanelOpen(false)} />}
+      {panelOpen && (
+        <InstitutePanel onClose={() => setPanelOpen(false)} />
+      )}
+
+      {createModalOpen && (
+        <CreateChannelModal
+          onClose={() => setCreateModalOpen(false)}
+          onConfirm={handleCreateChannel}
+        />
+      )}
     </>
   )
 }
