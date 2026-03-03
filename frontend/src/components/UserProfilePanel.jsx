@@ -14,7 +14,7 @@ function UserProfilePanel({ userId, onClose }) {
       try {
         const data = await fetchUserInfo(userId)
         if (isMounted) {
-          setUserInfo(data)
+          setUserInfo(data.user)
         }
       } catch (err) {
         console.error(err)

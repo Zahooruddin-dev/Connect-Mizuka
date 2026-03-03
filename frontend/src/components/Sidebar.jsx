@@ -4,12 +4,14 @@ import { useAuth } from '../services/AuthContext'
 import { fetchChannelsByInstitute, createChannel } from '../services/api'
 import InstitutePanel from './Institutepanel'
 import CreateChannelModal from './CreateChannelModal'
+import UserProfilePanel from './UserProfilePanel'
 import './styles/Sidebar.css'
 
 function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onClose, isOpen }) {
   const { activeInstitute } = useAuth()
   const [panelOpen, setPanelOpen] = useState(false)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [channels, setChannels] = useState([])
 
   useEffect(() => {
@@ -150,7 +152,13 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
         </div>
 
         <div className="sidebar-footer">
-          <div className="sidebar-user">
+          <div 
+            className="sidebar-user" 
+            onClick={() => setIsProfileOpen(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsProfileOpen(true) }}
+          >
             <div className="sidebar-avatar" aria-hidden="true">
               {user.username[0].toUpperCase()}
             </div>
@@ -178,6 +186,13 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
         <CreateChannelModal
           onClose={() => setCreateModalOpen(false)}
           onConfirm={handleCreateChannel}
+        />
+      )}
+
+      {isProfileOpen && (
+        <UserProfilePanel 
+          userId={user.id} 
+          onClose={() => setIsProfileOpen(false)} 
         />
       )}
     </>

@@ -21,3 +21,8 @@ Content-Type: application/json
 
 ### Get the Global Invite Key
 GET http://localhost:3000/api/institute/key/8ef44a8b-c24e-4730-8a6f-e042cba65e56
+
+### Get the user info
+
+
+GET http://localhost:3000/api/auth/user-info/c7efe75a-8306-4b9b-8550-20f90ec8e62c

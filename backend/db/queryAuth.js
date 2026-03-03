@@ -59,7 +59,7 @@ async function getUserMemberships(userId) {
 }
 async function getUserInfoQuery(userId) {
 	const { rows } = await pool.query(
-		`SELECT * FROM users WHERE id=$!`,
+		`SELECT * FROM users WHERE id=$1`,
 		[userId],
 	);
 	return rows[0] || null;
