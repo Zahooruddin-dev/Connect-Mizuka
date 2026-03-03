@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, LogOut, Plus, Building2, Check } from 'lucide-react';
+import { X, LogOut, Plus, Building2, Check, Copy } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { linkToInstitute } from '../services/api';
+import Toast from './Toast';
 import './styles/InstitutePanel.css';
 
 export default function InstitutePanel({ onClose }) {
@@ -19,6 +20,9 @@ export default function InstitutePanel({ onClose }) {
 	const [addError, setAddError] = useState('');
 	const [addLoading, setAddLoading] = useState(false);
 	const [leaveTarget, setLeaveTarget] = useState(null);
+	const [copiedId, setCopiedId] = useState(null);
+	const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+	const toastTimer = useRef(null);
 	const panelRef = useRef(null);
 	const firstFocusRef = useRef(null);
 
@@ -34,8 +38,36 @@ export default function InstitutePanel({ onClose }) {
 		return () => window.removeEventListener('keydown', handleKey);
 	}, [onClose]);
 
+	useEffect(() => {
+		return () => clearTimeout(toastTimer.current);
+	}, []);
+
+	function showToast(message, type = 'success') {
+		setToast({ visible: true, message, type });
+		clearTimeout(toastTimer.current);
+		toastTimer.current = setTimeout(() => {
+			setToast(prev => ({ ...prev, visible: false }));
+		}, 2200);
+	}
+
 	function handleBackdropClick(e) {
 		if (e.target === e.currentTarget) onClose();
+	}
+
+	async function handleCopyId(e, id) {
+		e.stopPropagation();
+		try {
+			await navigator.clipboard.writeText(id);
+			setCopiedId(id);
+			showToast('ID copied to clipboard', 'success');
+			clearTimeout(toastTimer.current);
+			toastTimer.current = setTimeout(() => {
+				setToast(prev => ({ ...prev, visible: false }));
+				setTimeout(() => setCopiedId(null), 300);
+			}, 2200);
+		} catch {
+			showToast('Failed to copy', 'error');
+		}
 	}
 
 	async function handleAddSubmit(e) {
@@ -65,6 +97,7 @@ export default function InstitutePanel({ onClose }) {
 		setNewId('');
 		setNewLabel('');
 		setAdding(false);
+		showToast('Joined institute', 'success');
 	}
 
 	function handleSelect(institute) {
@@ -74,6 +107,7 @@ export default function InstitutePanel({ onClose }) {
 
 	function handleLeaveConfirm() {
 		removeInstitute(leaveTarget.id);
+		showToast(`Left ${leaveTarget.label}`, 'error');
 		setLeaveTarget(null);
 	}
 
@@ -92,6 +126,8 @@ export default function InstitutePanel({ onClose }) {
 			aria-modal="true"
 			aria-label="Manage institutes"
 		>
+			<Toast message={toast.message} visible={toast.visible} type={toast.type} />
+
 			<div className="ipanel" ref={panelRef}>
 				<div className="ipanel-header">
 					<div className="ipanel-header-left">
@@ -130,7 +166,20 @@ export default function InstitutePanel({ onClose }) {
 										<span className="ipanel-item-info">
 											<span className="ipanel-item-label">{inst.label}</span>
 											{inst.label !== inst.id && (
-												<span className="ipanel-item-id">{inst.id}</span>
+												<button
+													className={`ipanel-item-id-btn${copiedId === inst.id ? ' copied' : ''}`}
+													onClick={(e) => handleCopyId(e, inst.id)}
+													title="Copy institute ID"
+													aria-label={`Copy ID for ${inst.label}`}
+												>
+													<span className="ipanel-item-id-text">{inst.id}</span>
+													<span className="ipanel-item-id-icon" aria-hidden="true">
+														{copiedId === inst.id
+															? <Check size={10} strokeWidth={3} />
+															: <Copy size={10} strokeWidth={2} />
+														}
+													</span>
+												</button>
 											)}
 										</span>
 										{activeInstitute?.id === inst.id && (
