@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, LogOut, Plus, Building2, Check, Copy } from 'lucide-react';
-import { useAuth } from '../services/AuthContext';
-import { linkToInstitute } from '../services/api';
-import Toast from './Toast';
-import './styles/InstitutePanel.css';
+import { useState, useEffect, useRef } from 'react'
+import { X, LogOut, Plus, Building2, Check, Copy } from 'lucide-react'
+import { useAuth } from '../services/AuthContext'
+import { linkToInstitute } from '../services/api'
+import Toast from './Toast'
+import './styles/InstitutePanel.css'
 
 export default function InstitutePanel({ onClose }) {
 	const {
@@ -13,109 +13,105 @@ export default function InstitutePanel({ onClose }) {
 		addInstitute,
 		removeInstitute,
 		setActiveInstitute,
-	} = useAuth();
-	const [adding, setAdding] = useState(false);
-	const [newId, setNewId] = useState('');
-	const [newLabel, setNewLabel] = useState('');
-	const [addError, setAddError] = useState('');
-	const [addLoading, setAddLoading] = useState(false);
-	const [leaveTarget, setLeaveTarget] = useState(null);
-	const [copiedId, setCopiedId] = useState(null);
-	const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
-	const toastTimer = useRef(null);
-	const panelRef = useRef(null);
-	const firstFocusRef = useRef(null);
+	} = useAuth()
+	const [adding, setAdding] = useState(false)
+	const [newId, setNewId] = useState('')
+	const [newLabel, setNewLabel] = useState('')
+	const [addError, setAddError] = useState('')
+	const [addLoading, setAddLoading] = useState(false)
+	const [leaveTarget, setLeaveTarget] = useState(null)
+	const [copiedId, setCopiedId] = useState(null)
+	const [toast, setToast] = useState({ visible: false, message: '', type: 'success' })
+	const toastTimer = useRef(null)
+	const panelRef = useRef(null)
+	const firstFocusRef = useRef(null)
 
 	useEffect(() => {
-		firstFocusRef.current?.focus();
-	}, []);
+		firstFocusRef.current?.focus()
+	}, [])
 
 	useEffect(() => {
 		function handleKey(e) {
-			if (e.key === 'Escape') onClose();
+			if (e.key === 'Escape') onClose()
 		}
-		window.addEventListener('keydown', handleKey);
-		return () => window.removeEventListener('keydown', handleKey);
-	}, [onClose]);
+		window.addEventListener('keydown', handleKey)
+		return () => window.removeEventListener('keydown', handleKey)
+	}, [onClose])
 
 	useEffect(() => {
-		return () => clearTimeout(toastTimer.current);
-	}, []);
+		return () => clearTimeout(toastTimer.current)
+	}, [])
 
 	function showToast(message, type = 'success') {
-		setToast({ visible: true, message, type });
-		clearTimeout(toastTimer.current);
+		setToast({ visible: true, message, type })
+		clearTimeout(toastTimer.current)
 		toastTimer.current = setTimeout(() => {
-			setToast(prev => ({ ...prev, visible: false }));
-		}, 2200);
+			setToast(prev => ({ ...prev, visible: false }))
+			setTimeout(() => setCopiedId(null), 300)
+		}, 2200)
 	}
 
 	function handleBackdropClick(e) {
-		if (e.target === e.currentTarget) onClose();
+		if (e.target === e.currentTarget) onClose()
 	}
 
-	async function handleCopyId(e, id) {
-		e.stopPropagation();
+	async function handleCopyId(id) {
 		try {
-			await navigator.clipboard.writeText(id);
-			setCopiedId(id);
-			showToast('ID copied to clipboard', 'success');
-			clearTimeout(toastTimer.current);
-			toastTimer.current = setTimeout(() => {
-				setToast(prev => ({ ...prev, visible: false }));
-				setTimeout(() => setCopiedId(null), 300);
-			}, 2200);
+			await navigator.clipboard.writeText(id)
+			setCopiedId(id)
+			showToast('ID copied to clipboard', 'success')
 		} catch {
-			showToast('Failed to copy', 'error');
+			showToast('Failed to copy', 'error')
 		}
 	}
 
 	async function handleAddSubmit(e) {
-		e.preventDefault();
-		const trimmedId = newId.trim();
+		e.preventDefault()
+		const trimmedId = newId.trim()
 		if (!trimmedId) {
-			setAddError('Institute ID is required');
-			return;
+			setAddError('Institute ID is required')
+			return
 		}
-		const already = institutes.find((i) => i.id === trimmedId);
+		const already = institutes.find((i) => i.id === trimmedId)
 		if (already) {
-			setAddError('You already belong to this institute');
-			return;
+			setAddError('You already belong to this institute')
+			return
 		}
-		setAddLoading(true);
-		const res = await linkToInstitute(user.id, trimmedId);
-		setAddLoading(false);
+		setAddLoading(true)
+		const res = await linkToInstitute(user.id, trimmedId)
+		setAddLoading(false)
 		if (res.message && res.message !== 'Linked to institute') {
-			setAddError(res.message);
-			return;
+			setAddError(res.message)
+			return
 		}
 		addInstitute({
 			id: res.membership.institute_id,
 			label: newLabel.trim() || trimmedId,
 			role: res.membership.role || 'member',
-		});
-		setNewId('');
-		setNewLabel('');
-		setAdding(false);
-		showToast('Joined institute', 'success');
+		})
+		setNewId('')
+		setNewLabel('')
+		setAdding(false)
+		showToast('Joined institute', 'success')
 	}
 
 	function handleSelect(institute) {
-		setActiveInstitute(institute);
-		onClose();
+		setActiveInstitute(institute)
+		onClose()
 	}
 
 	function handleLeaveConfirm() {
-		removeInstitute(leaveTarget.id);
-		showToast(`Left ${leaveTarget.label}`, 'error');
-		setLeaveTarget(null);
+		const label = leaveTarget.label
+		removeInstitute(leaveTarget.id)
+		setLeaveTarget(null)
+		showToast(`Left ${label}`, 'error')
 	}
 
 	function resetAddForm() {
-		setAdding(false);
-		setAddError('');
-		setNewId('');
-		setNewLabel('');
+		setAdding(false)
+		setAddError('')
+		setNewId('')
+		setNewLabel('')
 	}
 
 	return (
@@ -166,20 +162,23 @@ export default function InstitutePanel({ onClose }) {
 										<span className="ipanel-item-info">
 											<span className="ipanel-item-label">{inst.label}</span>
 											{inst.label !== inst.id && (
-												<button
-													className={`ipanel-item-id-btn${copiedId === inst.id ? ' copied' : ''}`}
-													onClick={(e) => handleCopyId(e, inst.id)}
-													title="Copy institute ID"
-													aria-label={`Copy ID for ${inst.label}`}
-												>
-													<span className="ipanel-item-id-text">{inst.id}</span>
-													<span className="ipanel-item-id-icon" aria-hidden="true">
-														{copiedId === inst.id
-															? <Check size={10} strokeWidth={3} />
-															: <Copy size={10} strokeWidth={2} />
+												<span 
+													className="ipanel-item-id" 
+													onClick={(e) => {
+														e.stopPropagation()
+														handleCopyId(inst.id)
+													}}
+													role="button"
+													tabIndex={0}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter' || e.key === ' ') {
+															e.stopPropagation()
+															handleCopyId(inst.id)
 														}
-													</span>
-												</button>
+													}}
+												>
+													{inst.id}
+												</span>
 											)}
 										</span>
 										{activeInstitute?.id === inst.id && (
@@ -189,6 +188,19 @@ export default function InstitutePanel({ onClose }) {
 											</span>
 										)}
 									</button>
+
+									<button
+										className={`ipanel-copy-btn${copiedId === inst.id ? ' copied' : ''}`}
+										onClick={() => handleCopyId(inst.id)}
+										aria-label={`Copy ID for ${inst.label}`}
+										title="Copy institute ID"
+									>
+										{copiedId === inst.id
+											? <Check size={13} strokeWidth={3} aria-hidden="true" />
+											: <Copy size={13} strokeWidth={2} aria-hidden="true" />
+										}
+									</button>
+
 									<button
 										className="ipanel-leave-btn"
 										onClick={() => setLeaveTarget(inst)}
@@ -219,7 +231,7 @@ export default function InstitutePanel({ onClose }) {
 								className="ipanel-input"
 								type="text"
 								value={newId}
-								onChange={(e) => { setNewId(e.target.value); setAddError(''); }}
+								onChange={(e) => { setNewId(e.target.value); setAddError('') }}
 								placeholder="Paste the UUID here"
 								required
 								autoFocus
@@ -276,5 +288,5 @@ export default function InstitutePanel({ onClose }) {
 				</div>
 			)}
 		</div>
-	);
+	)
 }
