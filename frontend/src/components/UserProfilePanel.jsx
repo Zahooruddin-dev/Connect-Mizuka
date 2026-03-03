@@ -90,6 +90,10 @@ function UserProfilePanel({ userId, onClose }) {
                     <span className="user-info-label">User ID</span>
                     <span className="user-info-value">{userInfo.id}</span>
                   </div>
+                     <div className="user-info-group">
+                    <span className="user-info-label">User Created at</span>
+                    <span className="user-info-value">{userInfo.created_at}</span>
+                  </div>
                 </>
               )}
               {activeTab === 'account' && (
