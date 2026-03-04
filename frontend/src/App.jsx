@@ -23,7 +23,16 @@ function App() {
 
 	useEffect(() => {
 		if (!activeInstitute) return;
-		socket.emit('join_institute_room', activeInstitute.id);
+
+		const join = () => socket.emit('join_institute_room', activeInstitute.id);
+
+		if (socket.connected) {
+			join();
+		} else {
+			socket.once('connect', join);
+		}
+
+		return () => socket.off('connect', join);
 	}, [activeInstitute]);
 
 	if (!user) return <LoginPage />;

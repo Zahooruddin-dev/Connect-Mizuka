@@ -43,11 +43,11 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('channel_deleted', ({ channelId, instituteId }) => {
-		socket.to(instituteId).emit('channel_deleted', { channelId });
+		io.to(instituteId).emit('channel_deleted', { channelId });
 	});
 
 	socket.on('channel_renamed', ({ channel, instituteId }) => {
-		socket.to(instituteId).emit('channel_renamed', { channel });
+		io.to(instituteId).emit('channel_renamed', { channel });
 	});
 
 	socket.on('typing', (data) => {
