@@ -16,13 +16,16 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
   const [channels, setChannels] = useState([])
 
   useEffect(() => {
-    if (activeInstitute) {
-      fetchChannelsByInstitute(activeInstitute.id)
-        .then(res => setChannels(res.channels || []))
-        .catch(() => setChannels([]))
-    } else {
+    if (!activeInstitute) {
       setChannels([])
+      return
     }
+
+    fetchChannelsByInstitute(activeInstitute.id)
+      .then(res => setChannels(res.channels || []))
+      .catch(() => setChannels([]))
+
+    socket.emit('join_institute_room', activeInstitute.id)
   }, [activeInstitute])
 
   useEffect(() => {
@@ -41,33 +44,12 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
       )
     }
 
-    const handleWindowDeleted = (e) => {
-      const channelId = e?.detail?.channelId
-      if (!channelId) return
-      setChannels(prev => prev.filter(c => String(c.id) !== String(channelId)))
-      if (String(activeChannel) === String(channelId) && typeof onChannelSelect === 'function') {
-        onChannelSelect(null)
-      }
-    }
-
-    const handleWindowRenamed = (e) => {
-      const channel = e?.detail?.channel
-      if (!channel?.id) return
-      setChannels(prev =>
-        prev.map(c => String(c.id) === String(channel.id) ? { ...c, name: channel.name } : c)
-      )
-    }
-
     socket.on('channel_deleted', handleSocketDeleted)
     socket.on('channel_renamed', handleSocketRenamed)
-    window.addEventListener('channelDeleted', handleWindowDeleted)
-    window.addEventListener('channelRenamed', handleWindowRenamed)
 
     return () => {
       socket.off('channel_deleted', handleSocketDeleted)
       socket.off('channel_renamed', handleSocketRenamed)
-      window.removeEventListener('channelDeleted', handleWindowDeleted)
-      window.removeEventListener('channelRenamed', handleWindowRenamed)
     }
   }, [activeChannel, onChannelSelect])
 
@@ -83,11 +65,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
   return (
     <>
       {isOpen && (
-        <div
-          className="sidebar-backdrop"
-          onClick={onClose}
-          aria-hidden="true"
-        />
+        <div className="sidebar-backdrop" onClick={onClose} aria-hidden="true" />
       )}
 
       <aside className={`sidebar${isOpen ? ' open' : ''}`} aria-label="Navigation">
@@ -99,11 +77,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
             <span className="sidebar-status" aria-hidden="true" />
           </div>
           {onClose && (
-            <button
-              className="sidebar-icon-btn sidebar-close-btn"
-              onClick={onClose}
-              aria-label="Close navigation"
-            >
+            <button className="sidebar-icon-btn sidebar-close-btn" onClick={onClose} aria-label="Close navigation">
               <X size={18} strokeWidth={2} />
             </button>
           )}
@@ -116,9 +90,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
           aria-haspopup="dialog"
         >
           <span className="sidebar-institute-icon" aria-hidden="true">
-            {activeInstitute
-              ? activeInstitute.label[0].toUpperCase()
-              : <Building2 size={14} />}
+            {activeInstitute ? activeInstitute.label[0].toUpperCase() : <Building2 size={14} />}
           </span>
           <span className="sidebar-institute-info">
             <span className="sidebar-institute-label">
@@ -126,12 +98,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
             </span>
             <span className="sidebar-institute-hint">click to manage</span>
           </span>
-          <ChevronDown
-            className="sidebar-institute-chevron"
-            size={14}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
+          <ChevronDown className="sidebar-institute-chevron" size={14} strokeWidth={2} aria-hidden="true" />
         </button>
 
         <div className="sidebar-section">
@@ -158,12 +125,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
                       onClick={() => onChannelSelect(ch)}
                       aria-current={activeChannel === ch.id ? 'page' : undefined}
                     >
-                      <Hash
-                        className="sidebar-hash"
-                        size={14}
-                        strokeWidth={2}
-                        aria-hidden="true"
-                      />
+                      <Hash className="sidebar-hash" size={14} strokeWidth={2} aria-hidden="true" />
                       <span>{ch.name}</span>
                     </button>
                   </li>
@@ -172,15 +134,8 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
             </>
           ) : (
             <div className="sidebar-empty">
-              <Building2
-                size={30}
-                strokeWidth={1}
-                className="sidebar-empty-icon"
-                aria-hidden="true"
-              />
-              <p className="sidebar-no-channels">
-                Select or join an institute to see channels.
-              </p>
+              <Building2 size={30} strokeWidth={1} className="sidebar-empty-icon" aria-hidden="true" />
+              <p className="sidebar-no-channels">Select or join an institute to see channels.</p>
             </div>
           )}
         </div>
@@ -201,33 +156,21 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
               <span className="sidebar-user-role">{user.role || 'member'}</span>
             </div>
           </div>
-          <button
-            className="sidebar-icon-btn sidebar-logout"
-            onClick={onLogout}
-            aria-label="Sign out"
-            title="Sign out"
-          >
+          <button className="sidebar-icon-btn sidebar-logout" onClick={onLogout} aria-label="Sign out" title="Sign out">
             <LogOut size={16} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
       </aside>
 
-      {panelOpen && (
-        <InstitutePanel onClose={() => setPanelOpen(false)} />
-      )}
-
+      {panelOpen && <InstitutePanel onClose={() => setPanelOpen(false)} />}
       {createModalOpen && (
         <CreateChannelModal
           onClose={() => setCreateModalOpen(false)}
           onConfirm={handleCreateChannel}
         />
       )}
-
       {isProfileOpen && (
-        <UserProfilePanel
-          userId={user.id}
-          onClose={() => setIsProfileOpen(false)}
-        />
+        <UserProfilePanel userId={user.id} onClose={() => setIsProfileOpen(false)} />
       )}
     </>
   )

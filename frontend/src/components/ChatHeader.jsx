@@ -57,7 +57,6 @@ function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, on
     if (res?.channel) {
       setEditing(false)
       socket.emit('channel_renamed', { channel: res.channel, instituteId })
-      window.dispatchEvent(new CustomEvent('channelRenamed', { detail: { channel: res.channel } }))
       if (typeof onChannelRenamed === 'function') onChannelRenamed(res.channel)
     } else {
       setError(res?.message || 'Failed to rename channel')
@@ -81,7 +80,6 @@ function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, on
         return
       }
       socket.emit('channel_deleted', { channelId, instituteId })
-      window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId } }))
       if (typeof onChannelDeleted === 'function') onChannelDeleted(channelId)
       setDeleting(false)
       setShowConfirm(false)

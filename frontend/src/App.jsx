@@ -24,15 +24,19 @@ function App() {
 	useEffect(() => {
 		if (!activeInstitute) return;
 
-		const join = () => socket.emit('join_institute_room', activeInstitute.id);
-
-		if (socket.connected) {
-			join();
-		} else {
-			socket.once('connect', join);
+		const join = () => {
+			console.log('[App] join_institute_room:', activeInstitute.id, '| socket.id:', socket.id)
+			socket.emit('join_institute_room', activeInstitute.id)
 		}
 
-		return () => socket.off('connect', join);
+		if (socket.connected) {
+			join()
+		} else {
+			console.log('[App] socket not connected yet, queuing join...')
+			socket.once('connect', join)
+		}
+
+		return () => socket.off('connect', join)
 	}, [activeInstitute]);
 
 	if (!user) return <LoginPage />;

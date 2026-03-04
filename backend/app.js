@@ -28,6 +28,7 @@ app.use('/api/channel', channelRoutes);
 io.on('connection', (socket) => {
 	socket.on('join_institute_room', (instituteId) => {
 		socket.join(instituteId);
+		console.log(`[Server] socket ${socket.id} joined institute room: ${instituteId}`)
 	});
 
 	socket.on('join_institute', (channelId) => {
@@ -43,10 +44,14 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('channel_deleted', ({ channelId, instituteId }) => {
+		const roomD = io.sockets.adapter.rooms.get(instituteId)
+		console.log(`[Server] channel_deleted | instituteId: ${instituteId} | room members: ${roomD ? [...roomD].join(', ') : 'EMPTY'}`)
 		io.to(instituteId).emit('channel_deleted', { channelId });
 	});
 
 	socket.on('channel_renamed', ({ channel, instituteId }) => {
+		const roomR = io.sockets.adapter.rooms.get(instituteId)
+		console.log(`[Server] channel_renamed | instituteId: ${instituteId} | room members: ${roomR ? [...roomR].join(', ') : 'EMPTY'}`)
 		io.to(instituteId).emit('channel_renamed', { channel });
 	});
 
