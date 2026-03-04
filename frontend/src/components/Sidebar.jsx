@@ -25,7 +25,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
   }, [activeInstitute])
 
   useEffect(() => {
-    const handler = (e) => {
+    const handleDeleted = (e) => {
       const id = e?.detail?.channelId
       if (!id) return
       setChannels(prev => prev.filter(c => String(c.id) !== String(id)))
@@ -33,8 +33,21 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
         onChannelSelect(null)
       }
     }
-    window.addEventListener('channelDeleted', handler)
-    return () => window.removeEventListener('channelDeleted', handler)
+
+    const handleRenamed = (e) => {
+      const updated = e?.detail?.channel
+      if (!updated?.id) return
+      setChannels(prev =>
+        prev.map(c => String(c.id) === String(updated.id) ? { ...c, name: updated.name } : c)
+      )
+    }
+
+    window.addEventListener('channelDeleted', handleDeleted)
+    window.addEventListener('channelRenamed', handleRenamed)
+    return () => {
+      window.removeEventListener('channelDeleted', handleDeleted)
+      window.removeEventListener('channelRenamed', handleRenamed)
+    }
   }, [activeChannel, onChannelSelect])
 
   async function handleCreateChannel(name) {
@@ -152,8 +165,8 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
         </div>
 
         <div className="sidebar-footer">
-          <div 
-            className="sidebar-user" 
+          <div
+            className="sidebar-user"
             onClick={() => setIsProfileOpen(true)}
             role="button"
             tabIndex={0}
@@ -190,9 +203,9 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
       )}
 
       {isProfileOpen && (
-        <UserProfilePanel 
-          userId={user.id} 
-          onClose={() => setIsProfileOpen(false)} 
+        <UserProfilePanel
+          userId={user.id}
+          onClose={() => setIsProfileOpen(false)}
         />
       )}
     </>

@@ -55,6 +55,7 @@ function ChatHeader({ channelId, channelLabel, onChannelDeleted, onChannelRename
     setSaving(false)
     if (res?.channel) {
       setEditing(false)
+      window.dispatchEvent(new CustomEvent('channelRenamed', { detail: { channel: res.channel } }))
       if (typeof onChannelRenamed === 'function') {
         onChannelRenamed(res.channel)
       }
@@ -68,7 +69,7 @@ function ChatHeader({ channelId, channelLabel, onChannelDeleted, onChannelRename
     if (e.key === 'Escape') handleEditCancel()
   }
 
-  const handleDeleteChannel = async () => {
+  async function handleDeleteChannel() {
     setDeleting(true)
     setError('')
     try {
@@ -79,10 +80,10 @@ function ChatHeader({ channelId, channelLabel, onChannelDeleted, onChannelRename
         setShowConfirm(false)
         return
       }
-      onChannelDeleted(channelId)
-      try {
-        window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId } }))
-      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId } }))
+      if (typeof onChannelDeleted === 'function') {
+        onChannelDeleted(channelId)
+      }
       setDeleting(false)
       setShowConfirm(false)
     } catch {
