@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react'
 import { Pencil, Check, X, Trash2, Hash } from 'lucide-react'
 import { useAuth } from '../services/AuthContext'
 import { deleteChannel, updateChannel } from '../services/api'
+import socket from '../services/socket'
 import './styles/ChatHeader.css'
 
-function ChatHeader({ channelId, channelLabel, onChannelDeleted, onChannelRenamed }) {
+function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, onChannelRenamed }) {
   const { user } = useAuth()
   const [showConfirm, setShowConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -55,10 +56,9 @@ function ChatHeader({ channelId, channelLabel, onChannelDeleted, onChannelRename
     setSaving(false)
     if (res?.channel) {
       setEditing(false)
+      socket.emit('channel_renamed', { channel: res.channel, instituteId })
       window.dispatchEvent(new CustomEvent('channelRenamed', { detail: { channel: res.channel } }))
-      if (typeof onChannelRenamed === 'function') {
-        onChannelRenamed(res.channel)
-      }
+      if (typeof onChannelRenamed === 'function') onChannelRenamed(res.channel)
     } else {
       setError(res?.message || 'Failed to rename channel')
     }
@@ -80,10 +80,9 @@ function ChatHeader({ channelId, channelLabel, onChannelDeleted, onChannelRename
         setShowConfirm(false)
         return
       }
+      socket.emit('channel_deleted', { channelId, instituteId })
       window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId } }))
-      if (typeof onChannelDeleted === 'function') {
-        onChannelDeleted(channelId)
-      }
+      if (typeof onChannelDeleted === 'function') onChannelDeleted(channelId)
       setDeleting(false)
       setShowConfirm(false)
     } catch {

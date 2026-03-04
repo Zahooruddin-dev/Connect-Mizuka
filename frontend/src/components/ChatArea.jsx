@@ -6,7 +6,7 @@ import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 import './styles/ChatArea.css';
 
-function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
+function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed }) {
 	const [messages, setMessages] = useState([]);
 	const [typingUsers, setTypingUsers] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -36,9 +36,7 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 		fetchMessages(channelId)
 			.then((res) => {
 				if (activeChannelRef.current !== channelId) return;
-				const data = Array.isArray(res.data)
-					? res.data
-					: res.data.messages || [];
+				const data = Array.isArray(res.data) ? res.data : res.data.messages || [];
 				setMessages(data);
 			})
 			.catch(() => {
@@ -68,37 +66,34 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 
 		const handleDisplayTyping = ({ username, channel_id }) => {
 			if (channel_id && channel_id !== channelId) return;
-			setTypingUsers((prev) =>
-				prev.includes(username) ? prev : [...prev, username],
-			);
+			setTypingUsers((prev) => prev.includes(username) ? prev : [...prev, username]);
 		};
 
 		const handleHideTyping = ({ channel_id } = {}) => {
 			if (channel_id && channel_id !== channelId) return;
 			setTypingUsers([]);
 		};
-		const handleGlobalChannelDeleted = ({ channel_id }) => {
-			if (channel_id === channelId) {
-				handleChannelDeleted();
+
+		const handleSocketChannelDeleted = ({ channelId: deletedId }) => {
+			window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId: deletedId } }));
+			if (deletedId === channelId) {
+				setMessages([]);
 			}
-			window.dispatchEvent(
-				new CustomEvent('channelDeleted', { detail: channel_id }),
-			);
 		};
-		const handleGlobalChannelRenamed = ({ channel }) => {
+
+		const handleSocketChannelRenamed = ({ channel }) => {
+			window.dispatchEvent(new CustomEvent('channelRenamed', { detail: { channel } }));
 			if (channel.id === channelId) {
-				handleChannelRenamed(channel);
+				setCurrentLabel(channel.name);
+				if (typeof onChannelRenamed === 'function') onChannelRenamed(channel);
 			}
-			window.dispatchEvent(
-				new CustomEvent('channelRenamed', { detail: channel }),
-			);
 		};
 
 		socket.on('receive_message', handleReceive);
 		socket.on('Display_typing', handleDisplayTyping);
 		socket.on('hide_typing', handleHideTyping);
-		socket.on('channel_deleted', handleGlobalChannelDeleted);
-		socket.on('channel_renamed', handleGlobalChannelRenamed);
+		socket.on('channel_deleted', handleSocketChannelDeleted);
+		socket.on('channel_renamed', handleSocketChannelRenamed);
 
 		return () => {
 			socket.emit('leave_institute', channelId);
@@ -106,10 +101,10 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 			socket.off('Display_typing', handleDisplayTyping);
 			socket.off('hide_typing', handleHideTyping);
 			socket.off('connect', joinRoom);
-			socket.off('channel_deleted', handleGlobalChannelDeleted);
-			socket.off('channel_renamed', handleGlobalChannelRenamed);
+			socket.off('channel_deleted', handleSocketChannelDeleted);
+			socket.off('channel_renamed', handleSocketChannelRenamed);
 		};
-	}, [channelId]);
+	}, [channelId]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const handleSend = useCallback(
 		(content) => {
@@ -121,7 +116,6 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 				created_at: new Date().toISOString(),
 			};
 			setMessages((prev) => [...prev, tempMessage]);
-
 			socket.emit('send_message', {
 				channel_id: channelId,
 				message: content,
@@ -133,17 +127,11 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 	);
 
 	const handleTyping = useCallback(() => {
-		socket.emit('typing', {
-			channel_id: channelId,
-			username: user.username,
-		});
+		socket.emit('typing', { channel_id: channelId, username: user.username });
 	}, [channelId, user]);
 
 	const handleStopTyping = useCallback(() => {
-		socket.emit('stop_typing', {
-			channel_id: channelId,
-			username: user.username,
-		});
+		socket.emit('stop_typing', { channel_id: channelId, username: user.username });
 	}, [channelId, user]);
 
 	const handleMessageDeleted = useCallback((id) => {
@@ -154,21 +142,17 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 		setMessages([]);
 	}, []);
 
-	const handleChannelRenamed = useCallback(
-		(updatedChannel) => {
-			setCurrentLabel(updatedChannel.name);
-			if (typeof onChannelRenamed === 'function') {
-				onChannelRenamed(updatedChannel);
-			}
-		},
-		[onChannelRenamed],
-	);
+	const handleChannelRenamed = useCallback((updatedChannel) => {
+		setCurrentLabel(updatedChannel.name);
+		if (typeof onChannelRenamed === 'function') onChannelRenamed(updatedChannel);
+	}, [onChannelRenamed]);
 
 	return (
 		<div className='chat-area'>
 			<ChatHeader
 				channelId={channelId}
 				channelLabel={currentLabel}
+				instituteId={instituteId}
 				onChannelDeleted={handleChannelDeleted}
 				onChannelRenamed={handleChannelRenamed}
 			/>

@@ -42,6 +42,7 @@ export const fetchUserInfo = async (userId) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
+
 export const updateProfile = async (
 	userId,
 	{ username, email, currentPassword, newPassword } = {},
@@ -190,16 +191,5 @@ export const fetchMessages = (channelId, limit = 20, offset = 0) =>
 
 export const deleteMessage = (messageId, userId) =>
 	api.delete(`/messages/message/${messageId}`, { data: { userId } });
-
-export const handleRename = async () => {
-  const res = await updateChannel(channelId, newName);
-  if (res.status === 200) {
-    socket.emit('channel_renamed', { 
-      channel: res.data.channel, 
-      instituteId 
-    });
-    window.dispatchEvent(new CustomEvent('channelRenamed', { detail: res.data.channel }));
-  }
-};
 
 export default api;

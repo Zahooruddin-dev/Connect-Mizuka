@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './services/AuthContext';
+import socket from './services/socket';
 import LoginPage from './pages/LoginPage';
 import InstituteGate from './components/Institutegate';
 import Sidebar from './components/Sidebar';
@@ -11,32 +12,33 @@ function App() {
 	const [activeChannel, setActiveChannel] = useState(null);
 	const [sidebarOpen, setSidebarOpen] = useState(true);
 
-	// automatically hide sidebar on small screens
 	useEffect(() => {
 		const arb = () => {
-			if (window.innerWidth < 768) {
-				setSidebarOpen(false);
-			} else {
-				setSidebarOpen(true);
-			}
+			setSidebarOpen(window.innerWidth >= 768);
 		};
 		arb();
 		window.addEventListener('resize', arb);
 		return () => window.removeEventListener('resize', arb);
 	}, []);
 
-	if (!user) {
-		return <LoginPage />;
-	}
+	useEffect(() => {
+		if (!activeInstitute) return;
+		socket.emit('join_institute_room', activeInstitute.id);
+	}, [activeInstitute]);
 
-	if (institutes.length === 0 || !activeInstitute) {
-		return <InstituteGate />;
-	}
+	if (!user) return <LoginPage />;
+	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
 
 	const effectiveChannel = activeChannel || {
 		id: activeInstitute.id,
-		label: 'general',
+		name: 'general',
 	};
+
+	function handleChannelRenamed(updatedChannel) {
+		if (activeChannel && String(activeChannel.id) === String(updatedChannel.id)) {
+			setActiveChannel(prev => ({ ...prev, name: updatedChannel.name }))
+		}
+	}
 
 	return (
 		<div className='app-layout'>
@@ -65,7 +67,9 @@ function App() {
 					key={effectiveChannel.id}
 					channelId={effectiveChannel.id}
 					channelLabel={effectiveChannel.name}
+					instituteId={activeInstitute.id}
 					user={user}
+					onChannelRenamed={handleChannelRenamed}
 				/>
 			</div>
 		</div>
