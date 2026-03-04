@@ -6,14 +6,17 @@ import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 import './styles/ChatArea.css';
 
-function ChatArea({ channelId, channelLabel, user }) {
+function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 	const [messages, setMessages] = useState([]);
 	const [typingUsers, setTypingUsers] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [currentLabel, setCurrentLabel] = useState(channelLabel);
 
-	// Track which channel the current socket listeners are bound to
-	// so we can ignore stale events that arrive after a channel switch
 	const activeChannelRef = useRef(channelId);
+
+	useEffect(() => {
+		setCurrentLabel(channelLabel);
+	}, [channelLabel]);
 
 	useEffect(() => {
 		activeChannelRef.current = channelId;
@@ -22,7 +25,6 @@ function ChatArea({ channelId, channelLabel, user }) {
 		setMessages([]);
 		setTypingUsers([]);
 
-		// ── JOIN new room ──────────────────────────────────────────
 		const joinRoom = () => socket.emit('join_institute', channelId);
 
 		if (socket.connected) {
@@ -31,10 +33,8 @@ function ChatArea({ channelId, channelLabel, user }) {
 			socket.once('connect', joinRoom);
 		}
 
-		// ── FETCH history ──────────────────────────────────────────
 		fetchMessages(channelId)
 			.then((res) => {
-				// Only apply if we're still on this channel
 				if (activeChannelRef.current !== channelId) return;
 				const data = Array.isArray(res.data)
 					? res.data
@@ -48,12 +48,8 @@ function ChatArea({ channelId, channelLabel, user }) {
 				if (activeChannelRef.current === channelId) setLoading(false);
 			});
 
-		// ── SOCKET HANDLERS ────────────────────────────────────────
 		const handleReceive = (msg) => {
-			// Drop events that don't belong to the currently-viewed channel
 			if (msg.channel_id && msg.channel_id !== channelId) return;
-
-			// Drop our own messages — we already add them optimistically
 			if (msg.from === user.id || msg.sender_id === user.id) return;
 
 			const normalised = {
@@ -71,7 +67,6 @@ function ChatArea({ channelId, channelLabel, user }) {
 		};
 
 		const handleDisplayTyping = ({ username, channel_id }) => {
-			// Only show typing for the active channel
 			if (channel_id && channel_id !== channelId) return;
 			setTypingUsers((prev) =>
 				prev.includes(username) ? prev : [...prev, username],
@@ -79,7 +74,6 @@ function ChatArea({ channelId, channelLabel, user }) {
 		};
 
 		const handleHideTyping = ({ channel_id } = {}) => {
-			// Only clear typing for the active channel
 			if (channel_id && channel_id !== channelId) return;
 			setTypingUsers([]);
 		};
@@ -88,17 +82,15 @@ function ChatArea({ channelId, channelLabel, user }) {
 		socket.on('Display_typing', handleDisplayTyping);
 		socket.on('hide_typing', handleHideTyping);
 
-		// ── CLEANUP: leave room + remove listeners ─────────────────
 		return () => {
-			socket.emit('leave_institute', channelId); // leave the old room
+			socket.emit('leave_institute', channelId);
 			socket.off('receive_message', handleReceive);
 			socket.off('Display_typing', handleDisplayTyping);
 			socket.off('hide_typing', handleHideTyping);
-			socket.off('connect', joinRoom); // prevent stale once-listener
+			socket.off('connect', joinRoom);
 		};
 	}, [channelId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-	// ── SEND (optimistic) ──────────────────────────────────────────
 	const handleSend = useCallback(
 		(content) => {
 			const tempMessage = {
@@ -120,7 +112,6 @@ function ChatArea({ channelId, channelLabel, user }) {
 		[channelId, user],
 	);
 
-	// ── TYPING ─────────────────────────────────────────────────────
 	const handleTyping = useCallback(() => {
 		socket.emit('typing', {
 			channel_id: channelId,
@@ -135,7 +126,6 @@ function ChatArea({ channelId, channelLabel, user }) {
 		});
 	}, [channelId, user]);
 
-	// ── LOCAL DELETES ──────────────────────────────────────────────
 	const handleMessageDeleted = useCallback((id) => {
 		setMessages((prev) => prev.filter((m) => (m.id || m._id) !== id));
 	}, []);
@@ -144,12 +134,20 @@ function ChatArea({ channelId, channelLabel, user }) {
 		setMessages([]);
 	}, []);
 
+	const handleChannelRenamed = useCallback((updatedChannel) => {
+		setCurrentLabel(updatedChannel.name);
+		if (typeof onChannelRenamed === 'function') {
+			onChannelRenamed(updatedChannel);
+		}
+	}, [onChannelRenamed]);
+
 	return (
 		<div className='chat-area'>
 			<ChatHeader
 				channelId={channelId}
-				channelLabel={channelLabel}
+				channelLabel={currentLabel}
 				onChannelDeleted={handleChannelDeleted}
+				onChannelRenamed={handleChannelRenamed}
 			/>
 			{loading ? (
 				<div className='chat-loading'>

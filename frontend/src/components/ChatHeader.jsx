@@ -1,34 +1,88 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { Pencil, Check, X, Trash2, Hash } from 'lucide-react'
 import { useAuth } from '../services/AuthContext'
-import { deleteChannel } from '../services/api'
+import { deleteChannel, updateChannel } from '../services/api'
 import './styles/ChatHeader.css'
 
-function ChatHeader({ channelId, channelLabel, onChannelDeleted }) {
+function ChatHeader({ channelId, channelLabel, onChannelDeleted, onChannelRenamed }) {
   const { user } = useAuth()
   const [showConfirm, setShowConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [nameInput, setNameInput] = useState(channelLabel || '')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef(null)
 
   const isAdmin = user?.role === 'admin'
+
+  useEffect(() => {
+    setNameInput(channelLabel || '')
+  }, [channelLabel])
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [editing])
+
+  function handleEditStart() {
+    setNameInput(channelLabel || '')
+    setError('')
+    setEditing(true)
+  }
+
+  function handleEditCancel() {
+    setEditing(false)
+    setNameInput(channelLabel || '')
+    setError('')
+  }
+
+  async function handleEditSave() {
+    const trimmed = nameInput.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '')
+    if (!trimmed) {
+      setError('Channel name cannot be empty')
+      return
+    }
+    if (trimmed === channelLabel) {
+      setEditing(false)
+      return
+    }
+    setSaving(true)
+    setError('')
+    const res = await updateChannel(channelId, user.id, { name: trimmed })
+    setSaving(false)
+    if (res?.channel) {
+      setEditing(false)
+      if (typeof onChannelRenamed === 'function') {
+        onChannelRenamed(res.channel)
+      }
+    } else {
+      setError(res?.message || 'Failed to rename channel')
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') handleEditSave()
+    if (e.key === 'Escape') handleEditCancel()
+  }
 
   const handleDeleteChannel = async () => {
     setDeleting(true)
     setError('')
     try {
       const res = await deleteChannel(channelId, user.id)
-      if (res.data?.error) {
-        setError(res.data.error)
+      if (res?.error) {
+        setError(res.error)
         setDeleting(false)
         setShowConfirm(false)
         return
       }
       onChannelDeleted(channelId)
-      // notify other components in this window to remove the channel
       try {
         window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId } }))
-      } catch (e) {
-        // ignore if dispatch fails in odd environments
-      }
+      } catch (e) {}
       setDeleting(false)
       setShowConfirm(false)
     } catch {
@@ -41,28 +95,71 @@ function ChatHeader({ channelId, channelLabel, onChannelDeleted }) {
   return (
     <header className="chat-header">
       <div className="chat-header-left">
-        <span className="chat-header-hash">#</span>
-        <span className="chat-header-name">{channelLabel || channelId}</span>
+        <Hash className="chat-header-hash" size={18} strokeWidth={2} aria-hidden="true" />
+
+        {editing ? (
+          <div className="chat-header-edit">
+            <input
+              ref={inputRef}
+              className="chat-header-input"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              maxLength={64}
+              disabled={saving}
+              aria-label="Channel name"
+              spellCheck={false}
+            />
+            <button
+              className="chat-header-icon-btn chat-header-save"
+              onClick={handleEditSave}
+              disabled={saving}
+              aria-label="Save name"
+              title="Save"
+            >
+              <Check size={14} strokeWidth={2.5} />
+            </button>
+            <button
+              className="chat-header-icon-btn chat-header-cancel"
+              onClick={handleEditCancel}
+              disabled={saving}
+              aria-label="Cancel editing"
+              title="Cancel"
+            >
+              <X size={14} strokeWidth={2.5} />
+            </button>
+          </div>
+        ) : (
+          <div className="chat-header-name-wrap">
+            <span className="chat-header-name">{channelLabel || channelId}</span>
+            {isAdmin && (
+              <button
+                className="chat-header-icon-btn chat-header-edit-btn"
+                onClick={handleEditStart}
+                aria-label="Rename channel"
+                title="Rename channel"
+              >
+                <Pencil size={13} strokeWidth={2} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
       <div className="chat-header-actions">
         {error && <span className="chat-header-error">{error}</span>}
-        {isAdmin && (
+        {isAdmin && !editing && (
           showConfirm ? (
             <div className="delete-confirm">
-              <span>Delete all messages?</span>
+              <span>Delete channel?</span>
               <button className="confirm-yes" onClick={handleDeleteChannel} disabled={deleting}>
-                {deleting ? 'Deleting...' : 'Yes'}
+                {deleting ? 'Deleting…' : 'Yes'}
               </button>
               <button className="confirm-no" onClick={() => setShowConfirm(false)}>No</button>
             </div>
           ) : (
             <button className="channel-delete-btn" onClick={() => setShowConfirm(true)} title="Delete channel">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3,6 5,6 21,6"/>
-                <path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/>
-                <path d="M10,11v6M14,11v6"/>
-                <path d="M9,6V4h6v2"/>
-              </svg>
+              <Trash2 size={14} strokeWidth={2} aria-hidden="true" />
               Delete channel
             </button>
           )

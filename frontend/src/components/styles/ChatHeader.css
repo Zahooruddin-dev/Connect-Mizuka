@@ -12,15 +12,20 @@
 .chat-header-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+  min-width: 0;
 }
 
 .chat-header-hash {
-  font-size: 22px;
   color: var(--teal-600);
-  font-weight: 300;
-  font-family: var(--font-mono);
-  line-height: 1;
+  flex-shrink: 0;
+}
+
+.chat-header-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .chat-header-name {
@@ -28,12 +33,95 @@
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-header-edit-btn {
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.chat-header-left:hover .chat-header-edit-btn {
+  opacity: 1;
+}
+
+.chat-header-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-header-input {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--teal-500);
+  border-radius: 7px;
+  padding: 4px 10px;
+  outline: none;
+  letter-spacing: -0.2px;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+  width: 200px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.chat-header-input:disabled {
+  opacity: 0.6;
+}
+
+.chat-header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+  color: var(--text-ghost);
+}
+
+.chat-header-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chat-header-save {
+  color: var(--teal-400);
+}
+
+.chat-header-save:hover:not(:disabled) {
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--teal-300);
+}
+
+.chat-header-cancel:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+}
+
+.chat-header-edit-btn:hover {
+  background: var(--bg-hover);
+  color: var(--teal-400);
 }
 
 .chat-header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-header-error {
+  font-size: 12px;
+  color: #f87171;
 }
 
 .channel-delete-btn {
@@ -44,6 +132,9 @@
   border-radius: var(--radius-sm);
   color: var(--text-ghost);
   font-size: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
 
@@ -67,6 +158,8 @@
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 500;
+  border: none;
+  cursor: pointer;
   transition: background 0.15s;
 }
 
@@ -86,6 +179,8 @@
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 500;
+  border: none;
+  cursor: pointer;
   transition: background 0.15s;
 }
 
