@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Hash, Plus, LogOut, ChevronDown, X, Building2 } from 'lucide-react'
 import { useAuth } from '../services/AuthContext'
 import { fetchChannelsByInstitute, createChannel } from '../services/api'
@@ -14,7 +14,14 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [channels, setChannels] = useState([])
+  const activeInstituteRef = useRef(activeInstitute?.id)
 
+  // Keep ref in sync with actual activeInstitute
+  useEffect(() => {
+    activeInstituteRef.current = activeInstitute?.id
+  }, [activeInstitute])
+
+  // Fetch channels when institute changes
   useEffect(() => {
     if (!activeInstitute) {
       setChannels([])
@@ -28,6 +35,7 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
     socket.emit('join_institute_room', activeInstitute.id)
   }, [activeInstitute])
 
+  // Listen for real-time channel events
   useEffect(() => {
     const handleSocketDeleted = ({ channelId }) => {
       if (!channelId) return
@@ -54,18 +62,35 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
       }
     }
 
+    const handleChannelCreated = ({ channel }) => {
+      if (!channel?.id) return
+      // Only add if it belongs to the active institute
+      if (String(channel.institute_id) !== String(activeInstituteRef.current)) return
+      
+      setChannels(prev => {
+        // Check if channel already exists (avoid duplicates)
+        if (prev.some(c => String(c.id) === String(channel.id))) return prev
+        return [...prev, channel]
+      })
+    }
+
     socket.on('channel_deleted', handleSocketDeleted)
     socket.on('channel_renamed', handleSocketRenamed)
+    socket.on('channel_created', handleChannelCreated)
 
     return () => {
       socket.off('channel_deleted', handleSocketDeleted)
       socket.off('channel_renamed', handleSocketRenamed)
+      socket.off('channel_created', handleChannelCreated)
     }
   }, [activeChannel, onChannelSelect])
 
   async function handleCreateChannel(name) {
     const res = await createChannel(user.id, activeInstitute.id, name)
     if (res.channel) {
+      // Emit socket event so other users see it in real-time
+      socket.emit('channel_created', { channel: res.channel, instituteId: activeInstitute.id })
+      // Add to local state immediately
       setChannels(prev => [...prev, res.channel])
       return {}
     }

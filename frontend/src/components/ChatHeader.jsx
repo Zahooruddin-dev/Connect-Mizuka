@@ -21,8 +21,14 @@ function ChatHeader({
 	const [saving, setSaving] = useState(false);
 	const [displayName, setDisplayName] = useState(channelLabel || '');
 	const inputRef = useRef(null);
+	const channelIdRef = useRef(channelId);
 
 	const isAdmin = user?.role === 'admin';
+
+	// Keep ref in sync with channelId
+	useEffect(() => {
+		channelIdRef.current = channelId;
+	}, [channelId]);
 
 	useEffect(() => {
 		setNameInput(channelLabel || '');
@@ -36,16 +42,29 @@ function ChatHeader({
 		}
 	}, [editing]);
 
+	// Listen for real-time socket events
 	useEffect(() => {
 		const handleSocketRenamed = ({ channel }) => {
-			if (channel.id === channelId) {
+			if (channel.id === channelIdRef.current) {
 				setDisplayName(channel.name);
+				setNameInput(channel.name);
+			}
+		};
+
+		const handleSocketDeleted = ({ channelId: deletedId }) => {
+			if (deletedId === channelIdRef.current && typeof onChannelDeleted === 'function') {
+				onChannelDeleted(deletedId);
 			}
 		};
 
 		socket.on('channel_renamed', handleSocketRenamed);
-		return () => socket.off('channel_renamed', handleSocketRenamed);
-	}, [channelId]);
+		socket.on('channel_deleted', handleSocketDeleted);
+
+		return () => {
+			socket.off('channel_renamed', handleSocketRenamed);
+			socket.off('channel_deleted', handleSocketDeleted);
+		};
+	}, [onChannelDeleted]);
 
 	function handleEditStart() {
 		setNameInput(channelLabel || '');
@@ -65,23 +84,35 @@ function ChatHeader({
 			.toLowerCase()
 			.replace(/\s+/g, '-')
 			.replace(/[^a-z0-9-_]/g, '');
+		
 		if (!trimmed) {
 			setError('Channel name cannot be empty');
 			return;
 		}
+
 		if (trimmed === channelLabel) {
 			setEditing(false);
 			return;
 		}
+
 		setSaving(true);
 		setError('');
+		
 		const res = await updateChannel(channelId, user.id, { name: trimmed });
 		setSaving(false);
+
 		if (res?.channel) {
 			setDisplayName(res.channel.name);
-			socket.emit('channel_renamed', { channel: res.channel, instituteId });
+			// Emit socket event to broadcast to all users in institute
+			socket.emit('channel_renamed', { 
+				channel: res.channel, 
+				instituteId: instituteId 
+			});
 			setEditing(false);
-			if (typeof onChannelRenamed === 'function') onChannelRenamed(res.channel);
+			
+			if (typeof onChannelRenamed === 'function') {
+				onChannelRenamed(res.channel);
+			}
 		} else {
 			setError(res?.message || 'Failed to rename channel');
 		}
@@ -95,19 +126,30 @@ function ChatHeader({
 	async function handleDeleteChannel() {
 		setDeleting(true);
 		setError('');
+		
 		try {
 			const res = await deleteChannel(channelId, user.id);
+			
 			if (res?.error) {
 				setError(res.error);
 				setDeleting(false);
 				setShowConfirm(false);
 				return;
 			}
-			socket.emit('channel_deleted', { channelId, instituteId });
-			if (typeof onChannelDeleted === 'function') onChannelDeleted(channelId);
+
+			// Emit socket event to broadcast deletion to all users in institute
+			socket.emit('channel_deleted', { 
+				channelId: channelId, 
+				instituteId: instituteId 
+			});
+
+			if (typeof onChannelDeleted === 'function') {
+				onChannelDeleted(channelId);
+			}
+
 			setDeleting(false);
 			setShowConfirm(false);
-		} catch {
+		} catch (err) {
 			setError('Failed to delete channel');
 			setDeleting(false);
 			setShowConfirm(false);

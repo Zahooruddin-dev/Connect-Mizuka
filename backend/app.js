@@ -55,6 +55,12 @@ io.on('connection', (socket) => {
 		io.to(instituteId).emit('channel_renamed', { channel });
 	});
 
+	socket.on('channel_created', ({ channel, instituteId }) => {
+		const roomC = io.sockets.adapter.rooms.get(instituteId)
+		console.log(`[Server] channel_created | instituteId: ${instituteId} | channel: ${channel.name} | room members: ${roomC ? [...roomC].join(', ') : 'EMPTY'}`)
+		io.to(instituteId).emit('channel_created', { channel });
+	});
+
 	socket.on('typing', (data) => {
 		socket.to(data.channel_id).emit('Display_typing', {
 			username: data.username,
