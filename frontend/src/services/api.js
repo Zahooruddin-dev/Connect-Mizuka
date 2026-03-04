@@ -33,11 +33,12 @@ export const register = async (username, email, password, role) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
+
 export const fetchUserInfo = async (userId) => {
 	try {
 		const res = await api.get(`/auth/user-info/${userId}`);
 		return res.data;
-	} catch (error) {
+	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
@@ -121,12 +122,7 @@ export const fetchChannelsByInstitute = async (instituteId) => {
 	}
 };
 
-export const createChannel = async (
-	adminId,
-	instituteId,
-	name,
-	isPrivate = false,
-) => {
+export const createChannel = async (adminId, instituteId, name, isPrivate = false) => {
 	try {
 		const res = await api.post('/channel/create', {
 			adminId,
@@ -140,13 +136,34 @@ export const createChannel = async (
 	}
 };
 
+export const updateChannel = async (channelId, adminId, { name, isPrivate } = {}) => {
+	try {
+		const res = await api.put(`/channel/${channelId}`, {
+			adminId,
+			...(name !== undefined && { name }),
+			...(isPrivate !== undefined && { is_private: isPrivate }),
+		});
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
+
+export const deleteChannel = async (channelId, adminId) => {
+	try {
+		const res = await api.delete(`/channel/${channelId}`, {
+			data: { adminId },
+		});
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
+
 export const fetchMessages = (channelId, limit = 20, offset = 0) =>
 	api.get(`/messages/${channelId}`, { params: { limit, offset } });
 
 export const deleteMessage = (messageId, userId) =>
 	api.delete(`/messages/message/${messageId}`, { data: { userId } });
-
-export const deleteChannel = (channelId, userId) =>
-	api.delete(`/messages/channel/${channelId}`, { data: { userId } });
 
 export default api;
