@@ -39,14 +39,6 @@ function App() {
 		return () => socket.off('connect', join)
 	}, [activeInstitute]);
 
-	if (!user) return <LoginPage />;
-	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
-
-	const effectiveChannel = activeChannel || {
-		id: activeInstitute.id,
-		name: 'general',
-	};
-
 	useEffect(() => {
 		const handleChannelDeleted = ({ channelId }) => {
 			if (activeChannel && String(activeChannel.id) === String(channelId)) {
@@ -57,6 +49,14 @@ function App() {
 		socket.on('channel_deleted', handleChannelDeleted)
 		return () => socket.off('channel_deleted', handleChannelDeleted)
 	}, [activeChannel])
+
+	if (!user) return <LoginPage />;
+	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
+
+	const effectiveChannel = activeChannel || {
+		id: activeInstitute.id,
+		name: 'general',
+	};
 
 	function handleChannelRenamed(updatedChannel) {
 		if (activeChannel && String(activeChannel.id) === String(updatedChannel.id)) {
