@@ -56,8 +56,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -151,7 +152,7 @@
 .user-info-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
@@ -178,6 +179,132 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.user-info-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-ghost);
+}
+
+.user-info-value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-inline-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--text-ghost);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+.user-info-group:hover .user-inline-edit-btn {
+  opacity: 1;
+}
+
+.user-inline-edit-btn:hover {
+  background: var(--bg-hover);
+  color: var(--teal-400);
+}
+
+.user-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-edit-input {
+  flex: 1;
+  padding: 7px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--teal-500);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.user-edit-input:disabled {
+  opacity: 0.5;
+}
+
+.user-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.user-edit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.user-edit-save {
+  color: var(--teal-400);
+}
+
+.user-edit-save:hover:not(:disabled) {
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--teal-300);
+}
+
+.user-edit-cancel {
+  color: var(--text-ghost);
+}
+
+.user-edit-cancel:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+}
+
+.user-edit-error {
+  font-size: 12px;
+  color: #f87171;
+}
+
+.user-edit-success {
+  font-size: 12px;
+  color: var(--teal-400);
+  font-weight: 500;
+}
+
+.user-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal-400);
+  box-shadow: 0 0 6px var(--teal-400);
+  flex-shrink: 0;
+}
+
+@keyframes user-spin {
+  to { transform: rotate(360deg); }
+}
+
+.user-edit-spinner {
+  animation: user-spin 0.8s linear infinite;
 }
 
 .user-panel-loading {

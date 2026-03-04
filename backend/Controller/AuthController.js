@@ -83,7 +83,7 @@ async function updateProfile(req, res) {
 	}
 
 	try {
-		const user = await db.getUserByEmail_orId(userId);
+		const user = await db.getUserById(userId);
 		if (!user) {
 			return res.status(404).json({ message: 'User not found' });
 		}

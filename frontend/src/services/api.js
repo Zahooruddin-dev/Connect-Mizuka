@@ -42,6 +42,22 @@ export const fetchUserInfo = async (userId) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
+export const updateProfile = async (
+	userId,
+	{ username, email, currentPassword, newPassword } = {},
+) => {
+	try {
+		const res = await api.put(`/auth/update-profile/${userId}`, {
+			...(username !== undefined && { username }),
+			...(email !== undefined && { email }),
+			...(currentPassword !== undefined && { currentPassword }),
+			...(newPassword !== undefined && { newPassword }),
+		});
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
 
 export const requestPasswordReset = async (email) => {
 	try {
@@ -122,7 +138,12 @@ export const fetchChannelsByInstitute = async (instituteId) => {
 	}
 };
 
-export const createChannel = async (adminId, instituteId, name, isPrivate = false) => {
+export const createChannel = async (
+	adminId,
+	instituteId,
+	name,
+	isPrivate = false,
+) => {
 	try {
 		const res = await api.post('/channel/create', {
 			adminId,
@@ -136,7 +157,11 @@ export const createChannel = async (adminId, instituteId, name, isPrivate = fals
 	}
 };
 
-export const updateChannel = async (channelId, adminId, { name, isPrivate } = {}) => {
+export const updateChannel = async (
+	channelId,
+	adminId,
+	{ name, isPrivate } = {},
+) => {
 	try {
 		const res = await api.put(`/channel/${channelId}`, {
 			adminId,
