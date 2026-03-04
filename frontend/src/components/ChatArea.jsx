@@ -77,10 +77,28 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 			if (channel_id && channel_id !== channelId) return;
 			setTypingUsers([]);
 		};
+		const handleGlobalChannelDeleted = ({ channel_id }) => {
+			if (channel_id === channelId) {
+				handleChannelDeleted();
+			}
+			window.dispatchEvent(
+				new CustomEvent('channelDeleted', { detail: channel_id }),
+			);
+		};
+		const handleGlobalChannelRenamed = ({ channel }) => {
+			if (channel.id === channelId) {
+				handleChannelRenamed(channel);
+			}
+			window.dispatchEvent(
+				new CustomEvent('channelRenamed', { detail: channel }),
+			);
+		};
 
 		socket.on('receive_message', handleReceive);
 		socket.on('Display_typing', handleDisplayTyping);
 		socket.on('hide_typing', handleHideTyping);
+		socket.on('channel_deleted', handleGlobalChannelDeleted);
+		socket.on('channel_renamed', handleGlobalChannelRenamed);
 
 		return () => {
 			socket.emit('leave_institute', channelId);
@@ -88,8 +106,10 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 			socket.off('Display_typing', handleDisplayTyping);
 			socket.off('hide_typing', handleHideTyping);
 			socket.off('connect', joinRoom);
+			socket.off('channel_deleted', handleGlobalChannelDeleted);
+			socket.off('channel_renamed', handleGlobalChannelRenamed);
 		};
-	}, [channelId]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [channelId]);
 
 	const handleSend = useCallback(
 		(content) => {
@@ -134,12 +154,15 @@ function ChatArea({ channelId, channelLabel, user, onChannelRenamed }) {
 		setMessages([]);
 	}, []);
 
-	const handleChannelRenamed = useCallback((updatedChannel) => {
-		setCurrentLabel(updatedChannel.name);
-		if (typeof onChannelRenamed === 'function') {
-			onChannelRenamed(updatedChannel);
-		}
-	}, [onChannelRenamed]);
+	const handleChannelRenamed = useCallback(
+		(updatedChannel) => {
+			setCurrentLabel(updatedChannel.name);
+			if (typeof onChannelRenamed === 'function') {
+				onChannelRenamed(updatedChannel);
+			}
+		},
+		[onChannelRenamed],
+	);
 
 	return (
 		<div className='chat-area'>

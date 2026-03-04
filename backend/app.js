@@ -28,7 +28,7 @@ app.use('/api/channel', channelRoutes);
 
 io.on('connection', (socket) => {
 	console.log(`Device Connected: ${socket.id}`);
-  
+
   socket.on('join_institute_room', (instituteId) => {
     socket.join(instituteId);
     console.log(`User ${socket.id} joined Institute Broadcast Room: ${instituteId}`);
@@ -47,8 +47,8 @@ io.on('connection', (socket) => {
 	socket.on('send_message', (data) => {
 		socketController.handleSendMessage(socket, io, data);
 	});
-	socket.on('channel_deleted', ({ channel_id, instituteId }) => {
-		socket.to(instituteId).emit('channel_deleted', { channel_id });
+	socket.on('channel_deleted', ({ channelId, instituteId }) => {
+		socket.to(instituteId).emit('channel_deleted', { channelId });
 	});
 	socket.on('channel_renamed', ({ channel, instituteId }) => {
 		socket.to(instituteId).emit('channel_renamed', { channel });
