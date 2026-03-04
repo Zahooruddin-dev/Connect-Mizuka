@@ -168,4 +168,5 @@ module.exports = {
 	linkToInstitute,
 	myMemberships,
 	getUserInfo,
+	updateProfile,
 };
