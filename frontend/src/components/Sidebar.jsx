@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Hash, Plus, LogOut, ChevronDown, X, Building2 } from 'lucide-react'
 import { useAuth } from '../services/AuthContext'
 import { fetchChannelsByInstitute, createChannel } from '../services/api'
+import socket from '../services/socket'
 import InstitutePanel from './Institutepanel'
 import CreateChannelModal from './CreateChannelModal'
 import UserProfilePanel from './UserProfilePanel'
@@ -25,28 +26,48 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
   }, [activeInstitute])
 
   useEffect(() => {
-    const handleDeleted = (e) => {
-      const id = e?.detail?.channelId
-      if (!id) return
-      setChannels(prev => prev.filter(c => String(c.id) !== String(id)))
-      if (String(activeChannel) === String(id) && typeof onChannelSelect === 'function') {
+    const handleSocketDeleted = ({ channelId }) => {
+      if (!channelId) return
+      setChannels(prev => prev.filter(c => String(c.id) !== String(channelId)))
+      if (String(activeChannel) === String(channelId) && typeof onChannelSelect === 'function') {
         onChannelSelect(null)
       }
     }
 
-    const handleRenamed = (e) => {
-      const updated = e?.detail?.channel
-      if (!updated?.id) return
+    const handleSocketRenamed = ({ channel }) => {
+      if (!channel?.id) return
       setChannels(prev =>
-        prev.map(c => String(c.id) === String(updated.id) ? { ...c, name: updated.name } : c)
+        prev.map(c => String(c.id) === String(channel.id) ? { ...c, name: channel.name } : c)
       )
     }
 
-    window.addEventListener('channelDeleted', handleDeleted)
-    window.addEventListener('channelRenamed', handleRenamed)
+    const handleWindowDeleted = (e) => {
+      const channelId = e?.detail?.channelId
+      if (!channelId) return
+      setChannels(prev => prev.filter(c => String(c.id) !== String(channelId)))
+      if (String(activeChannel) === String(channelId) && typeof onChannelSelect === 'function') {
+        onChannelSelect(null)
+      }
+    }
+
+    const handleWindowRenamed = (e) => {
+      const channel = e?.detail?.channel
+      if (!channel?.id) return
+      setChannels(prev =>
+        prev.map(c => String(c.id) === String(channel.id) ? { ...c, name: channel.name } : c)
+      )
+    }
+
+    socket.on('channel_deleted', handleSocketDeleted)
+    socket.on('channel_renamed', handleSocketRenamed)
+    window.addEventListener('channelDeleted', handleWindowDeleted)
+    window.addEventListener('channelRenamed', handleWindowRenamed)
+
     return () => {
-      window.removeEventListener('channelDeleted', handleDeleted)
-      window.removeEventListener('channelRenamed', handleRenamed)
+      socket.off('channel_deleted', handleSocketDeleted)
+      socket.off('channel_renamed', handleSocketRenamed)
+      window.removeEventListener('channelDeleted', handleWindowDeleted)
+      window.removeEventListener('channelRenamed', handleWindowRenamed)
     }
   }, [activeChannel, onChannelSelect])
 
