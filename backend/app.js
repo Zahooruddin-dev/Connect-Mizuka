@@ -28,6 +28,11 @@ app.use('/api/channel', channelRoutes);
 
 io.on('connection', (socket) => {
 	console.log(`Device Connected: ${socket.id}`);
+  
+  socket.on('join_institute_room', (instituteId) => {
+    socket.join(instituteId);
+    console.log(`User ${socket.id} joined Institute Broadcast Room: ${instituteId}`);
+  });
 
 	socket.on('join_institute', (channel_id) => {
 		socket.join(channel_id);
@@ -42,17 +47,23 @@ io.on('connection', (socket) => {
 	socket.on('send_message', (data) => {
 		socketController.handleSendMessage(socket, io, data);
 	});
+	socket.on('channel_deleted', ({ channel_id, instituteId }) => {
+		socket.to(instituteId).emit('channel_deleted', { channel_id });
+	});
+	socket.on('channel_renamed', ({ channel, instituteId }) => {
+		socket.to(instituteId).emit('channel_renamed', { channel });
+	});
 
 	socket.on('typing', (data) => {
 		socket.to(data.channel_id).emit('Display_typing', {
 			username: data.username,
-			channel_id: data.channel_id, 
+			channel_id: data.channel_id,
 		});
 	});
 
 	socket.on('stop_typing', (data) => {
 		socket.to(data.channel_id).emit('hide_typing', {
-			channel_id: data.channel_id, 
+			channel_id: data.channel_id,
 		});
 	});
 
