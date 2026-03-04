@@ -18,6 +18,24 @@ async function updateUserPassword(email, hashedPassword) {
 		email,
 	]);
 }
+async function updateProfileQuery(userId, { username, email, password_hash }) {
+	const fields = [];
+	const values = [];
+	let idx = 1;
+
+	if (username !== undefined) { fields.push(`username = $${idx++}`); values.push(username); }
+	if (email !== undefined) { fields.push(`email = $${idx++}`); values.push(email); }
+	if (password_hash !== undefined) { fields.push(`password_hash = $${idx++}`); values.push(password_hash); }
+
+	values.push(userId);
+
+	const { rows } = await pool.query(
+		`UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, username, email, role, created_at`,
+		values,
+	);
+	return rows[0] || null;
+}
+
 async function linkToInstituteQuery(userId, institute_id, role = 'member') {
 	// insert a record into the junction table. role defaults to member.
 	const { rows } = await pool.query(

@@ -73,6 +73,46 @@ async function Register(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+
+async function updateProfile(req, res) {
+	const { userId } = req.params;
+	const { username, email, currentPassword, newPassword } = req.body;
+
+	if (!username && !email && !newPassword) {
+		return res.status(400).json({ message: 'Nothing to update' });
+	}
+
+	try {
+		const user = await db.getUserByEmail_orId(userId);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+
+		if (newPassword) {
+			if (!currentPassword) {
+				return res.status(400).json({ message: 'Current password is required to set a new password' });
+			}
+			const match = await bcrypt.compare(currentPassword, user.password_hash);
+			if (!match) {
+				return res.status(401).json({ message: 'Current password is incorrect' });
+			}
+		}
+
+		const updatedUser = await db.updateProfileQuery(userId, {
+			username: username ?? user.username,
+			email: email ?? user.email,
+			password_hash: newPassword ? await bcrypt.hash(newPassword, 10) : undefined,
+		});
+
+		res.status(200).json({ message: 'Profile updated', user: updatedUser });
+	} catch (error) {
+		if (error.code === '23505') {
+			return res.status(400).json({ message: 'Email already in use' });
+		}
+		res.status(500).json({ message: error.message });
+	}
+}
+
 async function deleteUser(req, res) {
 	const { email, password } = req.body;
 	try {
