@@ -38,15 +38,54 @@ async function createChannel(req, res) {
 		res.status(500).json({ error: 'Failed to create institute' });
 	}
 }
-async function updateChannelQuery(channelId, { name, is_private }) {
-  const { rows } = await pool.query(
-    `UPDATE channels
-     SET name = $1, is_private = $2
-     WHERE id = $3
-     RETURNING id, name, is_private, institute_id`,
-    [name, is_private, channelId]
-  );
-  return rows[0] || null;
+
+
+async function updateChannel(req, res) {
+	const { channelId } = req.params;
+	const { name, is_private, adminId } = req.body;
+
+	if (!adminId) {
+		return res.status(400).json({ message: 'Missing admin ID' });
+	}
+	if (!name && is_private === undefined) {
+		return res.status(400).json({ message: 'Nothing to update' });
+	}
+
+	try {
+		const user = await dbAuth.getUserById(adminId);
+		if (!user || user.role !== 'admin') {
+			return res.status(403).json({
+				message: 'Access Denied: Only admins can update channels.',
+			});
+		}
+
+		const existing = await dbChannel.getChannelById(channelId);
+		if (!existing) {
+			return res.status(404).json({ error: 'Channel not found' });
+		}
+
+		const isAuthorized = await dbInstitute.verifyAdminOfInstitute(
+			adminId,
+			existing.institute_id,
+		);
+		if (!isAuthorized) {
+			return res.status(403).json({
+				message: 'Access Denied: You are not an admin of this institute',
+			});
+		}
+
+		const updated = await dbChannel.updateChannelQuery(channelId, {
+			name: name ?? existing.name,
+			is_private: is_private ?? existing.is_private,
+		});
+
+		res.status(200).json({
+			message: 'Channel updated successfully',
+			channel: updated,
+		});
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to update channel' });
+	}
 }
 
 
@@ -90,5 +129,5 @@ module.exports = {
 	getChannelsForInstitute,
 	getChannelById,
   deleteChannelById,
-  updateChannelQuery
+  updateChannel
 };
