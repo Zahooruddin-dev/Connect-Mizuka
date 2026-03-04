@@ -38,6 +38,17 @@ async function createChannel(req, res) {
 		res.status(500).json({ error: 'Failed to create institute' });
 	}
 }
+async function updateChannelQuery(channelId, { name, is_private }) {
+  const { rows } = await pool.query(
+    `UPDATE channels
+     SET name = $1, is_private = $2
+     WHERE id = $3
+     RETURNING id, name, is_private, institute_id`,
+    [name, is_private, channelId]
+  );
+  return rows[0] || null;
+}
+
 
 async function getChannelsForInstitute(req, res) {
 	const { instituteId } = req.params;
@@ -78,5 +89,6 @@ module.exports = {
 	createChannel,
 	getChannelsForInstitute,
 	getChannelById,
-  deleteChannelById
+  deleteChannelById,
+  updateChannelQuery
 };
