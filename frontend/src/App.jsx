@@ -47,6 +47,17 @@ function App() {
 		name: 'general',
 	};
 
+	useEffect(() => {
+		const handleChannelDeleted = ({ channelId }) => {
+			if (activeChannel && String(activeChannel.id) === String(channelId)) {
+				setActiveChannel(null)
+			}
+		}
+
+		socket.on('channel_deleted', handleChannelDeleted)
+		return () => socket.off('channel_deleted', handleChannelDeleted)
+	}, [activeChannel])
+
 	function handleChannelRenamed(updatedChannel) {
 		if (activeChannel && String(activeChannel.id) === String(updatedChannel.id)) {
 			setActiveChannel(prev => ({ ...prev, name: updatedChannel.name }))

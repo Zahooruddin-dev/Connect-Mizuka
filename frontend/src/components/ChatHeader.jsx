@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Pencil, Check, X, Trash2, Hash } from 'lucide-react'
 import { useAuth } from '../services/AuthContext'
 import { deleteChannel, updateChannel } from '../services/api'
@@ -55,8 +55,8 @@ function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, on
     const res = await updateChannel(channelId, user.id, { name: trimmed })
     setSaving(false)
     if (res?.channel) {
-      setEditing(false)
       socket.emit('channel_renamed', { channel: res.channel, instituteId })
+      setEditing(false)
       if (typeof onChannelRenamed === 'function') onChannelRenamed(res.channel)
     } else {
       setError(res?.message || 'Failed to rename channel')

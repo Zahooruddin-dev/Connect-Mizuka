@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Hash, Plus, LogOut, ChevronDown, X, Building2 } from 'lucide-react'
 import { useAuth } from '../services/AuthContext'
 import { fetchChannelsByInstitute, createChannel } from '../services/api'
@@ -31,10 +31,17 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
   useEffect(() => {
     const handleSocketDeleted = ({ channelId }) => {
       if (!channelId) return
-      setChannels(prev => prev.filter(c => String(c.id) !== String(channelId)))
-      if (String(activeChannel) === String(channelId) && typeof onChannelSelect === 'function') {
-        onChannelSelect(null)
-      }
+      setChannels(prev => {
+        const filtered = prev.filter(c => String(c.id) !== String(channelId))
+        if (String(activeChannel) === String(channelId)) {
+          if (filtered.length > 0 && typeof onChannelSelect === 'function') {
+            onChannelSelect(filtered[0])
+          } else if (typeof onChannelSelect === 'function') {
+            onChannelSelect(null)
+          }
+        }
+        return filtered
+      })
     }
 
     const handleSocketRenamed = ({ channel }) => {
@@ -42,6 +49,9 @@ function Sidebar({ activeChannel, onChannelSelect, user, onLogout, isAdmin, onCl
       setChannels(prev =>
         prev.map(c => String(c.id) === String(channel.id) ? { ...c, name: channel.name } : c)
       )
+      if (String(activeChannel) === String(channel.id) && typeof onChannelSelect === 'function') {
+        onChannelSelect(channel)
+      }
     }
 
     socket.on('channel_deleted', handleSocketDeleted)

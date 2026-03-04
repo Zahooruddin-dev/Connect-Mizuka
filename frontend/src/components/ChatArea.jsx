@@ -75,17 +75,15 @@ function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed
 		};
 
 		const handleSocketChannelDeleted = ({ channelId: deletedId }) => {
-			window.dispatchEvent(new CustomEvent('channelDeleted', { detail: { channelId: deletedId } }));
 			if (deletedId === channelId) {
-				setMessages([]);
+				setMessages([])
 			}
 		};
 
 		const handleSocketChannelRenamed = ({ channel }) => {
-			window.dispatchEvent(new CustomEvent('channelRenamed', { detail: { channel } }));
 			if (channel.id === channelId) {
-				setCurrentLabel(channel.name);
-				if (typeof onChannelRenamed === 'function') onChannelRenamed(channel);
+				setCurrentLabel(channel.name)
+				if (typeof onChannelRenamed === 'function') onChannelRenamed(channel)
 			}
 		};
 
