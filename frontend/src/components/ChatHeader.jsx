@@ -13,12 +13,14 @@ function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, on
   const [editing, setEditing] = useState(false)
   const [nameInput, setNameInput] = useState(channelLabel || '')
   const [saving, setSaving] = useState(false)
+  const [displayName, setDisplayName] = useState(channelLabel || '')
   const inputRef = useRef(null)
 
   const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
     setNameInput(channelLabel || '')
+    setDisplayName(channelLabel || '')
   }, [channelLabel])
 
   useEffect(() => {
@@ -27,6 +29,17 @@ function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, on
       inputRef.current?.select()
     }
   }, [editing])
+
+  useEffect(() => {
+    const handleSocketRenamed = ({ channel }) => {
+      if (channel.id === channelId) {
+        setDisplayName(channel.name)
+      }
+    }
+
+    socket.on('channel_renamed', handleSocketRenamed)
+    return () => socket.off('channel_renamed', handleSocketRenamed)
+  }, [channelId])
 
   function handleEditStart() {
     setNameInput(channelLabel || '')
@@ -55,6 +68,7 @@ function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, on
     const res = await updateChannel(channelId, user.id, { name: trimmed })
     setSaving(false)
     if (res?.channel) {
+      setDisplayName(res.channel.name)
       socket.emit('channel_renamed', { channel: res.channel, instituteId })
       setEditing(false)
       if (typeof onChannelRenamed === 'function') onChannelRenamed(res.channel)
@@ -129,7 +143,7 @@ function ChatHeader({ channelId, channelLabel, instituteId, onChannelDeleted, on
           </div>
         ) : (
           <div className="chat-header-name-wrap">
-            <span className="chat-header-name">{channelLabel || channelId}</span>
+            <span className="chat-header-name">{displayName || channelId}</span>
             {isAdmin && (
               <button
                 className="chat-header-icon-btn chat-header-edit-btn"
