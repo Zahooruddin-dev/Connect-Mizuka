@@ -6,19 +6,13 @@ import './styles/MessageList.css'
 function MessageList({ messages, typingUsers, currentUserId, onMessageDeleted }) {
 	const bottomRef = useRef(null)
 	const [selectedUser, setSelectedUser] = useState(null)
-	const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 })
 
 	useEffect(() => {
 		bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
 	}, [messages, typingUsers])
 
-	const handleUserClick = (userId, event) => {
-		const rect = event.currentTarget.getBoundingClientRect()
-		const top = rect.bottom + 8
-		const left = Math.max(16, rect.left - 100)
-
+	const handleUserClick = (userId) => {
 		setSelectedUser(userId)
-		setPopoverPosition({ top, left })
 	}
 
 	const handleClosePopover = () => {
@@ -58,7 +52,6 @@ function MessageList({ messages, typingUsers, currentUserId, onMessageDeleted })
 			{selectedUser && (
 				<UserProfilePopover
 					userId={selectedUser}
-					position={popoverPosition}
 					onClose={handleClosePopover}
 				/>
 			)}

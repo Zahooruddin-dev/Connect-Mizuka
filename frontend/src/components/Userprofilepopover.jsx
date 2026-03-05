@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { getUserProfile } from '../services/api';
 import './styles/UserProfilePopover.css';
 
-function UserProfilePopover({ userId, position, onClose }) {
+function UserProfilePopover({ userId, onClose }) {
 	const [user, setUser] = useState(null);
 	const [loading, setLoading] = useState(true);
 
@@ -28,18 +28,20 @@ function UserProfilePopover({ userId, position, onClose }) {
 	}, [userId]);
 
 	const formattedDate = user?.created_at
-		? new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+		? new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 		: null;
 
+	const handleOverlayClick = (e) => {
+		if (e.target === e.currentTarget) onClose();
+	};
+
 	return (
-		<div className="popover-overlay" onClick={onClose}>
+		<div className="popover-overlay" onClick={handleOverlayClick}>
 			<div
 				className="user-popover"
-				style={{
-					top: `${position.top}px`,
-					left: `${position.left}px`,
-				}}
-				onClick={(e) => e.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="popover-title"
 			>
 				{loading ? (
 					<div className="popover-loading">
@@ -48,25 +50,23 @@ function UserProfilePopover({ userId, position, onClose }) {
 				) : user ? (
 					<>
 						<div className="popover-header">
-							<button className="popover-close" onClick={onClose} aria-label="Close">
-								<X size={16} strokeWidth={2} />
+							<button className="popover-close" onClick={onClose} aria-label="Close popover">
+								<X size={18} strokeWidth={2} />
 							</button>
 						</div>
 
 						<div className="popover-body">
-							<div className="popover-avatar">
-								{user.username?.[0]?.toUpperCase() || 'U'}
+							<div className="popover-header-center">
+								<div className="popover-avatar">
+									{user.username?.[0]?.toUpperCase() || 'U'}
+								</div>
+								<div className="popover-name">
+									{user.username}
+								</div>
+								<div className="popover-role">
+									{user.role || 'Member'}
+								</div>
 							</div>
-
-							<div className="popover-name">
-								{user.username}
-							</div>
-
-							<div className="popover-role">
-								{user.role || 'Member'}
-							</div>
-
-							<div className="popover-divider"></div>
 
 							<div className="popover-info-group">
 								<span className="popover-info-label">Email</span>
@@ -80,10 +80,10 @@ function UserProfilePopover({ userId, position, onClose }) {
 
 							<div className="popover-actions">
 								<button className="popover-action-btn">
-									<span>@Mention</span>
+									@Mention
 								</button>
 								<button className="popover-action-btn popover-action-disabled" disabled>
-									<span>Direct Message</span>
+									Direct Message
 								</button>
 							</div>
 						</div>

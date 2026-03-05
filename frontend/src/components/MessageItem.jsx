@@ -1,31 +1,31 @@
-import { useState } from 'react';
-import { formatTime } from '../utils/time';
-import { deleteMessage } from '../services/api';
-import './styles/MessageItem.css';
+import { useState } from 'react'
+import { formatTime } from '../utils/time'
+import { deleteMessage } from '../services/api'
+import './styles/MessageItem.css'
 
 function MessageItem({ message, currentUserId, onDeleted, onUserClick }) {
-	const [deleting, setDeleting] = useState(false);
+	const [deleting, setDeleting] = useState(false)
 
-	const senderId = message.sender_id || message.userId || message.user_id;
-	const isMine = senderId === currentUserId;
+	const senderId = message.sender_id || message.userId || message.user_id
+	const isMine = senderId === currentUserId
 
 	const handleDelete = async () => {
-		if (deleting) return;
-		setDeleting(true);
+		if (deleting) return
+		setDeleting(true)
 		try {
-			const msgId = message.id || message._id;
-			await deleteMessage(msgId, currentUserId);
-			onDeleted(msgId);
+			const msgId = message.id || message._id
+			await deleteMessage(msgId, currentUserId)
+			onDeleted(msgId)
 		} catch {
-			setDeleting(false);
+			setDeleting(false)
 		}
-	};
+	}
 
-	const handleUserClick = (e) => {
+	const handleUserClick = () => {
 		if (typeof onUserClick === 'function') {
-			onUserClick(senderId, e);
+			onUserClick(senderId)
 		}
-	};
+	}
 
 	return (
 		<div className={`message-item ${isMine ? 'mine' : 'theirs'}`}>
@@ -83,7 +83,7 @@ function MessageItem({ message, currentUserId, onDeleted, onUserClick }) {
 				</button>
 			)}
 		</div>
-	);
+	)
 }
 
-export default MessageItem;
+export default MessageItem
