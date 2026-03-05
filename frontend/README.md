@@ -11,14 +11,15 @@
 7. [Authentication Flow](#authentication-flow)
 8. [Institute Flow](#institute-flow)
 9. [Real-Time Messaging Flow](#real-time-messaging-flow)
-10. [File-by-File Reference](#file-by-file-reference)
-11. [Socket Event Contract](#socket-event-contract)
-12. [REST API Contract](#rest-api-contract)
-13. [localStorage Keys](#localstorage-keys)
-14. [Message Shape Reference](#message-shape-reference)
-15. [Role-Based Behaviour](#role-based-behaviour)
-16. [Known Test Data](#known-test-data)
-17. [Common Pitfalls & Debug Notes](#common-pitfalls--debug-notes)
+10. [User Profile Popover](#user-profile-popover)
+11. [File-by-File Reference](#file-by-file-reference)
+12. [Socket Event Contract](#socket-event-contract)
+13. [REST API Contract](#rest-api-contract)
+14. [localStorage Keys](#localstorage-keys)
+15. [Message Shape Reference](#message-shape-reference)
+16. [Role-Based Behaviour](#role-based-behaviour)
+17. [Known Test Data](#known-test-data)
+18. [Common Pitfalls & Debug Notes](#common-pitfalls--debug-notes)
 
 ---
 
@@ -89,12 +90,18 @@ mizuka-frontend/
     │   ├── ChatArea.css
     │   ├── ChatHeader.jsx              ← Channel name bar + admin delete
     │   ├── ChatHeader.css
-    │   ├── MessageList.jsx             ← Scrollable message container + typing row
+    │   ├── MessageList.jsx             ← Scrollable messages + typing indicator + popover state
     │   ├── MessageList.css
-    │   ├── MessageItem.jsx             ← Single message bubble + delete button
+    │   ├── MessageItem.jsx             ← Single message + clickable avatar/username
     │   ├── MessageItem.css
     │   ├── MessageInput.jsx            ← Textarea, send button, typing emit logic
-    │   └── MessageInput.css
+    │   ├── MessageInput.css
+    │   ├── UserProfilePopover.jsx      ← Centered modal for viewing user profiles
+    │   ├── UserProfilePanel.jsx        ← Full editable profile for logged-in user
+    │   ├── styles/
+    │   │   ├── UserProfilePopover.css  ← Popover modal styling
+    │   │   └── UserProfilePanel.css
+    │   └── Institutepanel.jsx
     │
     ├── services/
     │   ├── AuthContext.jsx             ← Context: user, token, institutes, all actions
@@ -110,7 +117,7 @@ mizuka-frontend/
         └── app.css                     ← .app-layout flex container
 ```
 
-> Files not listed (`LoginScreen`, `MessageBubble`, `TypingIndicator`, `DateDivider`, `ChatWindow`, `useChat`, `auth.js`) are legacy scaffolding not used in the active render tree. Do not mount `ChatWindow` — use `ChatArea` exclusively, or you will get duplicate socket listeners.
+> Files not listed are legacy scaffolding. Do not mount `ChatWindow` — use `ChatArea` exclusively.
 
 ---
 
@@ -196,7 +203,8 @@ main.jsx
                └── <ChatArea key=channelId>
                     ├── <ChatHeader>
                     ├── <MessageList>
-                    │    └── <MessageItem> × N
+                    │    ├── <MessageItem> × N
+                    │    └── [conditional] <UserProfilePopover>
                     └── <MessageInput>
 ```
 
@@ -375,6 +383,179 @@ ChatArea unmounts (channel switch or logout)
 
 ---
 
+## User Profile Popover
+
+### Overview
+
+Clicking a user's avatar or username in `MessageItem` opens a centered modal showing that user's profile. The popover is read-only and displays email, role, and member-since date. It includes action buttons for @Mention (functional placeholder) and Direct Message (disabled).
+
+### Component Structure
+
+**UserProfilePopover.jsx** — centered modal component
+
+```jsx
+<UserProfilePopover
+  userId={selectedUser}
+  onClose={handleClosePopover}
+/>
+```
+
+Props:
+- `userId` (string) — user ID to fetch and display
+- `onClose` (function) — callback to close popover
+
+State:
+- `user` — fetched user object with id, username, email, role, created_at
+- `loading` — boolean for async fetch state
+
+**UserProfilePopover.css** — modal styling
+
+- Fixed overlay with dark backdrop and blur
+- Centered card constrained to max-width 420px
+- Slide-up entrance animation
+- Custom scrollbar matching theme
+- Responsive padding
+
+### Data Flow
+
+```
+User clicks avatar or username in MessageItem
+        │
+        ▼
+MessageItem.handleUserClick(senderId)
+        │
+        ▼
+MessageList.handleUserClick(userId)
+  └── setSelectedUser(userId)
+        │
+        ▼
+MessageList renders <UserProfilePopover userId={...} onClose={...}>
+        │
+        ▼
+UserProfilePopover.useEffect()
+  └── Calls api.getUserProfile(userId)
+        └── GET /api/auth/user-profile/:userId
+              └── Returns { user: { id, username, email, role, created_at } }
+        │
+        ▼
+setUser(data.user)
+        │
+        ▼
+Popover renders user info centered on screen
+        │
+User clicks close button or backdrop
+        │
+        ▼
+MessageList.handleClosePopover()
+  └── setSelectedUser(null)
+        │
+        ▼
+Popover unmounts
+```
+
+### Integration Points
+
+**MessageList.jsx** — manages popover state
+
+```jsx
+const [selectedUser, setSelectedUser] = useState(null)
+
+const handleUserClick = (userId) => {
+  setSelectedUser(userId)
+}
+
+const handleClosePopover = () => {
+  setSelectedUser(null)
+}
+
+// Later in render:
+{selectedUser && (
+  <UserProfilePopover
+    userId={selectedUser}
+    onClose={handleClosePopover}
+  />
+)}
+```
+
+**MessageItem.jsx** — clickable avatar and username
+
+```jsx
+<button
+  className="message-avatar-btn"
+  onClick={handleUserClick}
+  title={`View ${message.username}'s profile`}
+>
+  {/* avatar */}
+</button>
+
+<button
+  className="message-author-btn"
+  onClick={handleUserClick}
+  title={`View ${message.username}'s profile`}
+>
+  {message.username}
+</button>
+```
+
+**api.js** — new function
+
+```jsx
+export const getUserProfile = async (userId) => {
+	try {
+		const res = await api.get(`/auth/user-profile/${userId}`);
+		return res.data;
+	} catch (err) {
+		return { message: 'User not found' };
+	}
+};
+```
+
+**Backend requirement** — GET `/api/auth/user-profile/:userId`
+
+Endpoint must return:
+```json
+{
+  "user": {
+    "id": "uuid",
+    "username": "string",
+    "email": "string",
+    "role": "admin|member",
+    "created_at": "ISO8601 timestamp"
+  }
+}
+```
+
+### Styling Details
+
+**Layout:**
+- Fixed overlay spans full viewport (z-index 2000)
+- Dark backdrop with blur filter prevents interaction with elements behind
+- Card centered using flexbox `align-items: center` + `justify-content: center`
+- Max-width 420px, responsive on mobile with padding
+
+**Header section:**
+- User avatar 64px, gradient teal background
+- Username displayed at 18px, bold
+- Role shown as uppercase 12px teal text
+- Close button (X icon) top-right, hover effect
+
+**Info section:**
+- Email and "Member Since" in labeled groups
+- Each group has uppercase 11px label + 14px value
+- Separator line between groups
+- Scrollable if content exceeds viewport (max-height 70vh)
+
+**Actions section:**
+- Two buttons: @Mention (interactive) and Direct Message (disabled)
+- Hover state: teal border and text, semi-transparent teal background
+- Disabled state: 50% opacity
+
+**Animations:**
+- Overlay fades in 0.2s ease-out
+- Card slides up + fades in 0.3s cubic-bezier(0.16, 1, 0.3, 1)
+
+---
+
 ## File-by-File Reference
 
 ### `src/main.jsx`
@@ -445,15 +626,32 @@ Shows `#channelLabel`. Admin users (`user.role === 'admin'`) see a "Delete chann
 
 ### `src/components/MessageList.jsx`
 
-Renders all `MessageItem` components then a typing indicator row. Auto-scrolls to a `ref` div at the bottom on every `messages` or `typingUsers` change.
+Renders all `MessageItem` components, a typing indicator row, and conditionally a `UserProfilePopover`. Auto-scrolls to a `ref` div at the bottom on every `messages` or `typingUsers` change.
+
+Manages `selectedUser` state:
+- `handleUserClick(userId)` sets the selected user
+- `handleClosePopover()` clears it
+- Conditional render of `<UserProfilePopover>` when `selectedUser` is not null
 
 ### `src/components/MessageItem.jsx`
 
-Detects ownership via `message.sender_id || message.userId || message.user_id` compared to `currentUserId`. Own messages are right-aligned teal bubbles with a hover-reveal delete button. Others' messages are left-aligned with a sender name above and an avatar showing the first letter of `username`. Delete calls `deleteMessage(msgId, currentUserId)` which sends `{ userId }` in the DELETE body.
+Detects ownership via `message.sender_id || message.userId || message.user_id` compared to `currentUserId`. Own messages are right-aligned teal bubbles with a hover-reveal delete button. Others' messages are left-aligned with a sender name above and an avatar showing the first letter of `username`.
+
+Avatar and username are now clickable buttons that call `onUserClick(senderId)` to trigger popover display.
+
+Delete calls `deleteMessage(msgId, currentUserId)` which sends `{ userId }` in the DELETE body.
 
 ### `src/components/MessageInput.jsx`
 
 Textarea with send button. Uses a `ref` (not state) for the typing flag to avoid re-renders. Emits `typing` on first keystroke, restarts a 2-second timer on every keystroke, emits `stop_typing` when the timer fires or when a message is sent. `Enter` sends; `Shift+Enter` inserts newline.
+
+### `src/components/UserProfilePopover.jsx`
+
+Centered modal overlay for viewing user profiles read-only. Fetches user data from `/api/auth/user-profile/:userId`. Displays avatar, username, role, email, join date, and action buttons. Closes on backdrop click, close button, or when `onClose` is called.
+
+Props:
+- `userId` (string) — user ID to fetch
+- `onClose` (function) — callback when user dismisses popover
 
 ### `src/services/AuthContext.jsx`
 
@@ -482,6 +680,7 @@ Axios instance at `http://localhost:3000/api`, 10s timeout. JWT interceptor inje
 | `requestPasswordReset(email)` | POST | `/auth/request-reset` |
 | `resetPassword(email, code, newPassword)` | POST | `/auth/reset-password` |
 | `linkToInstitute(userId, instituteId)` | POST | `/auth/link-to-institute` |
+| `getUserProfile(userId)` | GET | `/auth/user-profile/:userId` |
 | `fetchMessages(channelId, limit, offset)` | GET | `/messages/:channelId` |
 | `deleteMessage(messageId, userId)` | DELETE | `/messages/message/:messageId` |
 | `deleteChannel(channelId, userId)` | DELETE | `/messages/channel/:channelId` |
@@ -539,6 +738,7 @@ All requests go to `http://localhost:3000/api`. JWT sent as `Authorization: Bear
 | POST | `/auth/request-reset` | `{ email }` | `{ message }` |
 | POST | `/auth/reset-password` | `{ email, code, newPassword }` | `{ message: 'reset password done' }` |
 | POST | `/auth/link-to-institute` | `{ userId, institute_id }` | `{ message, membership }` |
+| GET | `/auth/user-profile/:userId` | — | `{ user: { id, username, email, role, created_at } }` |
 
 ### Messages — `/api/messages/`
 
@@ -667,7 +867,7 @@ Root cause: the socket was never leaving the old room on channel switch, so both
 
 A user typing in channel A causes the typing indicator to flash in channel B.
 
-Root cause: `Display_typing` and `hide_typing` previously carried no channel context, so they fired globally. Fixed by including `channel_id` in both events on the backend, and checking it before updating `typingUsers[]` in `ChatArea`.
+Root cause: `Display_typing` and `hide_typing` previously carried no channel context, so they fired globally. Fixed by including `channel_id` in both events on the backend, and by checking it before updating `typingUsers[]` in `ChatArea`.
 
 ---
 
@@ -737,6 +937,12 @@ Backend fix in `AuthController.js`:
 ```js
 const link = await db.linkToInstituteQuery(institute_id, userId)
 ```
+
+---
+
+### UserProfilePopover not appearing
+
+Verify `api.js` includes the `getUserProfile` function and that the backend has the GET `/auth/user-profile/:userId` endpoint. The endpoint must return `{ user: { id, username, email, role, created_at } }`. Also check that `UserProfilePopover.jsx` is imported and rendered conditionally in `MessageList.jsx`.
 
 ---
 
