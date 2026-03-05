@@ -48,3 +48,31 @@ CREATE TABLE user_institutes (
     PRIMARY KEY (user_id, institute_id)
 );
 ALTER TABLE users DROP COLUMN institute_id;
+CREATE TABLE p2p_chatrooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_one_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_two_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    -- This ensures we don't have duplicate rooms for the same pair
+    CONSTRAINT unique_user_pair UNIQUE(user_one_id, user_two_id),
+    
+    -- This ensures a user can't start a P2P chat with themselves
+    CONSTRAINT separate_users CHECK (user_one_id <> user_two_id)
+);
+
+-- Indexing for fast lookups when checking if a room already exists
+CREATE INDEX idx_p2p_room_users ON p2p_chatrooms (user_one_id, user_two_id);
+CREATE TABLE p2p_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chatroom_id UUID NOT NULL REFERENCES p2p_chatrooms(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexing the chatroom_id so loading a conversation is nearly instant
+CREATE INDEX idx_p2p_messages_room ON p2p_messages (chatroom_id);
+
+-- Indexing created_at so we can quickly sort messages by time
+CREATE INDEX idx_p2p_messages_time ON p2p_messages (created_at DESC);
