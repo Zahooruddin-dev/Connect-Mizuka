@@ -2,13 +2,16 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../Controller/AuthController');
 const resetController = require('../Controller/ResetController');
+
 router.post('/login', authController.Login);
 router.post('/register', authController.Register);
 router.post('/delete', authController.deleteUser);
 router.get('/user-info/:userId', authController.getUserInfo);
+router.get('/user-profile/:userId', authController.getUserProfile);
 router.put('/update-profile/:userId', authController.updateProfile);
 router.post('/link-to-institute', authController.linkToInstitute);
 router.get('/my-memberships/:userId', authController.myMemberships);
 router.post('/request-reset', resetController.requestPasswordReset);
 router.post('/reset-password', resetController.resetPassword);
+
 module.exports = router;
