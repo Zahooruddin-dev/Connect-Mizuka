@@ -24,38 +24,23 @@ function App() {
 	useEffect(() => {
 		if (!activeInstitute) return;
 
-		const join = () => {
-			console.log('[App] join_institute_room:', activeInstitute.id, '| socket.id:', socket.id)
-			socket.emit('join_institute_room', activeInstitute.id)
-		}
+		const join = () => socket.emit('join_institute_room', activeInstitute.id);
 
 		if (socket.connected) {
-			join()
+			join();
 		} else {
-			console.log('[App] socket not connected yet, queuing join...')
-			socket.once('connect', join)
+			socket.once('connect', join);
 		}
 
-		return () => socket.off('connect', join)
+		return () => socket.off('connect', join);
 	}, [activeInstitute]);
-
-	useEffect(() => {
-		const handleChannelDeleted = ({ channelId }) => {
-			if (activeChannel && String(activeChannel.id) === String(channelId)) {
-				setActiveChannel(null)
-			}
-		}
-
-		socket.on('channel_deleted', handleChannelDeleted)
-		return () => socket.off('channel_deleted', handleChannelDeleted)
-	}, [activeChannel])
 
 	if (!user) return <LoginPage />;
 	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
 
 	const effectiveChannel = activeChannel || {
 		id: activeInstitute.id,
-		name: 'general',
+		name: '',
 	};
 
 	function handleChannelRenamed(updatedChannel) {

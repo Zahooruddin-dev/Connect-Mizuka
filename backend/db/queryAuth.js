@@ -1,10 +1,12 @@
 const pool = require('./Pool');
+
 async function getUserByEmail(email) {
 	const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [
 		email,
 	]);
 	return rows[0] || null;
 }
+
 async function deleteUserQuery(email) {
 	const { rows } = await pool.query(
 		'DELETE FROM users WHERE email = $1 RETURNING id',
@@ -12,12 +14,14 @@ async function deleteUserQuery(email) {
 	);
 	return rows[0] || null;
 }
+
 async function updateUserPassword(email, hashedPassword) {
 	await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [
 		hashedPassword,
 		email,
 	]);
 }
+
 async function updateProfileQuery(userId, { username, email, password_hash }) {
 	const fields = [];
 	const values = [];
@@ -37,7 +41,6 @@ async function updateProfileQuery(userId, { username, email, password_hash }) {
 }
 
 async function linkToInstituteQuery(userId, institute_id, role = 'member') {
-	// insert a record into the junction table. role defaults to member.
 	const { rows } = await pool.query(
 		`INSERT INTO user_institutes (user_id, institute_id, role)
 		 VALUES ($1, $2, $3) RETURNING *`,
@@ -45,6 +48,7 @@ async function linkToInstituteQuery(userId, institute_id, role = 'member') {
 	);
 	return rows[0] || null;
 }
+
 async function registerQuery(
 	username,
 	email,
@@ -58,6 +62,7 @@ async function registerQuery(
 	);
 	return rows[0];
 }
+
 async function getUserById(userId) {
 	const { rows } = await pool.query('SELECT role FROM users WHERE id =$1', [
 		userId,
@@ -75,6 +80,7 @@ async function getUserMemberships(userId) {
 	);
 	return rows || [];
 }
+
 async function getUserInfoQuery(userId) {
 	const { rows } = await pool.query(
 		`SELECT * FROM users WHERE id=$1`,
@@ -82,6 +88,15 @@ async function getUserInfoQuery(userId) {
 	);
 	return rows[0] || null;
 }
+
+async function getUserProfileForPopover(userId) {
+	const { rows } = await pool.query(
+		`SELECT id, username, email, role, created_at FROM users WHERE id=$1`,
+		[userId],
+	);
+	return rows[0] || null;
+}
+
 module.exports = {
 	registerQuery,
 	getUserByEmail,
@@ -92,4 +107,5 @@ module.exports = {
 	getUserMemberships,
 	getUserInfoQuery,
 	updateProfileQuery,
+	getUserProfileForPopover,
 };
