@@ -6,7 +6,7 @@ import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 import './styles/ChatArea.css';
 
-function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed }) {
+function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed, onStartP2P }) {
 	const [messages, setMessages] = useState([]);
 	const [typingUsers, setTypingUsers] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed
 
 		const handleDisplayTyping = ({ username, channel_id }) => {
 			if (channel_id && channel_id !== channelId) return;
-			setTypingUsers((prev) => prev.includes(username) ? prev : [...prev, username]);
+			setTypingUsers((prev) => (prev.includes(username) ? prev : [...prev, username]));
 		};
 
 		const handleHideTyping = ({ channel_id } = {}) => {
@@ -76,14 +76,14 @@ function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed
 
 		const handleSocketChannelDeleted = ({ channelId: deletedId }) => {
 			if (deletedId === channelId) {
-				setMessages([])
+				setMessages([]);
 			}
 		};
 
 		const handleSocketChannelRenamed = ({ channel }) => {
 			if (channel.id === channelId) {
-				setCurrentLabel(channel.name)
-				if (typeof onChannelRenamed === 'function') onChannelRenamed(channel)
+				setCurrentLabel(channel.name);
+				if (typeof onChannelRenamed === 'function') onChannelRenamed(channel);
 			}
 		};
 
@@ -140,13 +140,18 @@ function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed
 		setMessages([]);
 	}, []);
 
-	const handleChannelRenamed = useCallback((updatedChannel) => {
-		setCurrentLabel(updatedChannel.name);
-		if (typeof onChannelRenamed === 'function') onChannelRenamed(updatedChannel);
-	}, [onChannelRenamed]);
+	const handleChannelRenamed = useCallback(
+		(updatedChannel) => {
+			setCurrentLabel(updatedChannel.name);
+			if (typeof onChannelRenamed === 'function') {
+				onChannelRenamed(updatedChannel);
+			}
+		},
+		[onChannelRenamed],
+	);
 
 	return (
-		<div className='chat-area'>
+		<div className="chat-area">
 			<ChatHeader
 				channelId={channelId}
 				channelLabel={currentLabel}
@@ -155,8 +160,8 @@ function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed
 				onChannelRenamed={handleChannelRenamed}
 			/>
 			{loading ? (
-				<div className='chat-loading'>
-					<div className='chat-loading-dots'>
+				<div className="chat-loading">
+					<div className="chat-loading-dots">
 						<span />
 						<span />
 						<span />
@@ -168,6 +173,7 @@ function ChatArea({ channelId, channelLabel, instituteId, user, onChannelRenamed
 					typingUsers={typingUsers.filter((u) => u !== user.username)}
 					currentUserId={user.id}
 					onMessageDeleted={handleMessageDeleted}
+					onStartP2P={onStartP2P}
 				/>
 			)}
 			<MessageInput

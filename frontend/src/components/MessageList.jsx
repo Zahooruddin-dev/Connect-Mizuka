@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import MessageItem from './MessageItem';
-import UserProfilePopover from './UserProfilePopover';
+import UserProfilePopover from './Userprofilepopover';
 import './styles/MessageList.css';
 
 function MessageList({ messages, typingUsers, currentUserId, onMessageDeleted, onStartP2P }) {
