@@ -13,4 +13,13 @@ async function createNewRoom(u1,u2) {
 	);
 	return rows[0] || null;
 }
-module.exports = { findExistingRoomQuery, createNewRoom };
+async function getP2PMessagesQuery(roomId) {
+  const { rows } = await pool.query(
+    `SELECT * FROM p2p_messages 
+     WHERE chatroom_id = $1 
+     ORDER BY created_at ASC`,
+    [roomId]
+  );
+  return rows;
+}
+module.exports = { findExistingRoomQuery, createNewRoom ,getP2PMessagesQuery};
