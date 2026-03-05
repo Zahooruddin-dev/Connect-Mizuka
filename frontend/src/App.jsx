@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './services/AuthContext';
 import socket from './services/socket';
 import LoginPage from './pages/LoginPage';
-import InstituteGate from './components/Institutegate';
+import InstituteGate from './components/InstituteGate';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
+import P2PChatArea from './components/P2pchatarea';
 import './styles/app.css';
 
 function App() {
 	const { user, institutes, activeInstitute, logout, isActiveAdmin } = useAuth();
 	const [activeChannel, setActiveChannel] = useState(null);
+	const [activeP2P, setActiveP2P] = useState(null);
 	const [sidebarOpen, setSidebarOpen] = useState(true);
 
 	useEffect(() => {
@@ -24,33 +26,61 @@ function App() {
 	useEffect(() => {
 		if (!activeInstitute) return;
 
-		const join = () => socket.emit('join_institute_room', activeInstitute.id);
+		const join = () => {
+			console.log('[App] join_institute_room:', activeInstitute.id, '| socket.id:', socket.id);
+			socket.emit('join_institute_room', activeInstitute.id);
+		};
 
 		if (socket.connected) {
 			join();
 		} else {
+			console.log('[App] socket not connected yet, queuing join...');
 			socket.once('connect', join);
 		}
 
 		return () => socket.off('connect', join);
 	}, [activeInstitute]);
 
+	useEffect(() => {
+		const handleChannelDeleted = ({ channelId }) => {
+			if (activeChannel && String(activeChannel.id) === String(channelId)) {
+				setActiveChannel(null);
+			}
+		};
+
+		socket.on('channel_deleted', handleChannelDeleted);
+		return () => socket.off('channel_deleted', handleChannelDeleted);
+	}, [activeChannel]);
+
 	if (!user) return <LoginPage />;
 	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
 
 	const effectiveChannel = activeChannel || {
 		id: activeInstitute.id,
-		name: '',
+		label: 'general',
 	};
 
 	function handleChannelRenamed(updatedChannel) {
 		if (activeChannel && String(activeChannel.id) === String(updatedChannel.id)) {
-			setActiveChannel(prev => ({ ...prev, name: updatedChannel.name }))
+			setActiveChannel((prev) => ({ ...prev, name: updatedChannel.name }));
 		}
 	}
 
+	const handleStartP2P = ({ roomId, otherUserId, otherUsername }) => {
+		setActiveChannel(null);
+		setActiveP2P({
+			roomId,
+			otherUserId,
+			otherUsername,
+		});
+	};
+
+	const handleCloseP2P = () => {
+		setActiveP2P(null);
+	};
+
 	return (
-		<div className='app-layout'>
+		<div className="app-layout">
 			{sidebarOpen && (
 				<Sidebar
 					activeChannel={effectiveChannel.id}
@@ -62,24 +92,36 @@ function App() {
 					isOpen={sidebarOpen}
 				/>
 			)}
-			<div className='main-content'>
+			<div className="main-content">
 				{!sidebarOpen && (
 					<button
-						className='sidebar-toggle'
+						className="sidebar-toggle"
 						onClick={() => setSidebarOpen(true)}
-						aria-label='Open navigation'
+						aria-label="Open navigation"
 					>
 						☰
 					</button>
 				)}
-				<ChatArea
-					key={effectiveChannel.id}
-					channelId={effectiveChannel.id}
-					channelLabel={effectiveChannel.name}
-					instituteId={activeInstitute.id}
-					user={user}
-					onChannelRenamed={handleChannelRenamed}
-				/>
+
+				{activeP2P ? (
+					<P2PChatArea
+						key={activeP2P.roomId}
+						roomId={activeP2P.roomId}
+						otherUsername={activeP2P.otherUsername}
+						otherUserId={activeP2P.otherUserId}
+						user={user}
+						onClose={handleCloseP2P}
+					/>
+				) : (
+					<ChatArea
+						key={effectiveChannel.id}
+						channelId={effectiveChannel.id}
+						channelLabel={effectiveChannel.label}
+						instituteId={activeInstitute.id}
+						user={user}
+						onChannelRenamed={handleChannelRenamed}
+					/>
+				)}
 			</div>
 		</div>
 	);
