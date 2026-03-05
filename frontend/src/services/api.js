@@ -149,6 +149,26 @@ export const fetchChannelsByInstitute = async (instituteId) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
+export const getOrCreateP2PRoom = async (user1, user2) => {
+	try {
+		const res = await api.post('/p2p/room', {
+			user1,
+			user2,
+		});
+		return res.data;
+	} catch (err) {
+		return { error: err.response?.data?.message || 'Failed to create chat room' };
+	}
+};
+
+export const fetchP2PMessages = (roomId, limit = 50, offset = 0) =>
+	api.get(`/p2p/messages/${roomId}`, { params: { limit, offset } });
+
+export const deleteP2PMessage = (messageId, userId) =>
+	api.delete(`/p2p/messages/${messageId}`, { data: { userId } });
+
+export const fetchP2PChatrooms = (userId) =>
+	api.get(`/p2p/chatrooms/${userId}`);
 
 export const createChannel = async (
 	adminId,
