@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { getUserProfile } from '../services/api';
+import { getUserProfile, getOrCreateP2PRoom } from '../services/api';
 import './styles/UserProfilePopover.css';
 
-function UserProfilePopover({ userId, onClose }) {
+function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	const [user, setUser] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [creatingRoom, setCreatingRoom] = useState(false);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -33,6 +34,28 @@ function UserProfilePopover({ userId, onClose }) {
 
 	const handleOverlayClick = (e) => {
 		if (e.target === e.currentTarget) onClose();
+	};
+
+	const handleStartDirectMessage = async () => {
+		if (!user || creatingRoom) return;
+		setCreatingRoom(true);
+
+		const res = await getOrCreateP2PRoom(user.id, userId);
+		setCreatingRoom(false);
+
+		if (res.error) {
+			console.error('Failed to create P2P room:', res.error);
+			return;
+		}
+
+		if (res.chatroom && typeof onStartP2P === 'function') {
+			onStartP2P({
+				roomId: res.chatroom.id,
+				otherUserId: userId,
+				otherUsername: user.username,
+			});
+			onClose();
+		}
 	};
 
 	return (
@@ -82,8 +105,12 @@ function UserProfilePopover({ userId, onClose }) {
 								<button className="popover-action-btn">
 									@Mention
 								</button>
-								<button className="popover-action-btn popover-action-disabled" disabled>
-									Direct Message
+								<button
+									className="popover-action-btn"
+									onClick={handleStartDirectMessage}
+									disabled={creatingRoom}
+								>
+									{creatingRoom ? 'Opening...' : 'Direct Message'}
 								</button>
 							</div>
 						</div>
