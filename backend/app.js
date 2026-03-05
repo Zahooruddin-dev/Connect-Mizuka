@@ -15,6 +15,7 @@ const messageRoutes = require('./Routes/messageRoutes');
 const instituteRoutes = require('./Routes/instituteRoutes');
 const channelRoutes = require('./Routes/channelRoutes');
 const socketController = require('./Socket-Controllers/messageController');
+const p2pRoutes = require('./Routes/p2pRoutes');
 
 const PORT = process.env.PORT || 3000;
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/institute', instituteRoutes);
 app.use('/api/channel', channelRoutes);
+app.use('/api/p2p', p2pRoutes);
 
 io.on('connection', (socket) => {
 	socket.on('join_institute_room', (instituteId) => {
