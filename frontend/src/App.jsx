@@ -67,6 +67,7 @@ function App() {
 	}
 
 	const handleStartP2P = ({ roomId, otherUserId, otherUsername }) => {
+		console.log('[App] Starting P2P with:', { roomId, otherUserId, otherUsername });
 		setActiveChannel(null);
 		setActiveP2P({
 			roomId,
@@ -76,6 +77,7 @@ function App() {
 	};
 
 	const handleCloseP2P = () => {
+		console.log('[App] Closing P2P');
 		setActiveP2P(null);
 	};
 
@@ -120,6 +122,7 @@ function App() {
 						instituteId={activeInstitute.id}
 						user={user}
 						onChannelRenamed={handleChannelRenamed}
+						onStartP2P={handleStartP2P}
 					/>
 				)}
 			</div>

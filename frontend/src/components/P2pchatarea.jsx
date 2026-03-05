@@ -10,6 +10,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 	const [messages, setMessages] = useState([]);
 	const [typingUsers, setTypingUsers] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 
 	const activeRoomRef = useRef(roomId);
 
@@ -17,31 +18,44 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 		activeRoomRef.current = roomId;
 
 		setLoading(true);
+		setError(null);
 		setMessages([]);
 		setTypingUsers([]);
 
-		const joinRoom = () => socket.emit('join_p2p', roomId);
+		console.log('[P2P] Joining room:', roomId);
+
+		const joinRoom = () => {
+			console.log('[P2P] Emitting join_p2p:', roomId);
+			socket.emit('join_p2p', roomId);
+		};
 
 		if (socket.connected) {
 			joinRoom();
 		} else {
+			console.log('[P2P] Socket not connected, waiting...');
 			socket.once('connect', joinRoom);
 		}
 
 		fetchP2PMessages(roomId)
 			.then((res) => {
+				console.log('[P2P] Fetched messages:', res.data);
 				if (activeRoomRef.current !== roomId) return;
 				const data = Array.isArray(res.data) ? res.data : res.data.messages || [];
 				setMessages(data);
 			})
-			.catch(() => {
-				if (activeRoomRef.current === roomId) setMessages([]);
+			.catch((err) => {
+				console.error('[P2P] Error fetching messages:', err);
+				if (activeRoomRef.current === roomId) {
+					setError('Failed to load messages');
+					setMessages([]);
+				}
 			})
 			.finally(() => {
 				if (activeRoomRef.current === roomId) setLoading(false);
 			});
 
 		const handleReceive = (msg) => {
+			console.log('[P2P] Received message:', msg);
 			if (msg.chatroom_id && msg.chatroom_id !== roomId) return;
 			if (msg.sender_id === user.id) return;
 
@@ -60,11 +74,13 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 		};
 
 		const handleDisplayTyping = ({ username, room_id }) => {
+			console.log('[P2P] User typing:', { username, room_id });
 			if (room_id && room_id !== roomId) return;
-			setTypingUsers((prev) => prev.includes(username) ? prev : [...prev, username]);
+			setTypingUsers((prev) => (prev.includes(username) ? prev : [...prev, username]));
 		};
 
 		const handleHideTyping = ({ room_id } = {}) => {
+			console.log('[P2P] Hide typing');
 			if (room_id && room_id !== roomId) return;
 			setTypingUsers([]);
 		};
@@ -74,6 +90,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 		socket.on('hide_p2p_typing', handleHideTyping);
 
 		return () => {
+			console.log('[P2P] Leaving room:', roomId);
 			socket.emit('leave_p2p', roomId);
 			socket.off('receive_p2p_message', handleReceive);
 			socket.off('Display_p2p_typing', handleDisplayTyping);
@@ -83,6 +100,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 
 	const handleSend = useCallback(
 		(content) => {
+			console.log('[P2P] Sending message:', { roomId, content });
 			const tempMessage = {
 				id: `temp-${Date.now()}`,
 				content,
@@ -131,6 +149,12 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 						<span />
 						<span />
 					</div>
+					<span>Loading conversation...</span>
+				</div>
+			) : error ? (
+				<div className="p2p-chat-error">
+					<span>{error}</span>
+					<button onClick={() => window.location.reload()}>Reload</button>
 				</div>
 			) : (
 				<MessageList

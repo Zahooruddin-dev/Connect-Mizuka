@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getUserProfile, getOrCreateP2PRoom } from '../services/api';
-import './styles/UserProfilePopover.css';
+import { useAuth } from '../services/AuthContext';
+import './styles/Userprofilepopover.css';
 
 function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	const [user, setUser] = useState(null);
+	const { user: currentUser } = useAuth();
 	const [loading, setLoading] = useState(true);
 	const [creatingRoom, setCreatingRoom] = useState(false);
 
@@ -29,7 +31,11 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	}, [userId]);
 
 	const formattedDate = user?.created_at
-		? new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+		? new Date(user.created_at).toLocaleDateString(undefined, {
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+			})
 		: null;
 
 	const handleOverlayClick = (e) => {
@@ -37,26 +43,47 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	};
 
 	const handleStartDirectMessage = async () => {
-		if (!user || creatingRoom) return;
-		setCreatingRoom(true);
+		if (!user || !currentUser || creatingRoom) return;
 
-		const res = await getOrCreateP2PRoom(user.id, userId);
-		setCreatingRoom(false);
-
-		if (res.error) {
-			console.error('Failed to create P2P room:', res.error);
+		if (currentUser.id === userId) {
+			alert('You cannot message yourself');
 			return;
 		}
 
-		if (res.chatroom && typeof onStartP2P === 'function') {
-			onStartP2P({
-				roomId: res.chatroom.id,
-				otherUserId: userId,
-				otherUsername: user.username,
-			});
-			onClose();
+		console.log('[P2P] Starting DM with:', { currentUserId: currentUser.id, otherUserId: userId });
+		setCreatingRoom(true);
+
+		try {
+			const res = await getOrCreateP2PRoom(currentUser.id, userId);
+			console.log('[P2P] Room creation response:', res);
+
+			if (res.error) {
+				console.error('[P2P] Failed to create room:', res.error);
+				alert('Failed to open chat: ' + res.error);
+				setCreatingRoom(false);
+				return;
+			}
+
+			if (res.chatroom && typeof onStartP2P === 'function') {
+				console.log('[P2P] Opening chat with room:', res.chatroom.id);
+				onStartP2P({
+					roomId: res.chatroom.id,
+					otherUserId: userId,
+					otherUsername: user.username,
+				});
+				onClose();
+			} else {
+				console.error('[P2P] Invalid response format:', res);
+				setCreatingRoom(false);
+			}
+		} catch (error) {
+			console.error('[P2P] Exception:', error);
+			alert('Error: ' + error.message);
+			setCreatingRoom(false);
 		}
 	};
+
+	const isOwnProfile = currentUser?.id === userId;
 
 	return (
 		<div className="popover-overlay" onClick={handleOverlayClick}>
@@ -73,7 +100,11 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 				) : user ? (
 					<>
 						<div className="popover-header">
-							<button className="popover-close" onClick={onClose} aria-label="Close popover">
+							<button
+								className="popover-close"
+								onClick={onClose}
+								aria-label="Close popover"
+							>
 								<X size={18} strokeWidth={2} />
 							</button>
 						</div>
@@ -83,12 +114,8 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 								<div className="popover-avatar">
 									{user.username?.[0]?.toUpperCase() || 'U'}
 								</div>
-								<div className="popover-name">
-									{user.username}
-								</div>
-								<div className="popover-role">
-									{user.role || 'Member'}
-								</div>
+								<div className="popover-name">{user.username}</div>
+								<div className="popover-role">{user.role || 'Member'}</div>
 							</div>
 
 							<div className="popover-info-group">
@@ -102,16 +129,16 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 							</div>
 
 							<div className="popover-actions">
-								<button className="popover-action-btn">
-									@Mention
-								</button>
-								<button
-									className="popover-action-btn"
-									onClick={handleStartDirectMessage}
-									disabled={creatingRoom}
-								>
-									{creatingRoom ? 'Opening...' : 'Direct Message'}
-								</button>
+								<button className="popover-action-btn">@Mention</button>
+								{!isOwnProfile && (
+									<button
+										className="popover-action-btn"
+										onClick={handleStartDirectMessage}
+										disabled={creatingRoom}
+									>
+										{creatingRoom ? 'Opening...' : 'Direct Message'}
+									</button>
+								)}
 							</div>
 						</div>
 					</>

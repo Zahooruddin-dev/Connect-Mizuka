@@ -14,8 +14,9 @@ const authRoutes = require('./Routes/authRoutes');
 const messageRoutes = require('./Routes/messageRoutes');
 const instituteRoutes = require('./Routes/instituteRoutes');
 const channelRoutes = require('./Routes/channelRoutes');
-const socketController = require('./Socket-Controllers/messageController');
 const p2pRoutes = require('./Routes/p2pRoutes');
+const socketController = require('./Socket-Controllers/messageController');
+const p2pSocketController = require('./Socket-Controllers/P2psocketcontroller');
 
 const PORT = process.env.PORT || 3000;
 
@@ -30,7 +31,7 @@ app.use('/api/p2p', p2pRoutes);
 io.on('connection', (socket) => {
 	socket.on('join_institute_room', (instituteId) => {
 		socket.join(instituteId);
-		console.log(`[Server] socket ${socket.id} joined institute room: ${instituteId}`)
+		console.log(`[Server] socket ${socket.id} joined institute room: ${instituteId}`);
 	});
 
 	socket.on('join_institute', (channelId) => {
@@ -46,20 +47,20 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('channel_deleted', ({ channelId, instituteId }) => {
-		const roomD = io.sockets.adapter.rooms.get(instituteId)
-		console.log(`[Server] channel_deleted | instituteId: ${instituteId} | room members: ${roomD ? [...roomD].join(', ') : 'EMPTY'}`)
+		const roomD = io.sockets.adapter.rooms.get(instituteId);
+		console.log(`[Server] channel_deleted | instituteId: ${instituteId} | room members: ${roomD ? [...roomD].join(', ') : 'EMPTY'}`);
 		io.to(instituteId).emit('channel_deleted', { channelId });
 	});
 
 	socket.on('channel_renamed', ({ channel, instituteId }) => {
-		const roomR = io.sockets.adapter.rooms.get(instituteId)
-		console.log(`[Server] channel_renamed | instituteId: ${instituteId} | room members: ${roomR ? [...roomR].join(', ') : 'EMPTY'}`)
+		const roomR = io.sockets.adapter.rooms.get(instituteId);
+		console.log(`[Server] channel_renamed | instituteId: ${instituteId} | room members: ${roomR ? [...roomR].join(', ') : 'EMPTY'}`);
 		io.to(instituteId).emit('channel_renamed', { channel });
 	});
 
 	socket.on('channel_created', ({ channel, instituteId }) => {
-		const roomC = io.sockets.adapter.rooms.get(instituteId)
-		console.log(`[Server] channel_created | instituteId: ${instituteId} | channel: ${channel.name} | room members: ${roomC ? [...roomC].join(', ') : 'EMPTY'}`)
+		const roomC = io.sockets.adapter.rooms.get(instituteId);
+		console.log(`[Server] channel_created | instituteId: ${instituteId} | channel: ${channel.name} | room members: ${roomC ? [...roomC].join(', ') : 'EMPTY'}`);
 		io.to(instituteId).emit('channel_created', { channel });
 	});
 
@@ -73,6 +74,32 @@ io.on('connection', (socket) => {
 	socket.on('stop_typing', (data) => {
 		socket.to(data.channel_id).emit('hide_typing', {
 			channel_id: data.channel_id,
+		});
+	});
+
+	socket.on('join_p2p', (roomId) => {
+		socket.join(roomId);
+		console.log(`[Server] socket ${socket.id} joined P2P room: ${roomId}`);
+	});
+
+	socket.on('leave_p2p', (roomId) => {
+		socket.leave(roomId);
+	});
+
+	socket.on('send_p2p_message', (data) => {
+		p2pSocketController.handleSendP2PMessage(socket, io, data);
+	});
+
+	socket.on('typing_p2p', (data) => {
+		socket.to(data.room_id).emit('Display_p2p_typing', {
+			username: data.username,
+			room_id: data.room_id,
+		});
+	});
+
+	socket.on('stop_typing_p2p', (data) => {
+		socket.to(data.room_id).emit('hide_p2p_typing', {
+			room_id: data.room_id,
 		});
 	});
 });
