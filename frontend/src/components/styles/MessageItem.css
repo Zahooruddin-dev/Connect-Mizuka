@@ -1,119 +1,148 @@
 .message-item {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 3px 0;
-  animation: msg-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+	display: flex;
+	align-items: flex-end;
+	gap: 10px;
+	padding: 3px 0;
+	animation: msg-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes msg-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+	from { opacity: 0; transform: translateY(10px); }
+	to { opacity: 1; transform: translateY(0); }
 }
 
 .message-item.mine {
-  flex-direction: row-reverse;
+	flex-direction: row-reverse;
+}
+
+.message-avatar-btn {
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	border-radius: 50%;
+	transition: transform 0.15s;
+}
+
+.message-avatar-btn:hover {
+	transform: scale(1.1);
 }
 
 .message-avatar {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 18px;
+	width: 30px;
+	height: 30px;
+	min-width: 30px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 18px;
 }
 
 .message-avatar.mine-avatar {
-  background: linear-gradient(135deg, var(--teal-700), var(--teal-400));
+	background: linear-gradient(135deg, var(--teal-700), var(--teal-400));
 }
 
 .message-content {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  max-width: 65%;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	max-width: 65%;
 }
 
 .message-item.mine .message-content {
-  align-items: flex-end;
+	align-items: flex-end;
 }
 
-.message-author {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--teal-400);
-  letter-spacing: 0.02em;
-  padding: 0 4px;
+.message-author-btn {
+	background: none;
+	border: none;
+	padding: 0 4px;
+	margin: 0;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--teal-400);
+	letter-spacing: 0.02em;
+	cursor: pointer;
+	transition: color 0.15s;
+	text-align: left;
+}
+
+.message-author-btn:hover {
+	color: var(--teal-300);
+	text-decoration: underline;
 }
 
 .message-bubble-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .message-item.mine .message-bubble-wrap {
-  flex-direction: row-reverse;
+	flex-direction: row-reverse;
 }
 
 .message-bubble {
-  padding: 10px 14px;
-  border-radius: var(--radius-lg);
-  position: relative;
+	padding: 10px 14px;
+	border-radius: var(--radius-lg);
+	position: relative;
 }
 
 .message-item.theirs .message-bubble {
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
+	background: var(--bg-panel);
+	border: 1px solid var(--border);
+	border-bottom-left-radius: 4px;
 }
 
 .message-item.mine .message-bubble {
-  background: var(--teal-700);
-  border-bottom-right-radius: 4px;
+	background: var(--teal-700);
+	border-bottom-right-radius: 4px;
 }
 
 .message-text {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--text-primary);
-  word-break: break-word;
+	font-size: 14px;
+	line-height: 1.55;
+	color: var(--text-primary);
+	word-break: break-word;
 }
 
 .message-delete {
-  color: var(--text-ghost);
-  padding: 5px;
-  border-radius: var(--radius-sm);
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
-  display: flex;
-  align-items: center;
+	color: var(--text-ghost);
+	padding: 5px;
+	border-radius: var(--radius-sm);
+	opacity: 0;
+	transition: opacity 0.15s, color 0.15s, background 0.15s;
+	display: flex;
+	align-items: center;
+	background: none;
+	border: none;
+	cursor: pointer;
 }
 
 .message-item:hover .message-delete {
-  opacity: 1;
+	opacity: 1;
 }
 
 .message-delete:hover {
-  color: #f87171;
-  background: rgba(248, 113, 113, 0.1);
+	color: #f87171;
+	background: rgba(248, 113, 113, 0.1);
 }
 
 .message-delete.deleting {
-  opacity: 0.4;
-  pointer-events: none;
+	opacity: 0.4;
+	pointer-events: none;
 }
 
 .message-time {
-  font-size: 10px;
-  color: var(--text-ghost);
-  font-family: var(--font-mono);
-  padding: 0 4px;
+	font-size: 10px;
+	color: var(--text-ghost);
+	font-family: var(--font-mono);
+	padding: 0 4px;
 }
