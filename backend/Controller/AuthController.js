@@ -15,7 +15,6 @@ async function Login(req, res) {
 			return res.status(401).json({ message: 'Invalid email or password' });
 		}
 
-		// fetch memberships from junction table
 		const memberships = await db.getUserMemberships(user.id);
 
 		const token = jwt.sign(
@@ -46,6 +45,7 @@ async function Login(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+
 async function Register(req, res) {
 	const { username, email, password, role, institute_id } = req.body;
 	const instId = institute_id === '' ? null : institute_id;
@@ -57,7 +57,6 @@ async function Register(req, res) {
 			password_hash,
 			role,
 		);
-		// if an institute_id was provided, insert into the junction table
 		if (instId) {
 			await db.linkToInstituteQuery(
 				newUser.id,
@@ -92,7 +91,7 @@ async function updateProfile(req, res) {
 			if (!currentPassword) {
 				return res.status(400).json({ message: 'Current password is required to set a new password' });
 			}
-			const match = await bcrypt.compare(currentPassword, user.password_hash);
+			const match = await bcypt.compare(currentPassword, user.password_hash);
 			if (!match) {
 				return res.status(401).json({ message: 'Current password is incorrect' });
 			}
@@ -101,7 +100,7 @@ async function updateProfile(req, res) {
 		const updatedUser = await db.updateProfileQuery(userId, {
 			username: username ?? user.username,
 			email: email ?? user.email,
-			password_hash: newPassword ? await bcrypt.hash(newPassword, 10) : undefined,
+			password_hash: newPassword ? await bcypt.hash(newPassword, 10) : undefined,
 		});
 
 		res.status(200).json({ message: 'Profile updated', user: updatedUser });
@@ -130,6 +129,7 @@ async function deleteUser(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+
 async function linkToInstitute(req, res) {
 	const { userId, institute_id } = req.body;
 	try {
@@ -152,6 +152,7 @@ async function myMemberships(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+
 async function getUserInfo(req, res) {
 	const { userId } = req.params;
 	try {
@@ -161,6 +162,20 @@ async function getUserInfo(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+
+async function getUserProfile(req, res) {
+	const { userId } = req.params;
+	try {
+		const user = await db.getUserProfileForPopover(userId);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+		res.status(200).json({ user });
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+}
+
 module.exports = {
 	Login,
 	Register,
@@ -169,4 +184,5 @@ module.exports = {
 	myMemberships,
 	getUserInfo,
 	updateProfile,
+	getUserProfile,
 };
