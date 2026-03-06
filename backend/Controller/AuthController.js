@@ -188,7 +188,7 @@ async function searchMembers(req, res) {
 	const { query, userId } = req.query;
 	const searchTerm = `%${query}`;
 	try {
-		const users = await db.searchInstituteMembers(instituteId);
+		const users = await db.searchInstituteMembers(instituteId,userId,searchTerm);
 		if (!users) {
 			return res.status(404).json({ message: 'User not found' });
 		}

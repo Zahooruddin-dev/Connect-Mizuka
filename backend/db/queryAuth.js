@@ -27,9 +27,18 @@ async function updateProfileQuery(userId, { username, email, password_hash }) {
 	const values = [];
 	let idx = 1;
 
-	if (username !== undefined) { fields.push(`username = $${idx++}`); values.push(username); }
-	if (email !== undefined) { fields.push(`email = $${idx++}`); values.push(email); }
-	if (password_hash !== undefined) { fields.push(`password_hash = $${idx++}`); values.push(password_hash); }
+	if (username !== undefined) {
+		fields.push(`username = $${idx++}`);
+		values.push(username);
+	}
+	if (email !== undefined) {
+		fields.push(`email = $${idx++}`);
+		values.push(email);
+	}
+	if (password_hash !== undefined) {
+		fields.push(`password_hash = $${idx++}`);
+		values.push(password_hash);
+	}
 
 	values.push(userId);
 
@@ -44,17 +53,12 @@ async function linkToInstituteQuery(userId, institute_id, role = 'member') {
 	const { rows } = await pool.query(
 		`INSERT INTO user_institutes (user_id, institute_id, role)
 		 VALUES ($1, $2, $3) RETURNING *`,
-		[userId, institute_id, role]
+		[userId, institute_id, role],
 	);
 	return rows[0] || null;
 }
 
-async function registerQuery(
-	username,
-	email,
-	password_hash,
-	role = 'member',
-) {
+async function registerQuery(username, email, password_hash, role = 'member') {
 	const { rows } = await pool.query(
 		`
 		INSERT INTO users (username,email,password_hash,role) VALUES ($1,$2,$3,$4) RETURNING id, username, email, role`,
@@ -82,10 +86,9 @@ async function getUserMemberships(userId) {
 }
 
 async function getUserInfoQuery(userId) {
-	const { rows } = await pool.query(
-		`SELECT * FROM users WHERE id=$1`,
-		[userId],
-	);
+	const { rows } = await pool.query(`SELECT * FROM users WHERE id=$1`, [
+		userId,
+	]);
 	return rows[0] || null;
 }
 
@@ -95,6 +98,18 @@ async function getUserProfileForPopover(userId) {
 		[userId],
 	);
 	return rows[0] || null;
+}
+async function searchInstituteMembers(instituteId, userId, searchTerm) {
+	const { rows } = await pool.query(
+		`SELECT u.id, u.username,u.email,u.role
+		FROM users u
+		JOIN user_institutes ui ON u.id = ui.user_id
+		WHERE ui.institute_id = $1
+		AND u.id !=$1
+		AND u.username ILIKE $3 LIMIT 15`,
+		[instituteId, userId, searchTerm],
+	);
+	return rows || null;
 }
 
 module.exports = {
@@ -108,4 +123,5 @@ module.exports = {
 	getUserInfoQuery,
 	updateProfileQuery,
 	getUserProfileForPopover,
+	searchInstituteMembers,
 };
