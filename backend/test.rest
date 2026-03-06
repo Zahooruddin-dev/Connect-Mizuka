@@ -26,3 +26,18 @@ GET http://localhost:3000/api/institute/key/8ef44a8b-c24e-4730-8a6f-e042cba65e56
 
 
 GET http://localhost:3000/api/auth/user-info/c7efe75a-8306-4b9b-8550-20f90ec8e62c
+
+### Search for members in an Institute
+GET http://localhost:3000/api/institute/8ef44a8b-c24e-4730-8a6f-e042cba65e56/search-members?query=a&userId=c7efe75a-8306-4b9b-8550-20f90ec8e62c
+Content-Type: application/json
+
+###
+
+### Get or Create P2P Room
+POST http://localhost:3000/api/p2p/room
+Content-Type: application/json
+
+{
+    "user1": "YOUR_USER_UUID",
+    "user2": "TARGET_USER_UUID"
+}

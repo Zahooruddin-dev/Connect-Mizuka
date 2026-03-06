@@ -183,20 +183,6 @@ async function getUserProfile(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
-async function searchMembers(req, res) {
-	const { instituteId } = req.params;
-	const { query, userId } = req.query;
-	const searchTerm = `%${query}`;
-	try {
-		const users = await db.searchInstituteMembers(instituteId,userId,searchTerm);
-		if (!users) {
-			return res.status(404).json({ message: 'User not found' });
-		}
-		res.status(200).json({ users });
-	} catch (error) {
-		res.status(500).json({ error: 'Failed to search members' , error});
-	}
-}
 
 module.exports = {
 	Login,
@@ -207,5 +193,4 @@ module.exports = {
 	getUserInfo,
 	updateProfile,
 	getUserProfile,
-	searchMembers,
 };
