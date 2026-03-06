@@ -54,9 +54,9 @@ function App() {
 	if (!user) return <LoginPage />;
 	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
 
-	const effectiveChannel = activeChannel || {
+	const effectiveChannel = activeChannel ? { id: activeChannel.id, name: activeChannel.name } : {
 		id: activeInstitute.id,
-		label: 'general',
+		name: 'general',
 	};
 
 	function handleChannelRenamed(updatedChannel) {
@@ -124,7 +124,7 @@ function App() {
 				) : (
 					<ChatArea
 						channelId={effectiveChannel.id}
-						channelLabel={effectiveChannel.label}
+						channelLabel={effectiveChannel.name}
 						instituteId={activeInstitute.id}
 						user={user}
 						onChannelRenamed={handleChannelRenamed}
