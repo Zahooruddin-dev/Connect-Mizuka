@@ -9,6 +9,7 @@ router.post('/delete', authController.deleteUser);
 router.get('/user-info/:userId', authController.getUserInfo);
 router.get('/user-profile/:userId', authController.getUserProfile);
 router.put('/update-profile/:userId', authController.updateProfile);
+router.get('/:instituteId/search-members', instituteController.searchMembers);
 router.post('/link-to-institute', authController.linkToInstitute);
 router.get('/my-memberships/:userId', authController.myMemberships);
 router.post('/request-reset', resetController.requestPasswordReset);
