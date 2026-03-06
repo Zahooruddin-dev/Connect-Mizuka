@@ -65,7 +65,7 @@ async function getAdminDashboard(req, res) {
 async function searchMembers(req, res) {
 	const { instituteId } = req.params;
 	const { query, userId } = req.query;
-	const searchTerm = `%${query}`;
+	const searchTerm = `%${query}%`;
 	try {
 		const users = await db.searchInstituteMembers(instituteId,userId,searchTerm);
 		if (!users) {
