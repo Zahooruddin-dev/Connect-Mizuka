@@ -1,11 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Hash, Plus, LogOut, ChevronDown, X, Building2 } from 'lucide-react';
+import {
+	Hash,
+	Plus,
+	LogOut,
+	ChevronDown,
+	X,
+	Building2,
+	Inbox as InboxIcon,
+} from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { fetchChannelsByInstitute, createChannel } from '../services/api';
 import socket from '../services/socket';
-import InstitutePanel from './Institutepanel';
+import InstitutePanel from './InstitutePanel';
 import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
+import Inbox from './Inbox';
 import './styles/Sidebar.css';
 
 function Sidebar({
@@ -16,12 +25,15 @@ function Sidebar({
 	isAdmin,
 	onClose,
 	isOpen,
+	activeInstitute,
+	onStartP2P,
 }) {
-	const { activeInstitute } = useAuth();
+	const { activeInstitute: contextActiveInstitute } = useAuth();
 	const [panelOpen, setPanelOpen] = useState(false);
 	const [createModalOpen, setCreateModalOpen] = useState(false);
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
 	const [channels, setChannels] = useState([]);
+	const [activeTab, setActiveTab] = useState('channels');
 	const activeInstituteRef = useRef(activeInstitute?.id);
 
 	// Keep ref in sync with actual activeInstitute
@@ -37,7 +49,7 @@ function Sidebar({
 		}
 
 		fetchChannelsByInstitute(activeInstitute.id)
-			.then((res) => setChannels(res.channels || []))
+			.then((res) => setChannels(res.data?.channels || res.channels || []))
 			.catch(() => setChannels([]));
 
 		socket.emit('join_institute_room', activeInstitute.id);
@@ -72,6 +84,7 @@ function Sidebar({
 				onChannelSelect(channel);
 			}
 		};
+
 		const handleChannelCreated = ({ channel }) => {
 			if (!channel?.id) return;
 			// Only add if it belongs to the active institute
@@ -84,7 +97,7 @@ function Sidebar({
 				return [...prev, channel];
 			});
 		};
-	
+
 		socket.on('channel_deleted', handleSocketDeleted);
 		socket.on('channel_renamed', handleSocketRenamed);
 		socket.on('channel_created', handleChannelCreated);
@@ -170,64 +183,105 @@ function Sidebar({
 					/>
 				</button>
 
-				<div className='sidebar-section'>
-					{channels.length > 0 ? (
-						<>
-							<div className='sidebar-section-header'>
-								<span className='sidebar-section-label' id='channels-label'>
-									Channels
-								</span>
-								{isAdmin && (
-									<button
-										className='sidebar-add-channel-btn'
-										title='Create channel'
-										aria-label='Create channel'
-										onClick={() => setCreateModalOpen(true)}
-									>
-										<Plus size={13} strokeWidth={2.5} />
-									</button>
-								)}
-							</div>
-							<ul
-								className='sidebar-channels'
-								aria-labelledby='channels-label'
-								role='list'
-							>
-								{channels.map((ch) => (
-									<li key={ch.id} role='listitem'>
-										<button
-											className={`sidebar-channel-btn${activeChannel === ch.id ? ' active' : ''}`}
-											onClick={() => onChannelSelect(ch)}
-											aria-current={
-												activeChannel === ch.id ? 'page' : undefined
-											}
-										>
-											<Hash
-												className='sidebar-hash'
-												size={14}
-												strokeWidth={2}
-												aria-hidden='true'
-											/>
-											<span>{ch.name}</span>
-										</button>
-									</li>
-								))}
-							</ul>
-						</>
-					) : (
-						<div className='sidebar-empty'>
-							<Building2
-								size={30}
-								strokeWidth={1}
-								className='sidebar-empty-icon'
-								aria-hidden='true'
-							/>
-							<p className='sidebar-no-channels'>
-								Select or join an institute to see channels.
-							</p>
-						</div>
-					)}
+				{/* TAB SWITCHER */}
+				<div className='sidebar-tabs'>
+					<button
+						className={`sidebar-tab ${activeTab === 'channels' ? 'active' : ''}`}
+						onClick={() => setActiveTab('channels')}
+					>
+						<Hash size={14} />
+						Channels
+					</button>
+					<button
+						className={`sidebar-tab ${activeTab === 'inbox' ? 'active' : ''}`}
+						onClick={() => setActiveTab('inbox')}
+					>
+						<InboxIcon size={14} />
+						Inbox
+					</button>
 				</div>
+
+				{/* CHANNELS TAB */}
+				{activeTab === 'channels' && (
+					<div className='sidebar-section'>
+						{channels.length > 0 ? (
+							<>
+								<div className='sidebar-section-header'>
+									<span className='sidebar-section-label' id='channels-label'>
+										Channels
+									</span>
+									{isAdmin && (
+										<button
+											className='sidebar-add-channel-btn'
+											title='Create channel'
+											aria-label='Create channel'
+											onClick={() => setCreateModalOpen(true)}
+										>
+											<Plus size={13} strokeWidth={2.5} />
+										</button>
+									)}
+								</div>
+								<ul
+									className='sidebar-channels'
+									aria-labelledby='channels-label'
+									role='list'
+								>
+									{channels.map((ch) => (
+										<li key={ch.id} role='listitem'>
+											<button
+												className={`sidebar-channel-btn${
+													activeChannel === ch.id ? ' active' : ''
+												}`}
+												onClick={() => onChannelSelect(ch)}
+												aria-current={
+													activeChannel === ch.id ? 'page' : undefined
+												}
+											>
+												<Hash
+													className='sidebar-hash'
+													size={14}
+													strokeWidth={2}
+													aria-hidden='true'
+												/>
+												<span>{ch.name}</span>
+											</button>
+										</li>
+									))}
+								</ul>
+							</>
+						) : (
+							<div className='sidebar-empty'>
+								<Building2
+									size={30}
+									strokeWidth={1}
+									className='sidebar-empty-icon'
+									aria-hidden='true'
+								/>
+								<p className='sidebar-no-channels'>
+									Select or join an institute to see channels.
+								</p>
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* INBOX TAB */}
+				{activeTab === 'inbox' && activeInstitute && (
+					<Inbox
+						activeInstitute={activeInstitute}
+						currentUser={user}
+						onStartP2P={onStartP2P}
+					/>
+				)}
+
+				{activeTab === 'inbox' && !activeInstitute && (
+					<div className='sidebar-empty'>
+						<Building2 size={30} strokeWidth={1} aria-hidden='true' />
+						<p className='sidebar-no-channels'>
+							Select an institute to search members
+						</p>
+					</div>
+				)}
 
 				<div className='sidebar-footer'>
 					<div

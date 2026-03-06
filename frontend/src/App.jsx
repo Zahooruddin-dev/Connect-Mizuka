@@ -5,11 +5,12 @@ import LoginPage from './pages/LoginPage';
 import InstituteGate from './components/InstituteGate';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
-import P2PChatArea from './components/P2pchatarea';
+import P2PChatArea from './components/P2PChatArea';
 import './styles/app.css';
 
 function App() {
-	const { user, institutes, activeInstitute, logout, isActiveAdmin } = useAuth();
+	const { user, institutes, activeInstitute, logout, isActiveAdmin } =
+		useAuth();
 	const [activeChannel, setActiveChannel] = useState(null);
 	const [activeP2P, setActiveP2P] = useState(null);
 	const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -27,7 +28,12 @@ function App() {
 		if (!activeInstitute) return;
 
 		const join = () => {
-			console.log('[App] join_institute_room:', activeInstitute.id, '| socket.id:', socket.id);
+			console.log(
+				'[App] join_institute_room:',
+				activeInstitute.id,
+				'| socket.id:',
+				socket.id,
+			);
 			socket.emit('join_institute_room', activeInstitute.id);
 		};
 
@@ -61,19 +67,27 @@ function App() {
 	};
 
 	function handleChannelRenamed(updatedChannel) {
-		if (activeChannel && String(activeChannel.id) === String(updatedChannel.id)) {
+		if (
+			activeChannel &&
+			String(activeChannel.id) === String(updatedChannel.id)
+		) {
 			setActiveChannel((prev) => ({ ...prev, name: updatedChannel.name }));
 		}
 	}
 
 	const handleStartP2P = ({ roomId, otherUserId, otherUsername }) => {
-		console.log('[App] Starting P2P with:', { roomId, otherUserId, otherUsername });
+		console.log('[App] Starting P2P with:', {
+			roomId,
+			otherUserId,
+			otherUsername,
+		});
 		setActiveChannel(null);
 		setActiveP2P({
 			roomId,
 			otherUserId,
 			otherUsername,
 		});
+		setSidebarOpen(false);
 	};
 
 	const handleCloseP2P = () => {
@@ -82,7 +96,7 @@ function App() {
 	};
 
 	return (
-		<div className="app-layout">
+		<div className='app-layout'>
 			{sidebarOpen && (
 				<Sidebar
 					activeChannel={effectiveChannel.id}
@@ -92,14 +106,16 @@ function App() {
 					isAdmin={isActiveAdmin()}
 					onClose={() => setSidebarOpen(false)}
 					isOpen={sidebarOpen}
+					activeInstitute={activeInstitute}
+					onStartP2P={handleStartP2P}
 				/>
 			)}
-			<div className="main-content">
+			<div className='main-content'>
 				{!sidebarOpen && (
 					<button
-						className="sidebar-toggle"
+						className='sidebar-toggle'
 						onClick={() => setSidebarOpen(true)}
-						aria-label="Open navigation"
+						aria-label='Open navigation'
 					>
 						☰
 					</button>
