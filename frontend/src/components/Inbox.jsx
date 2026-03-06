@@ -90,7 +90,10 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 				].slice(0, 10); // Keep last 10
 
 				setRecentChats(newRecent);
-				localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(newRecent));
+				localStorage.setItem(
+					'mizuka_recent_p2p_chats',
+					JSON.stringify(newRecent),
+				);
 
 				onStartP2P({
 					roomId: res.chatroom.id,
@@ -114,25 +117,25 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 	};
 
 	return (
-		<div className="inbox-container">
-			<div className="inbox-header">
-				<h3 className="inbox-title">Direct Messages</h3>
+		<div className='inbox-container'>
+			<div className='inbox-header'>
+				<h3 className='inbox-title'>Direct Messages</h3>
 			</div>
 
-			<div className="inbox-search">
-				<Search size={16} className="inbox-search-icon" />
+			<div className='inbox-search'>
+				<Search size={16} className='inbox-search-icon' />
 				<input
-					type="text"
-					placeholder="Search members..."
+					type='text'
+					placeholder='Search members...'
 					value={searchTerm}
 					onChange={(e) => handleSearch(e.target.value)}
-					className="inbox-search-input"
+					className='inbox-search-input'
 				/>
 				{searchTerm && (
 					<button
-						className="inbox-search-clear"
+						className='inbox-search-clear'
 						onClick={handleClearSearch}
-						aria-label="Clear search"
+						aria-label='Clear search'
 					>
 						<X size={14} />
 					</button>
@@ -140,48 +143,48 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 			</div>
 
 			{searchTerm ? (
-				<div className="inbox-results">
+				<div className='inbox-results'>
 					{loading ? (
-						<div className="inbox-loading">
+						<div className='inbox-loading'>
 							<span>Searching...</span>
 						</div>
 					) : results.length > 0 ? (
-						<div className="inbox-user-list">
+						<div className='inbox-user-list'>
 							{results.map((user) => (
 								<button
 									key={user.id}
-									className="inbox-user-item"
+									className='inbox-user-item'
 									onClick={() => handleStartChat(user)}
 									disabled={startingChat === user.id}
 									title={`Message ${user.username}`}
 								>
-									<div className="inbox-user-avatar">
+									<div className='inbox-user-avatar'>
 										{user.username?.[0]?.toUpperCase() || 'U'}
 									</div>
-									<div className="inbox-user-info">
-										<div className="inbox-user-name">{user.username}</div>
-										<div className="inbox-user-role">{user.role}</div>
+									<div className='inbox-user-info'>
+										<div className='inbox-user-name'>{user.username}</div>
+										<div className='inbox-user-role'>{user.role}</div>
 									</div>
-									<MessageCircle size={16} className="inbox-user-action" />
+									<MessageCircle size={16} className='inbox-user-action' />
 								</button>
 							))}
 						</div>
 					) : (
-						<div className="inbox-empty">
+						<div className='inbox-empty'>
 							<span>No members found</span>
 						</div>
 					)}
 				</div>
 			) : (
-				<div className="inbox-recent">
+				<div className='inbox-recent'>
 					{recentChats.length > 0 ? (
 						<>
-							<div className="inbox-recent-header">Recent</div>
-							<div className="inbox-user-list">
+							<div className='inbox-recent-header'>Recent</div>
+							<div className='inbox-user-list'>
 								{recentChats.map((chat) => (
 									<button
 										key={chat.id}
-										className="inbox-user-item"
+										className='inbox-user-item'
 										onClick={() =>
 											handleStartChat({
 												id: chat.id,
@@ -193,20 +196,20 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 										disabled={startingChat === chat.id}
 										title={`Message ${chat.username}`}
 									>
-										<div className="inbox-user-avatar">
+										<div className='inbox-user-avatar'>
 											{chat.username?.[0]?.toUpperCase() || 'U'}
 										</div>
-										<div className="inbox-user-info">
-											<div className="inbox-user-name">{chat.username}</div>
-											<div className="inbox-user-role">{chat.role}</div>
+										<div className='inbox-user-info'>
+											<div className='inbox-user-name'>{chat.username}</div>
+											<div className='inbox-user-role'>{chat.role}</div>
 										</div>
-										<MessageCircle size={16} className="inbox-user-action" />
+										<MessageCircle size={16} className='inbox-user-action' />
 									</button>
 								))}
 							</div>
 						</>
 					) : (
-						<div className="inbox-empty">
+						<div className='inbox-empty'>
 							<span>No recent chats. Search to start one!</span>
 						</div>
 					)}

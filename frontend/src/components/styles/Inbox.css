@@ -44,7 +44,9 @@
 	font-size: 13px;
 	color: var(--text-primary);
 	font-family: var(--font-sans);
-	transition: border-color 0.15s, background 0.15s;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
 }
 
 .inbox-search-input:focus {
@@ -72,7 +74,9 @@
 	width: 20px;
 	height: 20px;
 	border-radius: 4px;
-	transition: color 0.15s, background 0.15s;
+	transition:
+		color 0.15s,
+		background 0.15s;
 }
 
 .inbox-search-clear:hover {
@@ -133,7 +137,9 @@
 	border-bottom: 1px solid var(--border);
 	color: var(--text-primary);
 	cursor: pointer;
-	transition: background 0.15s, transform 0.1s;
+	transition:
+		background 0.15s,
+		transform 0.1s;
 	font-family: var(--font-sans);
 	text-align: left;
 }
@@ -195,7 +201,9 @@
 	color: var(--teal-600);
 	flex-shrink: 0;
 	opacity: 0;
-	transition: opacity 0.15s, color 0.15s;
+	transition:
+		opacity 0.15s,
+		color 0.15s;
 }
 
 .inbox-user-item:hover:not(:disabled) .inbox-user-action {
