@@ -89,18 +89,26 @@ async function updateProfile(req, res) {
 
 		if (newPassword) {
 			if (!currentPassword) {
-				return res.status(400).json({ message: 'Current password is required to set a new password' });
+				return res
+					.status(400)
+					.json({
+						message: 'Current password is required to set a new password',
+					});
 			}
 			const match = await bcypt.compare(currentPassword, user.password_hash);
 			if (!match) {
-				return res.status(401).json({ message: 'Current password is incorrect' });
+				return res
+					.status(401)
+					.json({ message: 'Current password is incorrect' });
 			}
 		}
 
 		const updatedUser = await db.updateProfileQuery(userId, {
 			username: username ?? user.username,
 			email: email ?? user.email,
-			password_hash: newPassword ? await bcypt.hash(newPassword, 10) : undefined,
+			password_hash: newPassword
+				? await bcypt.hash(newPassword, 10)
+				: undefined,
 		});
 
 		res.status(200).json({ message: 'Profile updated', user: updatedUser });
@@ -175,6 +183,20 @@ async function getUserProfile(req, res) {
 		res.status(500).json({ message: error.message });
 	}
 }
+async function searchMembers(req, res) {
+	const { instituteId } = req.params;
+	const { query, userId } = req.query;
+	const searchTerm = `%${query}`;
+	try {
+		const users = await db.searchInstituteMembers(instituteId);
+		if (!users) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+		res.status(200).json({ users });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to search members' , error});
+	}
+}
 
 module.exports = {
 	Login,
@@ -185,4 +207,5 @@ module.exports = {
 	getUserInfo,
 	updateProfile,
 	getUserProfile,
+	searchMembers,
 };
