@@ -140,7 +140,20 @@ export const fetchChannel = async (channelId) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
-
+export const searchInstituteMembers = async (instituteId, searchTerm, currentUserId) => {
+  try {
+    const res = await api.get(`/institute/${instituteId}/search-members`, {
+      params: { 
+        query: searchTerm, 
+        userId: currentUserId 
+      }
+    });
+    return res.data.users;
+  } catch (err) {
+    console.error("Search Error:", err);
+    return [];
+  }
+};
 export const fetchChannelsByInstitute = async (instituteId) => {
 	try {
 		const res = await api.get(`/channel/institute/${instituteId}`);
