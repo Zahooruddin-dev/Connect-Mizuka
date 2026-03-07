@@ -43,9 +43,35 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 	}, [currentUser?.id]);
 
 	useEffect(() => {
+		if (!activeP2P?.roomId || !currentUser?.id) return;
+
+		socket.emit('mark_as_read', {
+			chatroom_id: activeP2P.roomId,
+			reader_id: currentUser.id,
+		});
+
+		setRoomUnread((prev) => {
+			if (!prev[activeP2P.roomId]) return prev;
+			const next = { ...prev };
+			delete next[activeP2P.roomId];
+			return next;
+		});
+	}, [activeP2P?.roomId, currentUser?.id]);
+
+	useEffect(() => {
 		const handleMessage = (msg) => {
 			const currentRoom = activeP2PRef.current?.roomId;
-			if (currentRoom === msg.chatroom_id) return;
+
+			if (currentRoom === msg.chatroom_id) {
+				socket.emit('mark_as_read', {
+					chatroom_id: msg.chatroom_id,
+					reader_id: currentUser.id,
+				});
+				return;
+			}
+
+			if (String(msg.sender_id) === String(currentUser.id)) return;
+
 			setRoomUnread((prev) => ({
 				...prev,
 				[msg.chatroom_id]: (prev[msg.chatroom_id] || 0) + 1,
@@ -68,16 +94,6 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 			socket.off('messages_read', handleRead);
 		};
 	}, [currentUser.id]);
-
-	useEffect(() => {
-		if (!activeP2P?.roomId) return;
-		setRoomUnread((prev) => {
-			if (!prev[activeP2P.roomId]) return prev;
-			const next = { ...prev };
-			delete next[activeP2P.roomId];
-			return next;
-		});
-	}, [activeP2P?.roomId]);
 
 	const handleSearch = useCallback(
 		(val) => {
@@ -129,12 +145,6 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 
 				setRecentChats(newRecent);
 				localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(newRecent));
-
-				setRoomUnread((prev) => {
-					const next = { ...prev };
-					delete next[res.chatroom.id];
-					return next;
-				});
 
 				onStartP2P({
 					roomId: res.chatroom.id,
