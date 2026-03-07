@@ -62,6 +62,8 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 		const handleMessage = (msg) => {
 			const currentRoom = activeP2PRef.current?.roomId;
 
+			if (String(msg.sender_id) === String(currentUser.id)) return;
+
 			if (currentRoom === msg.chatroom_id) {
 				socket.emit('mark_as_read', {
 					chatroom_id: msg.chatroom_id,
@@ -70,8 +72,6 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 				return;
 			}
 
-			if (String(msg.sender_id) === String(currentUser.id)) return;
-
 			setRoomUnread((prev) => ({
 				...prev,
 				[msg.chatroom_id]: (prev[msg.chatroom_id] || 0) + 1,
@@ -79,7 +79,7 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 		};
 
 		const handleRead = ({ chatroom_id, reader_id }) => {
-			if (String(reader_id) === String(currentUser.id)) return;
+			if (String(reader_id) !== String(currentUser.id)) return;
 			setRoomUnread((prev) => {
 				const next = { ...prev };
 				delete next[chatroom_id];
@@ -168,7 +168,6 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 	};
 
 	const isOnline = (userId) => onlineUsers.has(String(userId));
-
 	const getUnread = (roomId) => roomUnread[roomId] || 0;
 
 	return (
