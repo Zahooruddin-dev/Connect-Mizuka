@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle } from 'lucide-react';
-import { searchInstituteMembers, getOrCreateP2PRoom } from '../services/api';
+import { searchInstituteMembers } from '../services/api';
+import { getOrCreateP2PRoom } from '../services/p2pApi';
 import './styles/Inbox.css';
 
-function Inbox({ activeInstitute, currentUser, onStartP2P }) {
+function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set() }) {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [results, setResults] = useState([]);
 	const [recentChats, setRecentChats] = useState([]);
@@ -13,7 +14,6 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 	const debounceTimer = useRef(null);
 
 	useEffect(() => {
-		// Load recent chats from localStorage
 		const stored = localStorage.getItem('mizuka_recent_p2p_chats');
 		if (stored) {
 			try {
@@ -28,9 +28,7 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 		(val) => {
 			setSearchTerm(val);
 
-			if (debounceTimer.current) {
-				clearTimeout(debounceTimer.current);
-			}
+			if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
 			if (val.length < 2) {
 				setResults([]);
@@ -41,42 +39,31 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 
 			debounceTimer.current = setTimeout(async () => {
 				try {
-					console.log('[Inbox] Searching for:', val);
-					const users = await searchInstituteMembers(
-						activeInstitute.id,
-						val,
-						currentUser.id,
-					);
-					console.log('[Inbox] Search results:', users);
+					const users = await searchInstituteMembers(activeInstitute.id, val, currentUser.id);
 					setResults(users || []);
-				} catch (error) {
-					console.error('[Inbox] Search error:', error);
+				} catch {
 					setResults([]);
 				} finally {
 					setLoading(false);
 				}
-			}, 300); // 300ms debounce
+			}, 300);
 		},
 		[activeInstitute.id, currentUser.id],
 	);
 
 	const handleStartChat = async (user) => {
 		if (startingChat === user.id) return;
-
-		console.log('[Inbox] Starting chat with:', user.username);
 		setStartingChat(user.id);
 
 		try {
 			const res = await getOrCreateP2PRoom(currentUser.id, user.id);
 
 			if (res.error) {
-				console.error('[Inbox] Failed to create room:', res.error);
 				setStartingChat(null);
 				return;
 			}
 
 			if (res.chatroom && typeof onStartP2P === 'function') {
-				// Add to recent chats
 				const newRecent = [
 					{
 						id: user.id,
@@ -87,13 +74,10 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 						lastChat: new Date().toISOString(),
 					},
 					...recentChats.filter((chat) => chat.id !== user.id),
-				].slice(0, 10); // Keep last 10
+				].slice(0, 10);
 
 				setRecentChats(newRecent);
-				localStorage.setItem(
-					'mizuka_recent_p2p_chats',
-					JSON.stringify(newRecent),
-				);
+				localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(newRecent));
 
 				onStartP2P({
 					roomId: res.chatroom.id,
@@ -104,8 +88,8 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 				setSearchTerm('');
 				setResults([]);
 			}
-		} catch (error) {
-			console.error('[Inbox] Chat start error:', error);
+		} catch {
+			// silent
 		} finally {
 			setStartingChat(null);
 		}
@@ -115,6 +99,8 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 		setSearchTerm('');
 		setResults([]);
 	};
+
+	const isOnline = (userId) => onlineUsers.has(String(userId));
 
 	return (
 		<div className='inbox-container'>
@@ -158,8 +144,11 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 									disabled={startingChat === user.id}
 									title={`Message ${user.username}`}
 								>
-									<div className='inbox-user-avatar'>
-										{user.username?.[0]?.toUpperCase() || 'U'}
+									<div className='inbox-user-avatar-wrap'>
+										<div className='inbox-user-avatar'>
+											{user.username?.[0]?.toUpperCase() || 'U'}
+										</div>
+										{isOnline(user.id) && <span className='inbox-online-dot' />}
 									</div>
 									<div className='inbox-user-info'>
 										<div className='inbox-user-name'>{user.username}</div>
@@ -196,8 +185,11 @@ function Inbox({ activeInstitute, currentUser, onStartP2P }) {
 										disabled={startingChat === chat.id}
 										title={`Message ${chat.username}`}
 									>
-										<div className='inbox-user-avatar'>
-											{chat.username?.[0]?.toUpperCase() || 'U'}
+										<div className='inbox-user-avatar-wrap'>
+											<div className='inbox-user-avatar'>
+												{chat.username?.[0]?.toUpperCase() || 'U'}
+											</div>
+											{isOnline(chat.id) && <span className='inbox-online-dot' />}
 										</div>
 										<div className='inbox-user-info'>
 											<div className='inbox-user-name'>{chat.username}</div>
