@@ -9,11 +9,7 @@ async function handleSendP2PMessage(socket, io, data) {
 	}
 
 	try {
-		const savedMessage = await db.saveP2PMessage(
-			chatroom_id,
-			sender_id,
-			message,
-		);
+		const savedMessage = await db.saveP2PMessage(chatroom_id, sender_id, message);
 
 		const messagePayload = {
 			id: savedMessage.id,
@@ -26,9 +22,7 @@ async function handleSendP2PMessage(socket, io, data) {
 		};
 
 		io.to(chatroom_id).emit('receive_p2p_message', messagePayload);
-		console.log(
-			`[Server] P2P message sent in room ${chatroom_id} by ${username}`,
-		);
+		console.log(`[Server] P2P message sent in room ${chatroom_id} by ${username}`);
 	} catch (error) {
 		console.error('handleSendP2PMessage error:', error);
 	}
@@ -53,9 +47,7 @@ async function handleMarkAsRead(socket, io, data) {
 			message_ids: updatedIds,
 		});
 
-		console.log(
-			`[Server] ${updatedIds.length} message(s) marked as read in room ${chatroom_id} by user ${reader_id}`,
-		);
+		console.log(`[Server] ${updatedIds.length} message(s) marked as read in room ${chatroom_id} by user ${reader_id}`);
 	} catch (error) {
 		console.error('handleMarkAsRead error:', error);
 	}
