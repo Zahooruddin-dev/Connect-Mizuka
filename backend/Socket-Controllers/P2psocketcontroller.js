@@ -28,29 +28,4 @@ async function handleSendP2PMessage(socket, io, data) {
 	}
 }
 
-async function handleMarkAsRead(socket, io, data) {
-	const { chatroom_id, reader_id } = data;
-
-	if (!chatroom_id || !reader_id) {
-		console.error('Invalid mark_as_read payload:', data);
-		return;
-	}
-
-	try {
-		const updatedIds = await db.markMessagesAsRead(chatroom_id, reader_id);
-
-		if (updatedIds.length === 0) return;
-
-		io.to(chatroom_id).emit('messages_read', {
-			chatroom_id,
-			reader_id,
-			message_ids: updatedIds,
-		});
-
-		console.log(`[Server] ${updatedIds.length} message(s) marked as read in room ${chatroom_id} by user ${reader_id}`);
-	} catch (error) {
-		console.error('handleMarkAsRead error:', error);
-	}
-}
-
-module.exports = { handleSendP2PMessage, handleMarkAsRead };
+module.exports = { handleSendP2PMessage };
