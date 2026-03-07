@@ -158,10 +158,16 @@
 	transform: translateX(2px);
 }
 
+.inbox-user-avatar-wrap {
+	position: relative;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+}
+
 .inbox-user-avatar {
 	width: 36px;
 	height: 36px;
-	min-width: 36px;
 	border-radius: 50%;
 	background: linear-gradient(135deg, var(--teal-700), var(--teal-500));
 	display: flex;
@@ -171,6 +177,17 @@
 	font-weight: 600;
 	color: #fff;
 	box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);
+}
+
+.inbox-online-dot {
+	position: absolute;
+	bottom: 1px;
+	right: 1px;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: #22c55e;
+	border: 2px solid var(--bg-surface);
 }
 
 .inbox-user-info {
@@ -211,7 +228,6 @@
 	color: var(--teal-400);
 }
 
-/* Scrollbar styling */
 .inbox-results::-webkit-scrollbar,
 .inbox-recent::-webkit-scrollbar {
 	width: 6px;
