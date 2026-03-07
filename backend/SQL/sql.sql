@@ -76,3 +76,9 @@ CREATE INDEX idx_p2p_messages_room ON p2p_messages (chatroom_id);
 
 -- Indexing created_at so we can quickly sort messages by time
 CREATE INDEX idx_p2p_messages_time ON p2p_messages (created_at DESC);
+
+ALTER TABLE p2p_messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_p2p_messages_unread
+  ON p2p_messages (chatroom_id, sender_id, is_read)
+  WHERE is_read = FALSE;

@@ -28,7 +28,28 @@ app.use('/api/institute', instituteRoutes);
 app.use('/api/channel', channelRoutes);
 app.use('/api/p2p', p2pRoutes);
 
+const onlineUsers = new Map();
+
 io.on('connection', (socket) => {
+	socket.on('user_online', (userId) => {
+		if (!userId) return;
+		const uid = String(userId);
+		onlineUsers.set(uid, socket.id);
+		socket.userId = uid;
+		io.emit('update_user_status', { userId: uid, status: 'online' });
+	});
+
+	socket.on('disconnect', () => {
+		if (socket.userId) {
+			onlineUsers.delete(socket.userId);
+			io.emit('update_user_status', { userId: socket.userId, status: 'offline' });
+		}
+	});
+
+	socket.on('get_online_users', () => {
+		socket.emit('online_users_list', Array.from(onlineUsers.keys()));
+	});
+
 	socket.on('join_institute_room', (instituteId) => {
 		socket.join(instituteId);
 		console.log(`[Server] socket ${socket.id} joined institute room: ${instituteId}`);
@@ -47,20 +68,14 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('channel_deleted', ({ channelId, instituteId }) => {
-		const roomD = io.sockets.adapter.rooms.get(instituteId);
-		console.log(`[Server] channel_deleted | instituteId: ${instituteId} | room members: ${roomD ? [...roomD].join(', ') : 'EMPTY'}`);
 		io.to(instituteId).emit('channel_deleted', { channelId });
 	});
 
 	socket.on('channel_renamed', ({ channel, instituteId }) => {
-		const roomR = io.sockets.adapter.rooms.get(instituteId);
-		console.log(`[Server] channel_renamed | instituteId: ${instituteId} | room members: ${roomR ? [...roomR].join(', ') : 'EMPTY'}`);
 		io.to(instituteId).emit('channel_renamed', { channel });
 	});
 
 	socket.on('channel_created', ({ channel, instituteId }) => {
-		const roomC = io.sockets.adapter.rooms.get(instituteId);
-		console.log(`[Server] channel_created | instituteId: ${instituteId} | channel: ${channel.name} | room members: ${roomC ? [...roomC].join(', ') : 'EMPTY'}`);
 		io.to(instituteId).emit('channel_created', { channel });
 	});
 
@@ -101,6 +116,10 @@ io.on('connection', (socket) => {
 		socket.to(data.room_id).emit('hide_p2p_typing', {
 			room_id: data.room_id,
 		});
+	});
+
+	socket.on('mark_as_read', (data) => {
+		p2pSocketController.handleMarkAsRead(socket, io, data);
 	});
 });
 
