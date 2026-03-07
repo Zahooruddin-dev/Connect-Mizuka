@@ -175,7 +175,6 @@
 	transform: rotate(-180deg);
 }
 
-/* TAB SWITCHER */
 .sidebar-tabs {
 	display: flex;
 	gap: 0;
@@ -203,6 +202,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 6px;
+	position: relative;
 }
 
 .sidebar-tab:hover {
@@ -214,7 +214,22 @@
 	border-bottom-color: var(--teal-400);
 }
 
-/* SECTION */
+.sidebar-tab-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 16px;
+	height: 16px;
+	padding: 0 4px;
+	border-radius: 8px;
+	background: #ef4444;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: 0;
+}
+
 .sidebar-section {
 	flex: 1;
 	padding: 14px 8px 8px;
