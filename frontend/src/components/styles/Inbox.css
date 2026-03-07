@@ -158,6 +158,15 @@
 	transform: translateX(2px);
 }
 
+.inbox-user-item.has-unread {
+	background: rgba(20, 184, 166, 0.04);
+}
+
+.inbox-user-item.has-unread .inbox-user-name {
+	font-weight: 700;
+	color: var(--text-primary);
+}
+
 .inbox-user-avatar-wrap {
 	position: relative;
 	width: 36px;
@@ -226,6 +235,22 @@
 .inbox-user-item:hover:not(:disabled) .inbox-user-action {
 	opacity: 1;
 	color: var(--teal-400);
+}
+
+.inbox-unread-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 9px;
+	background: #ef4444;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1;
+	flex-shrink: 0;
 }
 
 .inbox-results::-webkit-scrollbar,
