@@ -46,4 +46,20 @@ async function getMessages(req, res) {
 	}
 }
 
-module.exports = { getOrCreateChatroom, getMessages };
+async function getUnreadCounts(req, res) {
+	const { userId } = req.params;
+
+	if (!userId) {
+		return res.status(400).json({ message: 'userId is required' });
+	}
+
+	try {
+		const counts = await db.getUnreadCountsForUser(userId);
+		res.status(200).json({ unreadCounts: counts || [] });
+	} catch (error) {
+		console.error('getUnreadCounts error:', error);
+		res.status(500).json({ error: error.message });
+	}
+}
+
+module.exports = { getOrCreateChatroom, getMessages, getUnreadCounts };
