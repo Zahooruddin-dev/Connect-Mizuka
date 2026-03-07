@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
 	Hash,
 	Plus,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { fetchChannelsByInstitute, createChannel } from '../services/api';
+import { fetchUnreadCounts } from '../services/p2pApi';
 import socket from '../services/socket';
 import InstitutePanel from './InstitutePanel';
 import CreateChannelModal from './CreateChannelModal';
@@ -27,6 +28,7 @@ function Sidebar({
 	isOpen,
 	activeInstitute,
 	onStartP2P,
+	activeP2P,
 }) {
 	const { activeInstitute: contextActiveInstitute } = useAuth();
 	const [panelOpen, setPanelOpen] = useState(false);
@@ -34,14 +36,80 @@ function Sidebar({
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
 	const [channels, setChannels] = useState([]);
 	const [activeTab, setActiveTab] = useState('channels');
+	const [unreadCount, setUnreadCount] = useState(0);
+	const [onlineUsers, setOnlineUsers] = useState(new Set());
 	const activeInstituteRef = useRef(activeInstitute?.id);
+	const activeTabRef = useRef(activeTab);
+	const activeP2PRef = useRef(activeP2P);
 
-	// Keep ref in sync with actual activeInstitute
 	useEffect(() => {
 		activeInstituteRef.current = activeInstitute?.id;
 	}, [activeInstitute]);
 
-	// Fetch channels when institute changes
+	useEffect(() => {
+		activeTabRef.current = activeTab;
+	}, [activeTab]);
+
+	useEffect(() => {
+		activeP2PRef.current = activeP2P;
+	}, [activeP2P]);
+
+	useEffect(() => {
+		if (!user?.id) return;
+		socket.emit('user_online', user.id);
+		socket.emit('get_online_users');
+	}, [user?.id]);
+
+	useEffect(() => {
+		if (!user?.id) return;
+		fetchUnreadCounts(user.id).then((counts) => {
+			const total = counts.reduce((sum, r) => sum + Number(r.unread_count), 0);
+			setUnreadCount(total);
+		});
+	}, [user?.id]);
+
+	useEffect(() => {
+		const handleStatus = ({ userId, status }) => {
+			setOnlineUsers((prev) => {
+				const next = new Set(prev);
+				if (status === 'online') next.add(String(userId));
+				else next.delete(String(userId));
+				return next;
+			});
+		};
+
+		const handleOnlineList = (userIds) => {
+			setOnlineUsers(new Set(userIds.map(String)));
+		};
+
+		socket.on('update_user_status', handleStatus);
+		socket.on('online_users_list', handleOnlineList);
+		return () => {
+			socket.off('update_user_status', handleStatus);
+			socket.off('online_users_list', handleOnlineList);
+		};
+	}, []);
+
+	useEffect(() => {
+		const handleP2PMessage = (msg) => {
+			if (
+				activeTabRef.current !== 'inbox' ||
+				activeP2PRef.current?.roomId !== msg.chatroom_id
+			) {
+				setUnreadCount((prev) => prev + 1);
+			}
+		};
+
+		socket.on('receive_p2p_message', handleP2PMessage);
+		return () => socket.off('receive_p2p_message', handleP2PMessage);
+	}, []);
+
+	useEffect(() => {
+		if (activeTab === 'inbox') {
+			setUnreadCount(0);
+		}
+	}, [activeTab]);
+
 	useEffect(() => {
 		if (!activeInstitute) {
 			setChannels([]);
@@ -55,7 +123,6 @@ function Sidebar({
 		socket.emit('join_institute_room', activeInstitute.id);
 	}, [activeInstitute]);
 
-	// Listen for real-time channel events
 	useEffect(() => {
 		const handleSocketDeleted = ({ channelId }) => {
 			if (!channelId) return;
@@ -72,9 +139,7 @@ function Sidebar({
 			if (!channel?.id) return;
 			setChannels((prev) =>
 				prev.map((c) =>
-					String(c.id) === String(channel.id)
-						? { ...c, name: channel.name }
-						: c,
+					String(c.id) === String(channel.id) ? { ...c, name: channel.name } : c,
 				),
 			);
 			if (
@@ -87,12 +152,8 @@ function Sidebar({
 
 		const handleChannelCreated = ({ channel }) => {
 			if (!channel?.id) return;
-			// Only add if it belongs to the active institute
-			if (String(channel.institute_id) !== String(activeInstituteRef.current))
-				return;
-
+			if (String(channel.institute_id) !== String(activeInstituteRef.current)) return;
 			setChannels((prev) => {
-				// Check if channel already exists (avoid duplicates)
 				if (prev.some((c) => String(c.id) === String(channel.id))) return prev;
 				return [...prev, channel];
 			});
@@ -124,24 +185,14 @@ function Sidebar({
 	return (
 		<>
 			{isOpen && (
-				<div
-					className='sidebar-backdrop'
-					onClick={onClose}
-					aria-hidden='true'
-				/>
+				<div className='sidebar-backdrop' onClick={onClose} aria-hidden='true' />
 			)}
 
-			<aside
-				className={`sidebar${isOpen ? ' open' : ''}`}
-				aria-label='Navigation'
-			>
+			<aside className={`sidebar${isOpen ? ' open' : ''}`} aria-label='Navigation'>
 				<div className='sidebar-header'>
 					<div className='sidebar-brand-wrap'>
 						<span className='sidebar-brand' aria-label='Mizuka'>
-							<span className='sidebar-brand-m' aria-hidden='true'>
-								M
-							</span>
-							izuka
+							<span className='sidebar-brand-m' aria-hidden='true'>M</span>izuka
 						</span>
 						<span className='sidebar-status' aria-hidden='true' />
 					</div>
@@ -183,7 +234,6 @@ function Sidebar({
 					/>
 				</button>
 
-				{/* TAB SWITCHER */}
 				<div className='sidebar-tabs'>
 					<button
 						className={`sidebar-tab ${activeTab === 'channels' ? 'active' : ''}`}
@@ -198,18 +248,18 @@ function Sidebar({
 					>
 						<InboxIcon size={14} />
 						Inbox
+						{unreadCount > 0 && (
+							<span className='sidebar-tab-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
+						)}
 					</button>
 				</div>
 
-				{/* CHANNELS TAB */}
 				{activeTab === 'channels' && (
 					<div className='sidebar-section'>
 						{channels.length > 0 ? (
 							<>
 								<div className='sidebar-section-header'>
-									<span className='sidebar-section-label' id='channels-label'>
-										Channels
-									</span>
+									<span className='sidebar-section-label' id='channels-label'>Channels</span>
 									{isAdmin && (
 										<button
 											className='sidebar-add-channel-btn'
@@ -221,28 +271,15 @@ function Sidebar({
 										</button>
 									)}
 								</div>
-								<ul
-									className='sidebar-channels'
-									aria-labelledby='channels-label'
-									role='list'
-								>
+								<ul className='sidebar-channels' aria-labelledby='channels-label' role='list'>
 									{channels.map((ch) => (
 										<li key={ch.id} role='listitem'>
 											<button
-												className={`sidebar-channel-btn${
-													activeChannel === ch.id ? ' active' : ''
-												}`}
+												className={`sidebar-channel-btn${activeChannel === ch.id ? ' active' : ''}`}
 												onClick={() => onChannelSelect(ch)}
-												aria-current={
-													activeChannel === ch.id ? 'page' : undefined
-												}
+												aria-current={activeChannel === ch.id ? 'page' : undefined}
 											>
-												<Hash
-													className='sidebar-hash'
-													size={14}
-													strokeWidth={2}
-													aria-hidden='true'
-												/>
+												<Hash className='sidebar-hash' size={14} strokeWidth={2} aria-hidden='true' />
 												<span>{ch.name}</span>
 											</button>
 										</li>
@@ -251,35 +288,26 @@ function Sidebar({
 							</>
 						) : (
 							<div className='sidebar-empty'>
-								<Building2
-									size={30}
-									strokeWidth={1}
-									className='sidebar-empty-icon'
-									aria-hidden='true'
-								/>
-								<p className='sidebar-no-channels'>
-									Select or join an institute to see channels.
-								</p>
+								<Building2 size={30} strokeWidth={1} className='sidebar-empty-icon' aria-hidden='true' />
+								<p className='sidebar-no-channels'>Select or join an institute to see channels.</p>
 							</div>
 						)}
 					</div>
 				)}
 
-				{/* INBOX TAB */}
 				{activeTab === 'inbox' && activeInstitute && (
 					<Inbox
 						activeInstitute={activeInstitute}
 						currentUser={user}
 						onStartP2P={onStartP2P}
+						onlineUsers={onlineUsers}
 					/>
 				)}
 
 				{activeTab === 'inbox' && !activeInstitute && (
 					<div className='sidebar-empty'>
 						<Building2 size={30} strokeWidth={1} aria-hidden='true' />
-						<p className='sidebar-no-channels'>
-							Select an institute to search members
-						</p>
+						<p className='sidebar-no-channels'>Select an institute to search members</p>
 					</div>
 				)}
 
@@ -320,10 +348,7 @@ function Sidebar({
 				/>
 			)}
 			{isProfileOpen && (
-				<UserProfilePanel
-					userId={user.id}
-					onClose={() => setIsProfileOpen(false)}
-				/>
+				<UserProfilePanel userId={user.id} onClose={() => setIsProfileOpen(false)} />
 			)}
 		</>
 	);
