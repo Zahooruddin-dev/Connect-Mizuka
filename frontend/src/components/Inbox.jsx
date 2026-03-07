@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle } from 'lucide-react';
 import { searchInstituteMembers } from '../services/api';
-import { getOrCreateP2PRoom, fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
+import { getOrCreateP2PRoom, fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
 import './styles/Inbox.css';
 
@@ -43,11 +43,7 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 	}, [currentUser?.id]);
 
 	useEffect(() => {
-		if (!activeP2P?.roomId || !currentUser?.id) return;
-
-		markRoomAsRead(activeP2P.roomId, currentUser.id).then(() => {
-			if (onUnreadUpdate) onUnreadUpdate();
-		});
+		if (!activeP2P?.roomId) return;
 
 		setRoomUnread((prev) => {
 			if (!prev[activeP2P.roomId]) return prev;
@@ -55,7 +51,9 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 			delete next[activeP2P.roomId];
 			return next;
 		});
-	}, [activeP2P?.roomId, currentUser?.id, onUnreadUpdate]);
+
+		if (onUnreadUpdate) onUnreadUpdate();
+	}, [activeP2P?.roomId]);
 
 	useEffect(() => {
 		const handleMessage = (msg) => {
@@ -63,12 +61,7 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 
 			const currentRoom = activeP2PRef.current?.roomId;
 
-			if (currentRoom === msg.chatroom_id) {
-				markRoomAsRead(msg.chatroom_id, currentUser.id).then(() => {
-					if (onUnreadUpdate) onUnreadUpdate();
-				});
-				return;
-			}
+			if (currentRoom === msg.chatroom_id) return;
 
 			setRoomUnread((prev) => ({
 				...prev,
@@ -78,7 +71,7 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 
 		socket.on('receive_p2p_message', handleMessage);
 		return () => socket.off('receive_p2p_message', handleMessage);
-	}, [currentUser.id, onUnreadUpdate]);
+	}, [currentUser.id]);
 
 	const handleSearch = useCallback(
 		(val) => {

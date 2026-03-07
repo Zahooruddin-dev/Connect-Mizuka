@@ -30,6 +30,7 @@ async function getOrCreateChatroom(req, res) {
 
 async function getMessages(req, res) {
 	const { roomId } = req.params;
+	const { userId } = req.query;
 
 	if (!roomId) {
 		return res.status(400).json({ message: 'roomId is required' });
@@ -37,6 +38,11 @@ async function getMessages(req, res) {
 
 	try {
 		const messages = await db.getP2PMessagesQuery(roomId);
+
+		if (userId) {
+			await db.markMessagesAsRead(roomId, userId);
+		}
+
 		res.status(200).json({ messages: messages || [] });
 	} catch (error) {
 		console.error('getMessages error:', error);

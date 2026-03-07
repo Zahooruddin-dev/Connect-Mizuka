@@ -10,8 +10,8 @@ export const getOrCreateP2PRoom = async (user1, user2) => {
 	}
 };
 
-export const fetchP2PMessages = (roomId, limit = 50, offset = 0) =>
-	api.get(`/p2p/messages/${roomId}`, { params: { limit, offset } });
+export const fetchP2PMessages = (roomId, userId, limit = 50, offset = 0) =>
+	api.get(`/p2p/messages/${roomId}`, { params: { userId, limit, offset } });
 
 export const deleteP2PMessage = (messageId, userId) =>
 	api.delete(`/p2p/messages/${messageId}`, { data: { userId } });
@@ -32,6 +32,6 @@ export const markRoomAsRead = async (roomId, userId) => {
 	try {
 		await api.post(`/p2p/read/${roomId}`, { userId });
 	} catch {
-		// silent — not critical
+		// silent
 	}
 };

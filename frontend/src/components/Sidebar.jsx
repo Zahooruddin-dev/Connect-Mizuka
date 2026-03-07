@@ -100,6 +100,8 @@ function Sidebar({
 
 	useEffect(() => {
 		const handleP2PMessage = (msg) => {
+			if (String(msg.sender_id) === String(user.id)) return;
+
 			if (
 				activeTabRef.current !== 'inbox' ||
 				activeP2PRef.current?.roomId !== msg.chatroom_id
@@ -110,7 +112,7 @@ function Sidebar({
 
 		socket.on('receive_p2p_message', handleP2PMessage);
 		return () => socket.off('receive_p2p_message', handleP2PMessage);
-	}, []);
+	}, [user.id]);
 
 	useEffect(() => {
 		if (activeTab === 'inbox') {
@@ -309,6 +311,7 @@ function Sidebar({
 						currentUser={user}
 						onStartP2P={onStartP2P}
 						onlineUsers={onlineUsers}
+						activeP2P={activeP2P}
 						onUnreadUpdate={updateUnreadCount}
 					/>
 				)}
