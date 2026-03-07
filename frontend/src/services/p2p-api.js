@@ -23,7 +23,15 @@ export const fetchUnreadCounts = async (userId) => {
 	try {
 		const res = await api.get(`/p2p/unread/${userId}`);
 		return res.data.unreadCounts || [];
-	} catch (err) {
+	} catch {
 		return [];
+	}
+};
+
+export const markRoomAsRead = async (roomId, userId) => {
+	try {
+		await api.post(`/p2p/read/${roomId}`, { userId });
+	} catch {
+		// silent — not critical
 	}
 };
