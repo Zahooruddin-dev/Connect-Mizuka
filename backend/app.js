@@ -118,9 +118,6 @@ io.on('connection', (socket) => {
 		});
 	});
 
-	socket.on('mark_as_read', (data) => {
-		p2pSocketController.handleMarkAsRead(socket, io, data);
-	});
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {
