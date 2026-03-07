@@ -42,6 +42,17 @@ function Sidebar({
 	const activeTabRef = useRef(activeTab);
 	const activeP2PRef = useRef(activeP2P);
 
+	const updateUnreadCount = async () => {
+		if (!user?.id) return;
+		try {
+			const counts = await fetchUnreadCounts(user.id);
+			const total = counts.reduce((sum, r) => sum + Number(r.unread_count), 0);
+			setUnreadCount(total);
+		} catch {
+			setUnreadCount(0);
+		}
+	};
+
 	useEffect(() => {
 		activeInstituteRef.current = activeInstitute?.id;
 	}, [activeInstitute]);
@@ -62,10 +73,7 @@ function Sidebar({
 
 	useEffect(() => {
 		if (!user?.id) return;
-		fetchUnreadCounts(user.id).then((counts) => {
-			const total = counts.reduce((sum, r) => sum + Number(r.unread_count), 0);
-			setUnreadCount(total);
-		});
+		updateUnreadCount();
 	}, [user?.id]);
 
 	useEffect(() => {
@@ -106,7 +114,7 @@ function Sidebar({
 
 	useEffect(() => {
 		if (activeTab === 'inbox') {
-			setUnreadCount(0);
+			updateUnreadCount();
 		}
 	}, [activeTab]);
 
@@ -301,6 +309,7 @@ function Sidebar({
 						currentUser={user}
 						onStartP2P={onStartP2P}
 						onlineUsers={onlineUsers}
+						onUnreadUpdate={updateUnreadCount}
 					/>
 				)}
 

@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle } from 'lucide-react';
 import { searchInstituteMembers } from '../services/api';
-import { getOrCreateP2PRoom, fetchUnreadCounts } from '../services/p2p-api';
+import { getOrCreateP2PRoom, fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
 import './styles/Inbox.css';
 
-function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set(), activeP2P }) {
+function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set(), activeP2P, onUnreadUpdate }) {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [results, setResults] = useState([]);
 	const [recentChats, setRecentChats] = useState([]);
@@ -45,9 +45,8 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 	useEffect(() => {
 		if (!activeP2P?.roomId || !currentUser?.id) return;
 
-		socket.emit('mark_as_read', {
-			chatroom_id: activeP2P.roomId,
-			reader_id: currentUser.id,
+		markRoomAsRead(activeP2P.roomId, currentUser.id).then(() => {
+			if (onUnreadUpdate) onUnreadUpdate();
 		});
 
 		setRoomUnread((prev) => {
@@ -56,18 +55,17 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 			delete next[activeP2P.roomId];
 			return next;
 		});
-	}, [activeP2P?.roomId, currentUser?.id]);
+	}, [activeP2P?.roomId, currentUser?.id, onUnreadUpdate]);
 
 	useEffect(() => {
 		const handleMessage = (msg) => {
-			const currentRoom = activeP2PRef.current?.roomId;
-
 			if (String(msg.sender_id) === String(currentUser.id)) return;
 
+			const currentRoom = activeP2PRef.current?.roomId;
+
 			if (currentRoom === msg.chatroom_id) {
-				socket.emit('mark_as_read', {
-					chatroom_id: msg.chatroom_id,
-					reader_id: currentUser.id,
+				markRoomAsRead(msg.chatroom_id, currentUser.id).then(() => {
+					if (onUnreadUpdate) onUnreadUpdate();
 				});
 				return;
 			}
@@ -78,22 +76,9 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 			}));
 		};
 
-		const handleRead = ({ chatroom_id, reader_id }) => {
-			if (String(reader_id) !== String(currentUser.id)) return;
-			setRoomUnread((prev) => {
-				const next = { ...prev };
-				delete next[chatroom_id];
-				return next;
-			});
-		};
-
 		socket.on('receive_p2p_message', handleMessage);
-		socket.on('messages_read', handleRead);
-		return () => {
-			socket.off('receive_p2p_message', handleMessage);
-			socket.off('messages_read', handleRead);
-		};
-	}, [currentUser.id]);
+		return () => socket.off('receive_p2p_message', handleMessage);
+	}, [currentUser.id, onUnreadUpdate]);
 
 	const handleSearch = useCallback(
 		(val) => {
