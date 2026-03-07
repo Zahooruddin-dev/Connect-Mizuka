@@ -48,8 +48,8 @@ async function getP2PMessagesQuery(roomId) {
 async function saveP2PMessage(chatroom_id, sender_id, content) {
 	try {
 		const { rows } = await pool.query(
-			`INSERT INTO p2p_messages (chatroom_id, sender_id, content, created_at) 
-			 VALUES ($1, $2, $3, NOW()) 
+			`INSERT INTO p2p_messages (chatroom_id, sender_id, content, is_read, created_at) 
+			 VALUES ($1, $2, $3, FALSE, NOW()) 
 			 RETURNING *`,
 			[chatroom_id, sender_id, content],
 		);
@@ -60,9 +60,48 @@ async function saveP2PMessage(chatroom_id, sender_id, content) {
 	}
 }
 
+async function markMessagesAsRead(chatroom_id, reader_id) {
+	try {
+		const { rows } = await pool.query(
+			`UPDATE p2p_messages
+			 SET is_read = TRUE
+			 WHERE chatroom_id = $1
+			   AND sender_id != $2
+			   AND is_read = FALSE
+			 RETURNING id`,
+			[chatroom_id, reader_id],
+		);
+		return rows.map((r) => r.id);
+	} catch (error) {
+		console.error('markMessagesAsRead error:', error);
+		throw error;
+	}
+}
+
+async function getUnreadCountsForUser(userId) {
+	try {
+		const { rows } = await pool.query(
+			`SELECT m.chatroom_id, COUNT(*) AS unread_count
+			 FROM p2p_messages m
+			 JOIN p2p_chatrooms c ON c.id = m.chatroom_id
+			 WHERE (c.user_one_id = $1 OR c.user_two_id = $1)
+			   AND m.sender_id != $1
+			   AND m.is_read = FALSE
+			 GROUP BY m.chatroom_id`,
+			[userId],
+		);
+		return rows;
+	} catch (error) {
+		console.error('getUnreadCountsForUser error:', error);
+		throw error;
+	}
+}
+
 module.exports = {
 	findExistingRoomQuery,
 	createNewRoom,
 	getP2PMessagesQuery,
 	saveP2PMessage,
+	markMessagesAsRead,
+	getUnreadCountsForUser,
 };
