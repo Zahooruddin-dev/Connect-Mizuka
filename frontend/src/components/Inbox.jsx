@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle } from 'lucide-react';
 import { searchInstituteMembers } from '../services/api';
-import { getOrCreateP2PRoom, fetchUnreadCounts } from '../services/p2pApi';
+import { getOrCreateP2PRoom, fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
 import './styles/Inbox.css';
 
