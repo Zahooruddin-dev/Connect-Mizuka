@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle } from 'lucide-react';
 import { searchInstituteMembers } from '../services/api';
-import { getOrCreateP2PRoom } from '../services/p2pApi';
+import { getOrCreateP2PRoom } from '../services/p2p-api';
 import './styles/Inbox.css';
 
 function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set() }) {

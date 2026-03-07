@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { fetchChannelsByInstitute, createChannel } from '../services/api';
-import { fetchUnreadCounts } from '../services/p2pApi';
+import { fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
 import InstitutePanel from './InstitutePanel';
 import CreateChannelModal from './CreateChannelModal';
