@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle } from 'lucide-react';
 import { searchInstituteMembers } from '../services/api';
-import { getOrCreateP2PRoom, fetchUnreadCounts } from '../services/p2p-api';
+import { getOrCreateP2PRoom, fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
 import './styles/Inbox.css';
 
@@ -43,7 +43,13 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 	}, [currentUser?.id]);
 
 	useEffect(() => {
-		if (!activeP2P?.roomId) return;
+		if (!activeP2P?.roomId || !currentUser?.id) return;
+
+		console.log('Inbox: Marking room as read for activeP2P:', activeP2P.roomId, currentUser.id);
+
+		markRoomAsRead(activeP2P.roomId, currentUser.id).then(() => {
+			if (onUnreadUpdate) onUnreadUpdate();
+		});
 
 		setRoomUnread((prev) => {
 			if (!prev[activeP2P.roomId]) return prev;
@@ -51,9 +57,7 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 			delete next[activeP2P.roomId];
 			return next;
 		});
-
-		if (onUnreadUpdate) onUnreadUpdate();
-	}, [activeP2P?.roomId]);
+	}, [activeP2P?.roomId, currentUser?.id, onUnreadUpdate]);
 
 	useEffect(() => {
 		const handleMessage = (msg) => {
@@ -61,7 +65,13 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 
 			const currentRoom = activeP2PRef.current?.roomId;
 
-			if (currentRoom === msg.chatroom_id) return;
+			if (currentRoom === msg.chatroom_id) {
+				console.log('Inbox: Received message in current room, marking as read:', msg.chatroom_id, currentUser.id);
+				markRoomAsRead(msg.chatroom_id, currentUser.id).then(() => {
+					if (onUnreadUpdate) onUnreadUpdate();
+				});
+				return;
+			}
 
 			setRoomUnread((prev) => ({
 				...prev,
@@ -71,7 +81,7 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 
 		socket.on('receive_p2p_message', handleMessage);
 		return () => socket.off('receive_p2p_message', handleMessage);
-	}, [currentUser.id]);
+	}, [currentUser.id, onUnreadUpdate]);
 
 	const handleSearch = useCallback(
 		(val) => {

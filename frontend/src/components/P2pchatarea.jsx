@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import socket from '../services/socket';
-import { fetchP2PMessages } from '../services/api';
+import { fetchP2PMessages } from '../services/p2p-api';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import './styles/P2PChatArea.css';
@@ -22,29 +22,21 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 		setMessages([]);
 		setTypingUsers([]);
 
-		console.log('[P2P] Joining room:', roomId);
-
-		const joinRoom = () => {
-			console.log('[P2P] Emitting join_p2p:', roomId);
-			socket.emit('join_p2p', roomId);
-		};
+		const joinRoom = () => socket.emit('join_p2p', roomId);
 
 		if (socket.connected) {
 			joinRoom();
 		} else {
-			console.log('[P2P] Socket not connected, waiting...');
 			socket.once('connect', joinRoom);
 		}
 
-		fetchP2PMessages(roomId)
+		fetchP2PMessages(roomId, user.id)
 			.then((res) => {
-				console.log('[P2P] Fetched messages:', res.data);
 				if (activeRoomRef.current !== roomId) return;
 				const data = Array.isArray(res.data) ? res.data : res.data.messages || [];
 				setMessages(data);
 			})
-			.catch((err) => {
-				console.error('[P2P] Error fetching messages:', err);
+			.catch(() => {
 				if (activeRoomRef.current === roomId) {
 					setError('Failed to load messages');
 					setMessages([]);
@@ -55,7 +47,6 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 			});
 
 		const handleReceive = (msg) => {
-			console.log('[P2P] Received message:', msg);
 			if (msg.chatroom_id && msg.chatroom_id !== roomId) return;
 			if (msg.sender_id === user.id) return;
 
@@ -74,13 +65,11 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 		};
 
 		const handleDisplayTyping = ({ username, room_id }) => {
-			console.log('[P2P] User typing:', { username, room_id });
 			if (room_id && room_id !== roomId) return;
 			setTypingUsers((prev) => (prev.includes(username) ? prev : [...prev, username]));
 		};
 
 		const handleHideTyping = ({ room_id } = {}) => {
-			console.log('[P2P] Hide typing');
 			if (room_id && room_id !== roomId) return;
 			setTypingUsers([]);
 		};
@@ -90,7 +79,6 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 		socket.on('hide_p2p_typing', handleHideTyping);
 
 		return () => {
-			console.log('[P2P] Leaving room:', roomId);
 			socket.emit('leave_p2p', roomId);
 			socket.off('receive_p2p_message', handleReceive);
 			socket.off('Display_p2p_typing', handleDisplayTyping);
@@ -100,7 +88,6 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 
 	const handleSend = useCallback(
 		(content) => {
-			console.log('[P2P] Sending message:', { roomId, content });
 			const tempMessage = {
 				id: `temp-${Date.now()}`,
 				content,
@@ -132,19 +119,19 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 	}, []);
 
 	return (
-		<div className="p2p-chat-area">
-			<div className="p2p-chat-header">
-				<div className="p2p-chat-title">
-					<span className="p2p-username">{otherUsername}</span>
+		<div className='p2p-chat-area'>
+			<div className='p2p-chat-header'>
+				<div className='p2p-chat-title'>
+					<span className='p2p-username'>{otherUsername}</span>
 				</div>
-				<button className="p2p-close-btn" onClick={onClose} aria-label="Close chat">
+				<button className='p2p-close-btn' onClick={onClose} aria-label='Close chat'>
 					<X size={18} strokeWidth={2} />
 				</button>
 			</div>
 
 			{loading ? (
-				<div className="p2p-chat-loading">
-					<div className="chat-loading-dots">
+				<div className='p2p-chat-loading'>
+					<div className='chat-loading-dots'>
 						<span />
 						<span />
 						<span />
@@ -152,7 +139,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 					<span>Loading conversation...</span>
 				</div>
 			) : error ? (
-				<div className="p2p-chat-error">
+				<div className='p2p-chat-error'>
 					<span>{error}</span>
 					<button onClick={() => window.location.reload()}>Reload</button>
 				</div>

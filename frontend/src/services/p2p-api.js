@@ -30,8 +30,10 @@ export const fetchUnreadCounts = async (userId) => {
 
 export const markRoomAsRead = async (roomId, userId) => {
 	try {
+		console.log('Marking room as read:', roomId, userId);
 		await api.post(`/p2p/read/${roomId}`, { userId });
-	} catch {
-		// silent
+		console.log('Marked room as read successfully');
+	} catch (error) {
+		console.error('Error marking room as read:', error);
 	}
 };

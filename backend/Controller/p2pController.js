@@ -70,12 +70,15 @@ async function markRoomAsRead(req, res) {
 	const { roomId } = req.params;
 	const { userId } = req.body;
 
+	console.log('Marking room as read:', roomId, userId);
+
 	if (!roomId || !userId) {
 		return res.status(400).json({ message: 'roomId and userId are required' });
 	}
 
 	try {
-		await db.markMessagesAsRead(roomId, userId);
+		const updatedIds = await db.markMessagesAsRead(roomId, userId);
+		console.log('Updated message IDs:', updatedIds);
 		res.status(200).json({ success: true });
 	} catch (error) {
 		console.error('markRoomAsRead error:', error);

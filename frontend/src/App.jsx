@@ -98,6 +98,7 @@ function App() {
 					isOpen={sidebarOpen}
 					activeInstitute={activeInstitute}
 					onStartP2P={handleStartP2P}
+					activeP2P={activeP2P}
 				/>
 			)}
 			<div className="main-content">

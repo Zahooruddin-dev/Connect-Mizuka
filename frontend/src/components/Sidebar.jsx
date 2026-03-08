@@ -63,6 +63,7 @@ function Sidebar({
 
 	useEffect(() => {
 		activeP2PRef.current = activeP2P;
+		console.log('Sidebar: activeP2P updated:', activeP2P);
 	}, [activeP2P]);
 
 	useEffect(() => {

@@ -62,6 +62,7 @@ async function saveP2PMessage(chatroom_id, sender_id, content) {
 
 async function markMessagesAsRead(chatroom_id, reader_id) {
 	try {
+		console.log('Executing markMessagesAsRead query:', chatroom_id, reader_id);
 		const { rows } = await pool.query(
 			`UPDATE p2p_messages
 			 SET is_read = TRUE
@@ -71,6 +72,7 @@ async function markMessagesAsRead(chatroom_id, reader_id) {
 			 RETURNING id`,
 			[chatroom_id, reader_id],
 		);
+		console.log('Query result rows:', rows.length);
 		return rows.map((r) => r.id);
 	} catch (error) {
 		console.error('markMessagesAsRead error:', error);

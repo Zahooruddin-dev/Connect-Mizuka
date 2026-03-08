@@ -43,15 +43,12 @@ export const fetchUserInfo = async (userId) => {
 	}
 };
 export const getUserProfile = async (userId) => {
-	try {
-		const res = await fetch(`http://localhost:3000/api/auth/user-profile/${userId}`);
-		if (!res.ok) {
-			return { message: 'User not found' };
-		}
-		return await res.json();
-	} catch (err) {
-		return { message: 'Network error' };
-	}
+  try {
+    const res = await api.get(`/auth/user-profile/${userId}`);
+    return res.data;
+  } catch (err) {
+    return err.response?.data || { message: 'User not found or Network error' };
+  }
 };
 
 export const updateProfile = async (
