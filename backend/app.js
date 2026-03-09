@@ -104,6 +104,9 @@ io.on('connection', (socket) => {
 	socket.on('send_p2p_message', (data) => {
 		p2pSocketController.handleSendP2PMessage(socket, io, data);
 	});
+	socket.on('delete_p2p_message', (data) => {
+		p2pSocketController.handleDeleteP2PMessage(socket, io, data);
+	});
 
 	socket.on('typing_p2p', (data) => {
 		socket.to(data.room_id).emit('Display_p2p_typing', {
