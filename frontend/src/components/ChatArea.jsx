@@ -4,6 +4,7 @@ import {
 	fetchMessages,
 	fetchP2PMessages,
 	deleteP2PMessage,
+	editP2PMessage
 } from '../services/api';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -178,6 +179,19 @@ function ChatArea({
 									...msg,
 									content: 'This message was deleted',
 									is_deleted: true,
+								}
+							: msg,
+					),
+				);
+			});
+			socket.on('p2p_message_edited', ({ messageId }) => {
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.id === messageId
+							? {
+									...msg,
+									content: 'This message was edited',
+									is_deleted: false,
 								}
 							: msg,
 					),
