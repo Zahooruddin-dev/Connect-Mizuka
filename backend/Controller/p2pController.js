@@ -74,7 +74,7 @@ async function editMsg(req, res) {
 	const { messageId } = req.params;
 	const { userId, content } = req.body;
 	console.log(
-		`[Backend] Attempting to delete message: ${messageId} for user: ${userId} content :${content}`,
+		`[Backend] Attempting to edit message: ${messageId} for user: ${userId} content :${content}`,
 	);
 	if (!messageId || !userId || !content) {
 		return res
@@ -84,7 +84,7 @@ async function editMsg(req, res) {
 
 	try {
 		console.log(
-			`[Backend] Attempting to delete message: ${messageId} for user: ${userId} content :${content}`,
+			`[Backend] Attempting to edit message: ${messageId} for user: ${userId} content :${content}`,
 		);
 		const editIds = await db.editP2PMessagesQuery(
 			messageId,
@@ -150,4 +150,5 @@ module.exports = {
 	getUnreadCounts,
 	markRoomAsRead,
 	deleteMsg,
+	editMsg
 };
