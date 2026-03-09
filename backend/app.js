@@ -42,7 +42,10 @@ io.on('connection', (socket) => {
 	socket.on('disconnect', () => {
 		if (socket.userId) {
 			onlineUsers.delete(socket.userId);
-			io.emit('update_user_status', { userId: socket.userId, status: 'offline' });
+			io.emit('update_user_status', {
+				userId: socket.userId,
+				status: 'offline',
+			});
 		}
 	});
 
@@ -52,7 +55,9 @@ io.on('connection', (socket) => {
 
 	socket.on('join_institute_room', (instituteId) => {
 		socket.join(instituteId);
-		console.log(`[Server] socket ${socket.id} joined institute room: ${instituteId}`);
+		console.log(
+			`[Server] socket ${socket.id} joined institute room: ${instituteId}`,
+		);
 	});
 
 	socket.on('join_institute', (channelId) => {
@@ -105,7 +110,10 @@ io.on('connection', (socket) => {
 		p2pSocketController.handleSendP2PMessage(socket, io, data);
 	});
 	socket.on('delete_p2p_message', (data) => {
-		p2pSocketController.handleDeleteP2PMessage(socket, io, data);
+		io.to(data.roomId).emit('p2p_message_deleted', {
+			messageId: data.messageId,
+			newContent: 'This message was deleted',
+		});
 	});
 
 	socket.on('typing_p2p', (data) => {
@@ -120,7 +128,6 @@ io.on('connection', (socket) => {
 			room_id: data.room_id,
 		});
 	});
-
 });
 
 httpServer.listen(PORT, '0.0.0.0', () => {
