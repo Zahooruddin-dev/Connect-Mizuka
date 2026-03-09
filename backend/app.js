@@ -114,6 +114,12 @@ io.on('connection', (socket) => {
 			messageId: data.messageId,
 			newContent: 'This message was deleted',
 		});
+	});	
+	socket.on('edit_p2p_message', (data) => {
+		io.to(data.roomId).emit('p2p_message_edited', {
+			messageId: data.messageId,
+			newContent: 'This message was edit',
+		});
 	});
 
 	socket.on('typing_p2p', (data) => {
