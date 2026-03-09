@@ -45,6 +45,25 @@ async function getP2PMessagesQuery(roomId) {
 	}
 }
 
+async function deleteP2PMessagesQuery(message_id, sender_id) {
+	try {
+		console.log('Executing deleteP2PMessagesQuery query:', message_id, sender_id);
+		const { rows } = await pool.query(
+			`UPDATE p2p_messages
+			 SET content = 'This message was deleted', 
+			 is_deleted = TRUE
+			 WHERE id = $1
+			   AND sender_id = $2
+			 RETURNING id`,
+			[message_id, sender_id],
+		);
+		console.log('Query soft deleted row:', rows.length);
+		return rows.map((r) => r.id);
+	} catch (error) {
+		console.error('deleteP2PMessagesQuery error:', error);
+		throw error;
+	}
+}
 async function saveP2PMessage(chatroom_id, sender_id, content) {
 	try {
 		const { rows } = await pool.query(
@@ -80,25 +99,6 @@ async function markMessagesAsRead(chatroom_id, reader_id) {
 	}
 }
 
-async function deleteP2PMessagesQuery(chatroom_id, reader_id) {
-	try {
-		console.log('Executing markMessagesAsRead query:', chatroom_id, reader_id);
-		const { rows } = await pool.query(
-			`UPDATE p2p_messages
-			 SET content = 'This message was deleted', 
-			 is_delete = TRUE
-			 WHERE id = $1
-			   AND sender_id = $2
-			 RETURNING id`,
-			[chatroom_id, reader_id],
-		);
-		console.log('Query soft deleted row:', rows.length);
-		return rows.map((r) => r.id);
-	} catch (error) {
-		console.error('deleteP2PMessagesQuery error:', error);
-		throw error;
-	}
-}
 
 async function getUnreadCountsForUser(userId) {
 	try {

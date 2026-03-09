@@ -19,7 +19,7 @@ export const fetchP2PMessages = (roomId, userId, limit = 50, offset = 0) =>
 
 export const deleteP2PMessage = async (messageId, userId) => {
 	try {
-		const res = await api.patch(`/p2p/message/${messageId}/delete`, {
+		const res = await api.patch(`/p2p/messages/${messageId}/delete`, {
 			userId,
 			roomId,
 		});
