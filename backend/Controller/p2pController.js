@@ -92,7 +92,7 @@ async function editMsg(req, res) {
 			content,
 		);
 
-		if (!editIds || deletedIds.length === 0) {
+		if (!editIds || editIds.length === 0) {
 			console.log(
 				`[Backend] Failed: Message not found, or user ${userId} is not the sender.`,
 			);

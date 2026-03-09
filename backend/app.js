@@ -118,7 +118,7 @@ io.on('connection', (socket) => {
 	socket.on('edit_p2p_message', (data) => {
 		io.to(data.roomId).emit('p2p_message_edited', {
 			messageId: data.messageId,
-			newContent: 'This message was edit',
+			newContent: data.content,
 		});
 	});
 
