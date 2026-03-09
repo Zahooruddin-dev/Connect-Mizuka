@@ -187,6 +187,19 @@ export const deleteP2PMessage = async (messageId, userId,roomId) => {
 		throw error;
 	}
 };
+export const editP2PMessage = async (messageId, userId,roomId,content) => {
+	try {
+		const res = await api.patch(`/p2p/messages/${messageId}/edit`, {
+			userId,
+			roomId,
+			content
+		});
+		return res.data;
+	} catch (error) {
+		console.error('Error editing messages', error);
+		throw error;
+	}
+};
 
 export const fetchP2PChatrooms = (userId) =>
 	api.get(`/p2p/chatrooms/${userId}`);
