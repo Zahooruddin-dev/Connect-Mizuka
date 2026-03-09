@@ -170,6 +170,13 @@ function ChatArea({
 			socket.on('channel_deleted', handleSocketChannelDeleted);
 			socket.on('channel_renamed', handleSocketChannelRenamed);
 		}
+		if (isP2P) {
+			socket.on('delete_p2p_message', ({ messageId }) => {
+				msg.id === messageId
+					? { ...msg, contentL: 'This message was deletd', is_deleted: true }
+					: msg;
+			});
+		}
 
 		return () => {
 			const leaveEvent = isP2P ? 'leave_p2p' : 'leave_institute';
@@ -181,6 +188,7 @@ function ChatArea({
 			socket.off(receiveEvent, handleReceive);
 			socket.off(typingEvent, handleDisplayTyping);
 			socket.off(stopTypingEvent, handleHideTyping);
+			socket.off('p2p_message_deleted');
 			socket.off('connect', joinRoom);
 
 			if (!isP2P) {
