@@ -61,6 +61,22 @@ async function deleteP2PMessagesQuery(message_id, userId) {
 		throw error;
 	}
 }
+async function editP2PMessagesQuery(message_id, userId,content) {
+	try {
+		const { rows } = await pool.query(
+			`UPDATE p2p_messages 
+     SET is_deleted = false, content = $1 
+     WHERE id = $2 AND sender_id = $3 
+     RETURNING id`,
+			[content,message_id, userId],
+		);
+		console.log('Query soft deleted row:', rows.length);
+		return rows.length > 0 ? [rows[0].id] : null;
+	} catch (error) {
+		console.error('deleteP2PMessagesQuery error:', error);
+		throw error;
+	}
+}
 async function saveP2PMessage(chatroom_id, sender_id, content) {
 	try {
 		const { rows } = await pool.query(
@@ -123,4 +139,5 @@ module.exports = {
 	markMessagesAsRead,
 	getUnreadCountsForUser,
 	deleteP2PMessagesQuery,
+	editP2PMessagesQuery
 };
