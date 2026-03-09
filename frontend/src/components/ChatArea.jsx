@@ -210,6 +210,7 @@ function ChatArea({
 			socket.off(typingEvent, handleDisplayTyping);
 			socket.off(stopTypingEvent, handleHideTyping);
 			socket.off('delete_p2p_message');
+			socket.off('edit_p2p_message');
 			socket.off('connect', joinRoom);
 
 			if (!isP2P) {
@@ -305,6 +306,23 @@ function ChatArea({
 		}
 	};
 
+	const handleP2PEdit = async (messageId) => {
+		if (!isP2P) return;
+		try {
+			await deleteP2PMessage(messageId, user.id, roomId,content);
+			setMessages((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? { ...msg, content: 'This message was edited', is_deleted: false }
+						: msg,
+				),
+			);
+			socket.emit('edit_p2p_message', { roomId, messageId });
+		} catch (error) {
+			console.error('failed to edit message', error);
+		}
+	};
+
 	return (
 		<div className='chat-area'>
 			<ChatHeader
@@ -312,6 +330,7 @@ function ChatArea({
 				channelLabel={currentLabel}
 				instituteId={instituteId}
 				onChannelDeleted={handleChannelDeleted}
+				onChannelEdit={handleP2PEdit}
 				onChannelRenamed={handleChannelRenamed}
 				isP2P={isP2P}
 				otherUsername={otherUsername}
