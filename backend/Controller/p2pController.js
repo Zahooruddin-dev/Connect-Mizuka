@@ -52,22 +52,47 @@ async function getMessages(req, res) {
 async function deleteMsg(req, res) {
 	const { messageId } = req.params;
 	const { userId } = req.body;
-	console.log(
-			`[Backend] Attempting to delete message: ${messageId} for user: ${userId}`,
-		);
 	if (!messageId || !userId) {
 		return res
 			.status(400)
 			.json({ message: 'messageId nad userId is required' });
 	}
+	try {
+		const deletedIds = await db.deleteP2PMessagesQuery(messageId, userId);
+		if (!deletedIds || deletedIds.length === 0) {
+			return res
+				.status(404)
+				.json({ error: 'Message not found or unauthorized' });
+		}
+		return res.status(200).json({ success: true, deletedId: deletedIds[0] });
+	} catch (error) {
+		console.error('deleteMsg error:', error);
+		res.status(500).json({ error: 'Could not load message to delete' });
+	}
+}
+async function editMsg(req, res) {
+	const { messageId } = req.params;
+	const { userId, content } = req.body;
+	console.log(
+		`[Backend] Attempting to delete message: ${messageId} for user: ${userId} content :${content}`,
+	);
+	if (!messageId || !userId || !content) {
+		return res
+			.status(400)
+			.json({ message: 'messageId, userId and content is required' });
+	}
 
 	try {
 		console.log(
-			`[Backend] Attempting to delete message: ${messageId} for user: ${userId}`,
+			`[Backend] Attempting to delete message: ${messageId} for user: ${userId} content :${content}`,
 		);
-		const deletedIds = await db.deleteP2PMessagesQuery(messageId, userId);
+		const editIds = await db.editP2PMessagesQuery(
+			messageId,
+			userId,
+			content,
+		);
 
-		if (!deletedIds || deletedIds.length === 0) {
+		if (!editIds || deletedIds.length === 0) {
 			console.log(
 				`[Backend] Failed: Message not found, or user ${userId} is not the sender.`,
 			);
@@ -77,12 +102,12 @@ async function deleteMsg(req, res) {
 		}
 
 		console.log(
-			`[Backend] Success! Marked message ${deletedIds[0]} as deleted.`,
+			`[Backend] Success! Marked message ${editIds[0]} as edit.`,
 		);
-		return res.status(200).json({ success: true, deletedId: deletedIds[0] });
+		return res.status(200).json({ success: true, deletedId: editIds[0] });
 	} catch (error) {
-		console.error('deleteMsg error:', error);
-		res.status(500).json({ error: 'Could not load message to delete' });
+		console.error('editmesage error:', error);
+		res.status(500).json({ error: 'Could not load message to edit' });
 	}
 }
 
