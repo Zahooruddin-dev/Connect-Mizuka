@@ -4,7 +4,7 @@ import {
 	fetchMessages,
 	fetchP2PMessages,
 	deleteP2PMessage,
-	editP2PMessage
+	editP2PMessage,
 } from '../services/api';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -184,7 +184,7 @@ function ChatArea({
 					),
 				);
 			});
-			socket.on('p2p_message_edited', ({ messageId,newContent }) => {
+			socket.on('p2p_message_edited', ({ messageId, newContent }) => {
 				setMessages((prev) =>
 					prev.map((msg) =>
 						msg.id === messageId
@@ -306,18 +306,22 @@ function ChatArea({
 		}
 	};
 
-	const handleP2PEdit = async (messageId,newContent) => {
+	const handleP2PEdit = async (messageId, newContent) => {
 		if (!isP2P) return;
 		try {
-			await editP2PMessage(messageId, user.id, roomId,newContent);
+			await editP2PMessage(messageId, user.id, roomId, newContent);
 			setMessages((prev) =>
 				prev.map((msg) =>
 					msg.id === messageId
-						? { ...msg, content: 'This message was edited', is_deleted: false }
+						? { ...msg, content: newContent, is_deleted: false }
 						: msg,
 				),
 			);
-			socket.emit('edit_p2p_message', { roomId, messageId, content:newContent });
+			socket.emit('edit_p2p_message', {
+				roomId,
+				messageId,
+				content: newContent,
+			});
 		} catch (error) {
 			console.error('failed to edit message', error);
 		}
@@ -330,7 +334,6 @@ function ChatArea({
 				channelLabel={currentLabel}
 				instituteId={instituteId}
 				onChannelDeleted={handleChannelDeleted}
-				onChannelEdit={handleP2PEdit}
 				onChannelRenamed={handleChannelRenamed}
 				isP2P={isP2P}
 				otherUsername={otherUsername}
@@ -350,6 +353,7 @@ function ChatArea({
 					typingUsers={typingUsers.filter((u) => u !== user.username)}
 					currentUserId={user.id}
 					onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
+					onMessageEdited={handleP2PEdit}
 					onStartP2P={onStartP2P}
 				/>
 			)}

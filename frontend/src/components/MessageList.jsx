@@ -3,7 +3,14 @@ import MessageItem from './MessageItem';
 import UserProfilePopover from './Userprofilepopover';
 import './styles/MessageList.css';
 
-function MessageList({ messages, typingUsers, currentUserId, onMessageDeleted, onStartP2P }) {
+function MessageList({
+	messages,
+	typingUsers,
+	currentUserId,
+	onMessageDeleted,
+	onMessageEdited,
+	onStartP2P,
+}) {
 	const bottomRef = useRef(null);
 	const [selectedUser, setSelectedUser] = useState(null);
 
@@ -20,10 +27,10 @@ function MessageList({ messages, typingUsers, currentUserId, onMessageDeleted, o
 	};
 
 	return (
-		<div className="message-list">
-			<div className="message-list-inner">
+		<div className='message-list'>
+			<div className='message-list-inner'>
 				{messages.length === 0 && (
-					<div className="message-empty">
+					<div className='message-empty'>
 						<span>No messages yet. Start the conversation.</span>
 					</div>
 				)}
@@ -33,18 +40,20 @@ function MessageList({ messages, typingUsers, currentUserId, onMessageDeleted, o
 						message={msg}
 						currentUserId={currentUserId}
 						onDeleted={onMessageDeleted}
+						onEdit={onMessageEdited}
 						onUserClick={handleUserClick}
 					/>
 				))}
 				{typingUsers.length > 0 && (
-					<div className="typing-indicator">
-						<div className="typing-dots">
+					<div className='typing-indicator'>
+						<div className='typing-dots'>
 							<span />
 							<span />
 							<span />
 						</div>
-						<span className="typing-label">
-							{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing
+						<span className='typing-label'>
+							{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'}{' '}
+							typing
 						</span>
 					</div>
 				)}

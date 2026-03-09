@@ -146,3 +146,111 @@
 	font-family: var(--font-mono);
 	padding: 0 4px;
 }
+.message-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.message-item:hover .message-action-buttons {
+  opacity: 1;
+}
+
+.message-action-icon {
+  color: var(--text-ghost);
+  padding: 5px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.message-action-icon:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.message-action-icon.message-delete:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.message-action-icon.deleting {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.edit-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px; 
+}
+
+.edit-input {
+  background: rgba(0, 0, 0, 0.2); 
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.edit-input:focus {
+  border-color: var(--teal-400);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.edit-save-btn, .edit-cancel-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.edit-save-btn {
+  color: var(--teal-300);
+  background: rgba(45, 212, 191, 0.15);
+}
+
+.edit-save-btn:hover {
+  background: rgba(45, 212, 191, 0.25);
+  color: #fff;
+}
+
+.edit-cancel-btn {
+  color: var(--text-ghost);
+}
+
+.edit-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.edited-flag {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5); 
+  font-style: italic;
+  margin-left: 6px;
+  user-select: none;
+}
