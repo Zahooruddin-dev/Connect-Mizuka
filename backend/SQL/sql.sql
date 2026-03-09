@@ -82,3 +82,6 @@ ALTER TABLE p2p_messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAU
 CREATE INDEX IF NOT EXISTS idx_p2p_messages_unread
   ON p2p_messages (chatroom_id, sender_id, is_read)
   WHERE is_read = FALSE;
+
+  ALTER TABLE p2p_messages 
+ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
