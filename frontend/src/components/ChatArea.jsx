@@ -307,7 +307,7 @@ function ChatArea({
 					messages={messages}
 					typingUsers={typingUsers.filter((u) => u !== user.username)}
 					currentUserId={user.id}
-					onMessageDeleted={handleMessageDeleted}
+					onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
 					onStartP2P={onStartP2P}
 				/>
 			)}
