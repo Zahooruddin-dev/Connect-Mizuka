@@ -174,8 +174,19 @@ export const getOrCreateP2PRoom = async (user1, user2) => {
 export const fetchP2PMessages = (roomId, limit = 50, offset = 0) =>
 	api.get(`/p2p/messages/${roomId}`, { params: { limit, offset } });
 
-export const deleteP2PMessage = (messageId, userId) =>
-	api.delete(`/p2p/messages/${messageId}`, { data: { userId } });
+
+export const deleteP2PMessage = async (messageId, userId,roomId) => {
+	try {
+		const res = await api.patch(`/p2p/messages/${messageId}/delete`, {
+			userId,
+			roomId,
+		});
+		return res.data;
+	} catch (error) {
+		console.error('Error deleting messages', error);
+		throw error;
+	}
+};
 
 export const fetchP2PChatrooms = (userId) =>
 	api.get(`/p2p/chatrooms/${userId}`);

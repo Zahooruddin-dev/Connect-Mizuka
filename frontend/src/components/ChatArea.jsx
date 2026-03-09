@@ -16,7 +16,6 @@ function ChatArea({
 	instituteId,
 	roomId,
 	otherUsername,
-	otherUserId,
 	user,
 	onChannelRenamed,
 	onStartP2P,
@@ -171,10 +170,18 @@ function ChatArea({
 			socket.on('channel_renamed', handleSocketChannelRenamed);
 		}
 		if (isP2P) {
-			socket.on('delete_p2p_message', ({ messageId }) => {
-				msg.id === messageId
-					? { ...msg, contentL: 'This message was deletd', is_deleted: true }
-					: msg;
+			socket.on('p2p_message_deleted', ({ messageId }) => {
+				setMessages((prev) =>
+					prev.map((msg) =>
+						msg.id === messageId
+							? {
+									...msg,
+									content: 'This message was deleted',
+									is_deleted: true,
+								}
+							: msg,
+					),
+				);
 			});
 		}
 
@@ -188,7 +195,7 @@ function ChatArea({
 			socket.off(receiveEvent, handleReceive);
 			socket.off(typingEvent, handleDisplayTyping);
 			socket.off(stopTypingEvent, handleHideTyping);
-			socket.off('p2p_message_deleted');
+			socket.off('delete_p2p_message');
 			socket.off('connect', joinRoom);
 
 			if (!isP2P) {
@@ -271,11 +278,13 @@ function ChatArea({
 		if (!isP2P) return;
 		try {
 			await deleteP2PMessage(messageId, user.id, roomId);
-			setMessages((prev) => {
-				msg.id === messageId
-					? { ...msg, content: 'This message was deleted', is_deleted: true }
-					: msg;
-			});
+			setMessages((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? { ...msg, content: 'This message was deleted', is_deleted: true }
+						: msg,
+				),
+			);
 			socket.emit('delete_p2p_message', { roomId, messageId });
 		} catch (error) {
 			console.error('failed to delete message', error);

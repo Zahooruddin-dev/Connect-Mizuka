@@ -99,18 +99,6 @@ async function getUserProfileForPopover(userId) {
 	);
 	return rows[0] || null;
 }
-async function searchInstituteMembers(instituteId, userId, searchTerm) {
-	const { rows } = await pool.query(
-		`SELECT u.id, u.username,u.email,u.role
-		FROM users u
-		JOIN user_institutes ui ON u.id = ui.user_id
-		WHERE ui.institute_id = $1
-		AND u.id !=$1
-		AND u.username ILIKE $3 LIMIT 15`,
-		[instituteId, userId, searchTerm],
-	);
-	return rows || null;
-}
 
 module.exports = {
 	registerQuery,
@@ -123,5 +111,4 @@ module.exports = {
 	getUserInfoQuery,
 	updateProfileQuery,
 	getUserProfileForPopover,
-	searchInstituteMembers,
 };

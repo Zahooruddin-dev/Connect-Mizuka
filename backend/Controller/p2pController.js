@@ -50,21 +50,36 @@ async function getMessages(req, res) {
 	}
 }
 async function deleteMsg(req, res) {
-	const { roomId } = req.params;
-	const { userId } = req.query;
-
-	if (!roomId || !userId) {
-		return res.status(400).json({ message: 'roomId nad userId is required' });
+	const { messageId } = req.params;
+	const { userId } = req.body;
+	console.log(
+			`[Backend] Attempting to delete message: ${messageId} for user: ${userId}`,
+		);
+	if (!messageId || !userId) {
+		return res
+			.status(400)
+			.json({ message: 'messageId nad userId is required' });
 	}
 
 	try {
-		const messages = await db.deleteP2PMessagesQuery(roomId);
+		console.log(
+			`[Backend] Attempting to delete message: ${messageId} for user: ${userId}`,
+		);
+		const deletedIds = await db.deleteP2PMessagesQuery(messageId, userId);
 
-		if (userId) {
-			await db.markMessagesAsRead(roomId, userId);
+		if (!deletedIds || deletedIds.length === 0) {
+			console.log(
+				`[Backend] Failed: Message not found, or user ${userId} is not the sender.`,
+			);
+			return res
+				.status(404)
+				.json({ error: 'Message not found or unauthorized' });
 		}
 
-		res.status(200).json({ messages: messages || [] });
+		console.log(
+			`[Backend] Success! Marked message ${deletedIds[0]} as deleted.`,
+		);
+		return res.status(200).json({ success: true, deletedId: deletedIds[0] });
 	} catch (error) {
 		console.error('deleteMsg error:', error);
 		res.status(500).json({ error: 'Could not load message to delete' });
@@ -104,4 +119,10 @@ async function markRoomAsRead(req, res) {
 	}
 }
 
-module.exports = { getOrCreateChatroom, getMessages, getUnreadCounts, markRoomAsRead,deleteMsg };
+module.exports = {
+	getOrCreateChatroom,
+	getMessages,
+	getUnreadCounts,
+	markRoomAsRead,
+	deleteMsg,
+};
