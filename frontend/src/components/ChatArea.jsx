@@ -184,13 +184,13 @@ function ChatArea({
 					),
 				);
 			});
-			socket.on('p2p_message_edited', ({ messageId }) => {
+			socket.on('p2p_message_edited', ({ messageId,newContent }) => {
 				setMessages((prev) =>
 					prev.map((msg) =>
 						msg.id === messageId
 							? {
 									...msg,
-									content: 'This message was edited',
+									content: newContent,
 									is_deleted: false,
 								}
 							: msg,
@@ -306,10 +306,10 @@ function ChatArea({
 		}
 	};
 
-	const handleP2PEdit = async (messageId) => {
+	const handleP2PEdit = async (messageId,newContent) => {
 		if (!isP2P) return;
 		try {
-			await deleteP2PMessage(messageId, user.id, roomId,content);
+			await editP2PMessage(messageId, user.id, roomId,newContent);
 			setMessages((prev) =>
 				prev.map((msg) =>
 					msg.id === messageId
@@ -317,7 +317,7 @@ function ChatArea({
 						: msg,
 				),
 			);
-			socket.emit('edit_p2p_message', { roomId, messageId });
+			socket.emit('edit_p2p_message', { roomId, messageId, content:newContent });
 		} catch (error) {
 			console.error('failed to edit message', error);
 		}
