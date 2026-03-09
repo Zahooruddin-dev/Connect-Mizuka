@@ -49,6 +49,27 @@ async function getMessages(req, res) {
 		res.status(500).json({ error: 'Could not load message history' });
 	}
 }
+async function deleteMsg(req, res) {
+	const { roomId } = req.params;
+	const { userId } = req.query;
+
+	if (!roomId || !userId) {
+		return res.status(400).json({ message: 'roomId nad userId is required' });
+	}
+
+	try {
+		const messages = await db.deleteP2PMessagesQuery(roomId);
+
+		if (userId) {
+			await db.markMessagesAsRead(roomId, userId);
+		}
+
+		res.status(200).json({ messages: messages || [] });
+	} catch (error) {
+		console.error('deleteMsg error:', error);
+		res.status(500).json({ error: 'Could not load message to delete' });
+	}
+}
 
 async function getUnreadCounts(req, res) {
 	const { userId } = req.params;
@@ -70,15 +91,12 @@ async function markRoomAsRead(req, res) {
 	const { roomId } = req.params;
 	const { userId } = req.body;
 
-	console.log('Marking room as read:', roomId, userId);
-
 	if (!roomId || !userId) {
 		return res.status(400).json({ message: 'roomId and userId are required' });
 	}
 
 	try {
-		const updatedIds = await db.markMessagesAsRead(roomId, userId);
-		console.log('Updated message IDs:', updatedIds);
+		await db.markMessagesAsRead(roomId, userId);
 		res.status(200).json({ success: true });
 	} catch (error) {
 		console.error('markRoomAsRead error:', error);
@@ -86,4 +104,4 @@ async function markRoomAsRead(req, res) {
 	}
 }
 
-module.exports = { getOrCreateChatroom, getMessages, getUnreadCounts, markRoomAsRead };
+module.exports = { getOrCreateChatroom, getMessages, getUnreadCounts, markRoomAsRead,deleteMsg };
