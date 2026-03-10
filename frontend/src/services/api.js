@@ -67,6 +67,14 @@ export const updateProfile = async (
 		return err.response?.data || { message: 'Network error' };
 	}
 };
+export const changePassword = async (userId, oldPassword, newPassword) => {
+	try {
+		const res = await api.post(`/auth/change-password/${userId}`, { oldPassword, newPassword });
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
 
 
 export const requestPasswordReset = async (email) => {
