@@ -11,6 +11,16 @@ import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 import './styles/ChatArea.css';
 
+// Two separate module-level caches — one per conversation type.
+// Both survive room/channel switches for the lifetime of the tab.
+
+const channelCache = new Map();
+const p2pCache = new Map();
+
+function getCache(isP2P) {
+	return isP2P ? p2pCache : channelCache;
+}
+
 function ChatArea({
 	channelId,
 	channelLabel,
@@ -22,90 +32,123 @@ function ChatArea({
 	onStartP2P,
 	onCloseP2P,
 }) {
-	const [messages, setMessages] = useState([]);
+	const isP2P = !!roomId;
+	const activeId = isP2P ? roomId : channelId;
+	const cached = getCache(isP2P).get(activeId);
+
+	const [messages, setMessages] = useState(cached || []);
 	const [typingUsers, setTypingUsers] = useState([]);
-	const [loading, setLoading] = useState(true);
+	const [loading, setLoading] = useState(!cached);
 	const [currentLabel, setCurrentLabel] = useState(
 		channelLabel || otherUsername,
 	);
+	const [retryCount, setRetryCount] = useState(0);
 
-	const activeChannelRef = useRef(channelId);
-	const activeRoomRef = useRef(roomId);
-	const isP2P = !!roomId;
+	const activeIdRef = useRef(activeId);
+	const messagesRef = useRef(messages);
 
+	useEffect(() => {
+		messagesRef.current = messages;
+	}, [messages]);
 	useEffect(() => {
 		setCurrentLabel(channelLabel || otherUsername);
 	}, [channelLabel, otherUsername]);
 
-	useEffect(() => {
-		activeChannelRef.current = channelId;
-		activeRoomRef.current = roomId;
+	// Write through helper  keeps cache and state in sync in one call.
+	const setAndCache = useCallback(
+		(updater) => {
+			setMessages((prev) => {
+				const next = typeof updater === 'function' ? updater(prev) : updater;
+				getCache(isP2P).set(activeId, next);
+				return next;
+			});
+		},
+		[isP2P, activeId],
+	);
 
-		setLoading(true);
-		setMessages([]);
+	useEffect(() => {
+		activeIdRef.current = activeId;
+
+		// Restore cache immediately , skip spinner on revisit.
+		const hit = getCache(isP2P).get(activeId);
+		if (hit) {
+			setMessages(hit);
+			setLoading(false);
+		} else {
+			setMessages([]);
+			setLoading(true);
+		}
 		setTypingUsers([]);
 
-		// Determine which socket event to emit and which room to join
-		const socketEvent = isP2P ? 'join_p2p' : 'join_institute';
-		const roomToJoin = isP2P ? roomId : channelId;
+		// Join the right socket room.
+		const joinRoom = () =>
+			socket.emit(isP2P ? 'join_p2p' : 'join_institute', activeId);
+		if (socket.connected) joinRoom();
+		else socket.once('connect', joinRoom);
 
-		const joinRoom = () => {
-			console.log(
-				`[ChatArea] Joining ${isP2P ? 'P2P' : 'channel'} room:`,
-				roomToJoin,
-			);
-			socket.emit(socketEvent, roomToJoin);
-		};
+		// Fetch  silent background refresh on cache hit, full load on miss.
+		const fetchFn = isP2P
+			? () => fetchP2PMessages(activeId, user.id)
+			: () => fetchMessages(activeId);
 
-		if (socket.connected) {
-			joinRoom();
-		} else {
-			socket.once('connect', joinRoom);
-		}
-
-		// Fetch messages from appropriate endpoint
-		const fetchFn = isP2P ? fetchP2PMessages : fetchMessages;
-		fetchFn(roomToJoin)
+		fetchFn()
 			.then((res) => {
-				const currentRoom = isP2P
-					? activeRoomRef.current
-					: activeChannelRef.current;
-				if (currentRoom !== roomToJoin) return;
-
-				const data = Array.isArray(res.data)
+				if (activeIdRef.current !== activeId) return;
+				const fresh = Array.isArray(res.data)
 					? res.data
 					: res.data.messages || [];
-				setMessages(data);
+
+				// Only update when data actually changed  avoids pointless re-renders.
+				const current = messagesRef.current;
+				const changed =
+					fresh.length !== current.length ||
+					fresh.some((m, i) => m.id !== current[i]?.id);
+
+				if (changed) setAndCache(fresh);
 			})
 			.catch(() => {
-				const currentRoom = isP2P
-					? activeRoomRef.current
-					: activeChannelRef.current;
-				if (currentRoom === roomToJoin) setMessages([]);
+				if (activeIdRef.current !== activeId) return;
+				if (!getCache(isP2P).get(activeId)?.length) setMessages([]);
 			})
 			.finally(() => {
-				const currentRoom = isP2P
-					? activeRoomRef.current
-					: activeChannelRef.current;
-				if (currentRoom === roomToJoin) setLoading(false);
+				if (activeIdRef.current === activeId) setLoading(false);
 			});
 
-		// Message receive handler
-		const handleReceive = (msg) => {
-			const currentRoom = isP2P
-				? activeRoomRef.current
-				: activeChannelRef.current;
+		// ── Incoming messages ─
 
-			// Filter by room/channel
+		const handleReceive = (msg) => {
+			if (activeIdRef.current !== activeId) return;
+
 			if (isP2P) {
-				if (msg.chatroom_id && msg.chatroom_id !== currentRoom) return;
-				if (msg.sender_id === user.id) return;
+				if (msg.chatroom_id && msg.chatroom_id !== activeId) return;
+
+				// Own message confirmed by server — reconcile temp placeholder.
+				if (msg.sender_id === user.id) {
+					setAndCache((prev) => {
+						const idx = prev.findIndex(
+							(m) =>
+								String(m.id).startsWith('temp-') &&
+								m.content === msg.content &&
+								m.sender_id === user.id,
+						);
+						if (idx === -1) return prev;
+						const next = [...prev];
+						next[idx] = {
+							id: msg.id,
+							content: msg.content,
+							sender_id: msg.sender_id,
+							username: msg.username,
+							created_at: msg.created_at,
+						};
+						return next;
+					});
+					return;
+				}
 			} else {
-				if (msg.channel_id && msg.channel_id !== currentRoom) return;
+				if (msg.channel_id && msg.channel_id !== activeId) return;
 				if (msg.from === user.id || msg.sender_id === user.id) return;
 			}
 
-			// Normal message format
 			const normalised = {
 				id: msg.id,
 				content: msg.text ?? msg.content,
@@ -114,50 +157,64 @@ function ChatArea({
 				created_at: msg.timestamp ?? msg.created_at,
 			};
 
-			setMessages((prev) => {
+			setAndCache((prev) => {
 				if (prev.some((m) => m.id === normalised.id)) return prev;
 				return [...prev, normalised];
 			});
 		};
 
-		// Typing indicators
-		const handleDisplayTyping = ({ username, channel_id, room_id }) => {
-			const currentRoom = isP2P
-				? activeRoomRef.current
-				: activeChannelRef.current;
-			const relevantRoom = room_id || channel_id;
+		// ── Typing ──
 
-			if (relevantRoom && relevantRoom !== currentRoom) return;
+		const handleDisplayTyping = ({ username, channel_id, room_id }) => {
+			const relevantRoom = room_id || channel_id;
+			if (relevantRoom && relevantRoom !== activeId) return;
 			setTypingUsers((prev) =>
 				prev.includes(username) ? prev : [...prev, username],
 			);
 		};
 
 		const handleHideTyping = ({ channel_id, room_id } = {}) => {
-			const currentRoom = isP2P
-				? activeRoomRef.current
-				: activeChannelRef.current;
 			const relevantRoom = room_id || channel_id;
-
-			if (relevantRoom && relevantRoom !== currentRoom) return;
+			if (relevantRoom && relevantRoom !== activeId) return;
 			setTypingUsers([]);
 		};
 
-		// Channel-specific handlers
-		const handleSocketChannelDeleted = ({ channelId: deletedId }) => {
-			if (!isP2P && deletedId === activeChannelRef.current) {
-				setMessages([]);
-			}
+		// ── Channel-only handlers ─────────────
+
+		const handleChannelDeleted = ({ channelId: deletedId }) => {
+			if (deletedId === activeIdRef.current) setMessages([]);
 		};
 
-		const handleSocketChannelRenamed = ({ channel }) => {
-			if (!isP2P && channel.id === activeChannelRef.current) {
-				setCurrentLabel(channel.name);
-				if (typeof onChannelRenamed === 'function') onChannelRenamed(channel);
-			}
+		const handleChannelRenamed = ({ channel }) => {
+			if (channel.id !== activeIdRef.current) return;
+			setCurrentLabel(channel.name);
+			if (typeof onChannelRenamed === 'function') onChannelRenamed(channel);
 		};
 
-		// Register listeners
+		// ── P2P delete / edit from other user
+
+		const handleP2PDeleted = ({ messageId }) => {
+			setAndCache((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? { ...msg, content: 'This message was deleted', is_deleted: true }
+						: msg,
+				),
+			);
+		};
+
+		const handleP2PEdited = ({ messageId, newContent }) => {
+			setAndCache((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? { ...msg, content: newContent, is_deleted: false }
+						: msg,
+				),
+			);
+		};
+
+		// ── Register
+
 		const receiveEvent = isP2P ? 'receive_p2p_message' : 'receive_message';
 		const typingEvent = isP2P ? 'Display_p2p_typing' : 'Display_typing';
 		const stopTypingEvent = isP2P ? 'hide_p2p_typing' : 'hide_typing';
@@ -167,58 +224,31 @@ function ChatArea({
 		socket.on(stopTypingEvent, handleHideTyping);
 
 		if (!isP2P) {
-			socket.on('channel_deleted', handleSocketChannelDeleted);
-			socket.on('channel_renamed', handleSocketChannelRenamed);
-		}
-		if (isP2P) {
-			socket.on('p2p_message_deleted', ({ messageId }) => {
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === messageId
-							? {
-									...msg,
-									content: 'This message was deleted',
-									is_deleted: true,
-								}
-							: msg,
-					),
-				);
-			});
-			socket.on('p2p_message_edited', ({ messageId, newContent }) => {
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === messageId
-							? {
-									...msg,
-									content: newContent,
-									is_deleted: false,
-								}
-							: msg,
-					),
-				);
-			});
+			socket.on('channel_deleted', handleChannelDeleted);
+			socket.on('channel_renamed', handleChannelRenamed);
+		} else {
+			socket.on('p2p_message_deleted', handleP2PDeleted);
+			socket.on('p2p_message_edited', handleP2PEdited);
 		}
 
 		return () => {
-			const leaveEvent = isP2P ? 'leave_p2p' : 'leave_institute';
-			const currentRoom = isP2P
-				? activeRoomRef.current
-				: activeChannelRef.current;
-			socket.emit(leaveEvent, currentRoom);
-
+			socket.emit(isP2P ? 'leave_p2p' : 'leave_institute', activeId);
 			socket.off(receiveEvent, handleReceive);
 			socket.off(typingEvent, handleDisplayTyping);
 			socket.off(stopTypingEvent, handleHideTyping);
-			socket.off('delete_p2p_message');
-			socket.off('edit_p2p_message');
 			socket.off('connect', joinRoom);
 
 			if (!isP2P) {
-				socket.off('channel_deleted', handleSocketChannelDeleted);
-				socket.off('channel_renamed', handleSocketChannelRenamed);
+				socket.off('channel_deleted', handleChannelDeleted);
+				socket.off('channel_renamed', handleChannelRenamed);
+			} else {
+				socket.off('p2p_message_deleted', handleP2PDeleted);
+				socket.off('p2p_message_edited', handleP2PEdited);
 			}
 		};
-	}, [channelId, roomId, isP2P, user.id, onChannelRenamed]);
+	}, [channelId, roomId, isP2P, user.id, retryCount, onChannelRenamed]);
+
+	// ── Send ─
 
 	const handleSend = useCallback(
 		(content) => {
@@ -229,7 +259,7 @@ function ChatArea({
 				username: user.username,
 				created_at: new Date().toISOString(),
 			};
-			setMessages((prev) => [...prev, tempMessage]);
+			setAndCache((prev) => [...prev, tempMessage]);
 
 			if (isP2P) {
 				socket.emit('send_p2p_message', {
@@ -247,85 +277,96 @@ function ChatArea({
 				});
 			}
 		},
-		[channelId, roomId, isP2P, user],
+		[channelId, roomId, isP2P, user, setAndCache],
 	);
 
 	const handleTyping = useCallback(() => {
-		if (isP2P) {
+		if (isP2P)
 			socket.emit('typing_p2p', { room_id: roomId, username: user.username });
-		} else {
+		else
 			socket.emit('typing', { channel_id: channelId, username: user.username });
-		}
 	}, [channelId, roomId, isP2P, user]);
 
 	const handleStopTyping = useCallback(() => {
-		if (isP2P) {
+		if (isP2P)
 			socket.emit('stop_typing_p2p', {
 				room_id: roomId,
 				username: user.username,
 			});
-		} else {
+		else
 			socket.emit('stop_typing', {
 				channel_id: channelId,
 				username: user.username,
 			});
-		}
 	}, [channelId, roomId, isP2P, user]);
 
-	const handleMessageDeleted = useCallback((id) => {
-		setMessages((prev) => prev.filter((m) => (m.id || m._id) !== id));
-	}, []);
+	// ── P2P delete / edit (own actions) ──────
 
-	const handleChannelDeleted = useCallback(() => {
-		setMessages([]);
-	}, []);
+	const handleP2PDelete = useCallback(
+		async (messageId) => {
+			try {
+				await deleteP2PMessage(messageId, user.id, roomId);
+				setAndCache((prev) =>
+					prev.map((msg) =>
+						msg.id === messageId
+							? {
+									...msg,
+									content: 'This message was deleted',
+									is_deleted: true,
+								}
+							: msg,
+					),
+				);
+				socket.emit('delete_p2p_message', { roomId, messageId });
+			} catch (err) {
+				console.error('failed to delete message', err);
+			}
+		},
+		[roomId, user.id, setAndCache],
+	);
 
-	const handleChannelRenamed = useCallback(
+	const handleP2PEdit = useCallback(
+		async (messageId, newContent) => {
+			try {
+				await editP2PMessage(messageId, user.id, roomId, newContent);
+				setAndCache((prev) =>
+					prev.map((msg) =>
+						msg.id === messageId
+							? { ...msg, content: newContent, is_deleted: false }
+							: msg,
+					),
+				);
+				socket.emit('edit_p2p_message', {
+					roomId,
+					messageId,
+					content: newContent,
+				});
+			} catch (err) {
+				console.error('failed to edit message', err);
+			}
+		},
+		[roomId, user.id, setAndCache],
+	);
+
+	const handleMessageDeleted = useCallback(
+		(id) => {
+			setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== id));
+		},
+		[setAndCache],
+	);
+
+	const handleChannelDeletedCb = useCallback(() => setMessages([]), []);
+
+	const handleChannelRenamedCb = useCallback(
 		(updatedChannel) => {
 			setCurrentLabel(updatedChannel.name);
-			if (typeof onChannelRenamed === 'function') {
+			if (typeof onChannelRenamed === 'function')
 				onChannelRenamed(updatedChannel);
-			}
 		},
 		[onChannelRenamed],
 	);
-	const handleP2PDelete = async (messageId) => {
-		if (!isP2P) return;
-		try {
-			await deleteP2PMessage(messageId, user.id, roomId);
-			setMessages((prev) =>
-				prev.map((msg) =>
-					msg.id === messageId
-						? { ...msg, content: 'This message was deleted', is_deleted: true }
-						: msg,
-				),
-			);
-			socket.emit('delete_p2p_message', { roomId, messageId });
-		} catch (error) {
-			console.error('failed to delete message', error);
-		}
-	};
 
-	const handleP2PEdit = async (messageId, newContent) => {
-		if (!isP2P) return;
-		try {
-			await editP2PMessage(messageId, user.id, roomId, newContent);
-			setMessages((prev) =>
-				prev.map((msg) =>
-					msg.id === messageId
-						? { ...msg, content: newContent, is_deleted: false }
-						: msg,
-				),
-			);
-			socket.emit('edit_p2p_message', {
-				roomId,
-				messageId,
-				content: newContent,
-			});
-		} catch (error) {
-			console.error('failed to edit message', error);
-		}
-	};
+	const handleRetry = useCallback(() => setRetryCount((c) => c + 1), []);
 
 	return (
 		<div className='chat-area'>
@@ -333,8 +374,8 @@ function ChatArea({
 				channelId={channelId}
 				channelLabel={currentLabel}
 				instituteId={instituteId}
-				onChannelDeleted={handleChannelDeleted}
-				onChannelRenamed={handleChannelRenamed}
+				onChannelDeleted={handleChannelDeletedCb}
+				onChannelRenamed={handleChannelRenamedCb}
 				isP2P={isP2P}
 				otherUsername={otherUsername}
 				onCloseP2P={onCloseP2P}
@@ -355,6 +396,7 @@ function ChatArea({
 					onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
 					onMessageEdited={handleP2PEdit}
 					onStartP2P={onStartP2P}
+					onRetry={handleRetry}
 				/>
 			)}
 			<MessageInput
