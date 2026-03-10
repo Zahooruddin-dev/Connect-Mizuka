@@ -207,7 +207,8 @@ async function changePassword(req, res) {
 			user: updatedUser,
 		});
 	} catch (error) {
-		res.status(500).json({ message: error.message });
+		console.error('Change password error:', error);
+		res.status(500).json({ message: 'Internal server error' });
 	}
 }
 
@@ -215,6 +216,7 @@ module.exports = {
 	Login,
 	Register,
 	deleteUser,
+	changePassword,
 	linkToInstitute,
 	myMemberships,
 	getUserInfo,

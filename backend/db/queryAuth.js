@@ -99,7 +99,16 @@ async function getUserProfileForPopover(userId) {
 	);
 	return rows[0] || null;
 }
-
+async function changePasswordQuery(userId, newPasswordHash) {
+  const { rows } = await pool.query(
+    `UPDATE users 
+     SET password_hash = $1 
+     WHERE id = $2 
+     RETURNING id, username, email`,
+    [newPasswordHash, userId]
+  );
+  return rows[0] || null;
+}
 module.exports = {
 	registerQuery,
 	getUserByEmail,
@@ -111,4 +120,5 @@ module.exports = {
 	getUserInfoQuery,
 	updateProfileQuery,
 	getUserProfileForPopover,
+	changePasswordQuery
 };
