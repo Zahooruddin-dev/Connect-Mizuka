@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './services/AuthContext';
 import socket from './services/socket';
 import LoginPage from './pages/LoginPage';
@@ -8,105 +8,101 @@ import ChatArea from './components/ChatArea';
 import './styles/app.css';
 
 function App() {
-	const { user, institutes, activeInstitute, logout, isActiveAdmin } = useAuth();
+	const { user, institutes, activeInstitute, logout, isActiveAdmin } =
+		useAuth();
 	const [activeChannel, setActiveChannel] = useState(null);
 	const [activeP2P, setActiveP2P] = useState(null);
-	const [sidebarOpen, setSidebarOpen] = useState(true);
+	const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 
+	// Responsive sidebar, derived from window width.
 	useEffect(() => {
-		const arb = () => {
-			setSidebarOpen(window.innerWidth >= 768);
-		};
-		arb();
-		window.addEventListener('resize', arb);
-		return () => window.removeEventListener('resize', arb);
+		const onResize = () => setSidebarOpen(window.innerWidth >= 768);
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
 	}, []);
 
+	// Join the institute socket room whenever the active institute changes.
 	useEffect(() => {
 		if (!activeInstitute) return;
-
-		const join = () => {
-			console.log('[App] join_institute_room:', activeInstitute.id, '| socket.id:', socket.id);
-			socket.emit('join_institute_room', activeInstitute.id);
-		};
-
-		if (socket.connected) {
-			join();
-		} else {
-			console.log('[App] socket not connected yet, queuing join...');
-			socket.once('connect', join);
-		}
-
+		const join = () => socket.emit('join_institute_room', activeInstitute.id);
+		if (socket.connected) join();
+		else socket.once('connect', join);
 		return () => socket.off('connect', join);
 	}, [activeInstitute]);
 
+	// Clear active channel if it gets deleted while open.
+	// Uses a ref stable callback so the listener isn't re-registered on every
+	// render, only when activeChannel.id actually changes.
 	useEffect(() => {
+		if (!activeChannel) return;
 		const handleChannelDeleted = ({ channelId }) => {
-			if (activeChannel && String(activeChannel.id) === String(channelId)) {
+			if (String(activeChannel.id) === String(channelId)) {
 				setActiveChannel(null);
 			}
 		};
-
 		socket.on('channel_deleted', handleChannelDeleted);
 		return () => socket.off('channel_deleted', handleChannelDeleted);
-	}, [activeChannel]);
+	}, [activeChannel?.id]);
+
+	const handleChannelRenamed = useCallback((updatedChannel) => {
+		setActiveChannel((prev) => {
+			if (!prev || String(prev.id) !== String(updatedChannel.id)) return prev;
+			return { ...prev, name: updatedChannel.name };
+		});
+	}, []);
+
+	const handleStartP2P = useCallback(
+		({ roomId, otherUserId, otherUsername }) => {
+			setActiveP2P({ roomId, otherUserId, otherUsername });
+			setActiveChannel(null);
+		},
+		[],
+	);
+
+	const handleChannelSelect = useCallback((channel) => {
+		setActiveChannel(channel);
+		setActiveP2P(null);
+	}, []);
+
+	const handleCloseP2P = useCallback(() => {
+		setActiveP2P(null);
+	}, []);
+
+	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
+	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
 
 	if (!user) return <LoginPage />;
 	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
 
-	const effectiveChannel = activeChannel ? { id: activeChannel.id, name: activeChannel.name } : {
+	const effectiveChannel = activeChannel ?? {
 		id: activeInstitute.id,
 		name: 'general',
 	};
-
-	function handleChannelRenamed(updatedChannel) {
-		if (activeChannel && String(activeChannel.id) === String(updatedChannel.id)) {
-			setActiveChannel((prev) => ({ ...prev, name: updatedChannel.name }));
-		}
-	}
-
-	const handleStartP2P = ({ roomId, otherUserId, otherUsername }) => {
-		console.log('[App] Starting P2P with:', { roomId, otherUserId, otherUsername });
-		setActiveChannel(null);
-		setActiveP2P({
-			roomId,
-			otherUserId,
-			otherUsername,
-		});
-	};
-
-	const handleChannelSelect = (channel) => {
-		setActiveChannel(channel);
-		setActiveP2P(null);
-	};
-
-	const handleCloseP2P = () => {
-		console.log('[App] Closing P2P');
-		setActiveP2P(null);
-	};
+	const isAdmin = isActiveAdmin();
 
 	return (
-		<div className="app-layout">
+		<div className='app-layout'>
 			{sidebarOpen && (
 				<Sidebar
 					activeChannel={effectiveChannel.id}
 					onChannelSelect={handleChannelSelect}
 					user={user}
 					onLogout={logout}
-					isAdmin={isActiveAdmin()}
-					onClose={() => setSidebarOpen(false)}
+					isAdmin={isAdmin}
+					onClose={handleCloseSidebar}
 					isOpen={sidebarOpen}
 					activeInstitute={activeInstitute}
 					onStartP2P={handleStartP2P}
 					activeP2P={activeP2P}
 				/>
 			)}
-			<div className="main-content">
+
+			<div className='main-content'>
 				{!sidebarOpen && (
 					<button
-						className="sidebar-toggle"
-						onClick={() => setSidebarOpen(true)}
-						aria-label="Open navigation"
+						className='sidebar-toggle'
+						onClick={handleOpenSidebar}
+						aria-label='Open navigation'
 					>
 						☰
 					</button>
@@ -120,7 +116,6 @@ function App() {
 						user={user}
 						onCloseP2P={handleCloseP2P}
 						onStartP2P={handleStartP2P}
-						isP2P={true}
 					/>
 				) : (
 					<ChatArea
@@ -130,7 +125,7 @@ function App() {
 						user={user}
 						onChannelRenamed={handleChannelRenamed}
 						onStartP2P={handleStartP2P}
-						isAdmin={isActiveAdmin()}
+						isAdmin={isAdmin}
 					/>
 				)}
 			</div>
