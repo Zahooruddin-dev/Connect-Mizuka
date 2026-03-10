@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
 	Hash,
 	Plus,
@@ -8,7 +8,6 @@ import {
 	Building2,
 	Inbox as InboxIcon,
 } from 'lucide-react';
-import { useAuth } from '../services/AuthContext';
 import { fetchChannelsByInstitute, createChannel } from '../services/api';
 import { fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
@@ -30,7 +29,6 @@ function Sidebar({
 	onStartP2P,
 	activeP2P,
 }) {
-	const { activeInstitute: contextActiveInstitute } = useAuth();
 	const [panelOpen, setPanelOpen] = useState(false);
 	const [createModalOpen, setCreateModalOpen] = useState(false);
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -38,11 +36,30 @@ function Sidebar({
 	const [activeTab, setActiveTab] = useState('channels');
 	const [unreadCount, setUnreadCount] = useState(0);
 	const [onlineUsers, setOnlineUsers] = useState(new Set());
+
+	// Refs let socket handlers always read current values without being
+	// recreated or added to effect dependency arrays.
 	const activeInstituteRef = useRef(activeInstitute?.id);
+	const activeChannelRef = useRef(activeChannel);
 	const activeTabRef = useRef(activeTab);
 	const activeP2PRef = useRef(activeP2P);
 
-	const updateUnreadCount = async () => {
+	useEffect(() => {
+		activeInstituteRef.current = activeInstitute?.id;
+	}, [activeInstitute]);
+	useEffect(() => {
+		activeChannelRef.current = activeChannel;
+	}, [activeChannel]);
+	useEffect(() => {
+		activeTabRef.current = activeTab;
+	}, [activeTab]);
+	useEffect(() => {
+		activeP2PRef.current = activeP2P;
+	}, [activeP2P]);
+
+	// Stable reference, safe to pass as a prop to Inbox without causing
+	// re-renders every time Sidebar re-renders.
+	const updateUnreadCount = useCallback(async () => {
 		if (!user?.id) return;
 		try {
 			const counts = await fetchUnreadCounts(user.id);
@@ -51,32 +68,21 @@ function Sidebar({
 		} catch {
 			setUnreadCount(0);
 		}
-	};
+	}, [user?.id]);
 
-	useEffect(() => {
-		activeInstituteRef.current = activeInstitute?.id;
-	}, [activeInstitute]);
-
-	useEffect(() => {
-		activeTabRef.current = activeTab;
-	}, [activeTab]);
-
-	useEffect(() => {
-		activeP2PRef.current = activeP2P;
-		console.log('Sidebar: activeP2P updated:', activeP2P);
-	}, [activeP2P]);
-
+	// Register presence on mount / user change.
 	useEffect(() => {
 		if (!user?.id) return;
 		socket.emit('user_online', user.id);
 		socket.emit('get_online_users');
 	}, [user?.id]);
 
+	// Initial unread count fetch.
 	useEffect(() => {
-		if (!user?.id) return;
 		updateUnreadCount();
-	}, [user?.id]);
+	}, [updateUnreadCount]);
 
+	// Online/offline presence events.
 	useEffect(() => {
 		const handleStatus = ({ userId, status }) => {
 			setOnlineUsers((prev) => {
@@ -86,10 +92,8 @@ function Sidebar({
 				return next;
 			});
 		};
-
-		const handleOnlineList = (userIds) => {
+		const handleOnlineList = (userIds) =>
 			setOnlineUsers(new Set(userIds.map(String)));
-		};
 
 		socket.on('update_user_status', handleStatus);
 		socket.on('online_users_list', handleOnlineList);
@@ -99,10 +103,10 @@ function Sidebar({
 		};
 	}, []);
 
+	// Increment sidebar badge on incoming P2P messages.
 	useEffect(() => {
 		const handleP2PMessage = (msg) => {
 			if (String(msg.sender_id) === String(user.id)) return;
-
 			if (
 				activeTabRef.current !== 'inbox' ||
 				activeP2PRef.current?.roomId !== msg.chatroom_id
@@ -110,23 +114,21 @@ function Sidebar({
 				setUnreadCount((prev) => prev + 1);
 			}
 		};
-
 		socket.on('receive_p2p_message', handleP2PMessage);
 		return () => socket.off('receive_p2p_message', handleP2PMessage);
 	}, [user.id]);
 
+	// Re-sync unread count from DB when switching to the inbox tab.
 	useEffect(() => {
-		if (activeTab === 'inbox') {
-			updateUnreadCount();
-		}
-	}, [activeTab]);
+		if (activeTab === 'inbox') updateUnreadCount();
+	}, [activeTab, updateUnreadCount]);
 
+	// Fetch channels and join institute room when the institute changes.
 	useEffect(() => {
 		if (!activeInstitute) {
 			setChannels([]);
 			return;
 		}
-
 		fetchChannelsByInstitute(activeInstitute.id)
 			.then((res) => setChannels(res.data?.channels || res.channels || []))
 			.catch(() => setChannels([]));
@@ -134,36 +136,37 @@ function Sidebar({
 		socket.emit('join_institute_room', activeInstitute.id);
 	}, [activeInstitute]);
 
+	// Channel socket events, use refs for activeChannel and onChannelSelect
+	// so this effect never needs to re-register just because those values changed.
 	useEffect(() => {
 		const handleSocketDeleted = ({ channelId }) => {
 			if (!channelId) return;
-			setChannels((prev) => {
-				const filtered = prev.filter((c) => String(c.id) !== String(channelId));
-				if (String(activeChannel) === String(channelId)) {
-					onChannelSelect(null);
-				}
-				return filtered;
-			});
+			setChannels((prev) =>
+				prev.filter((c) => String(c.id) !== String(channelId)),
+			);
+			if (String(activeChannelRef.current) === String(channelId)) {
+				onChannelSelect(null);
+			}
 		};
 
 		const handleSocketRenamed = ({ channel }) => {
 			if (!channel?.id) return;
 			setChannels((prev) =>
 				prev.map((c) =>
-					String(c.id) === String(channel.id) ? { ...c, name: channel.name } : c,
+					String(c.id) === String(channel.id)
+						? { ...c, name: channel.name }
+						: c,
 				),
 			);
-			if (
-				String(activeChannel) === String(channel.id) &&
-				typeof onChannelSelect === 'function'
-			) {
+			if (String(activeChannelRef.current) === String(channel.id)) {
 				onChannelSelect(channel);
 			}
 		};
 
 		const handleChannelCreated = ({ channel }) => {
 			if (!channel?.id) return;
-			if (String(channel.institute_id) !== String(activeInstituteRef.current)) return;
+			if (String(channel.institute_id) !== String(activeInstituteRef.current))
+				return;
 			setChannels((prev) => {
 				if (prev.some((c) => String(c.id) === String(channel.id))) return prev;
 				return [...prev, channel];
@@ -178,32 +181,57 @@ function Sidebar({
 			socket.off('channel_renamed', handleSocketRenamed);
 			socket.off('channel_created', handleChannelCreated);
 		};
-	}, [activeChannel, onChannelSelect]);
+		// onChannelSelect is stable (memoized in App). No other deps needed
+		// because activeChannel and activeInstitute are read via refs.
+	}, [onChannelSelect]);
 
-	async function handleCreateChannel(name) {
-		const res = await createChannel(user.id, activeInstitute.id, name);
-		if (res.channel) {
-			socket.emit('channel_created', {
-				channel: res.channel,
-				instituteId: activeInstitute.id,
-			});
-			setChannels((prev) => [...prev, res.channel]);
-			return {};
-		}
-		return { error: res.message || 'Failed to create channel' };
-	}
+	const handleCreateChannel = useCallback(
+		async (name) => {
+			const res = await createChannel(user.id, activeInstitute.id, name);
+			if (res.channel) {
+				socket.emit('channel_created', {
+					channel: res.channel,
+					instituteId: activeInstitute.id,
+				});
+				setChannels((prev) => [...prev, res.channel]);
+				return {};
+			}
+			return { error: res.message || 'Failed to create channel' };
+		},
+		[user.id, activeInstitute?.id],
+	);
+
+	const handleOpenPanel = useCallback(() => setPanelOpen(true), []);
+	const handleClosePanel = useCallback(() => setPanelOpen(false), []);
+	const handleOpenCreate = useCallback(() => setCreateModalOpen(true), []);
+	const handleCloseCreate = useCallback(() => setCreateModalOpen(false), []);
+	const handleOpenProfile = useCallback(() => setIsProfileOpen(true), []);
+	const handleCloseProfile = useCallback(() => setIsProfileOpen(false), []);
+	const handleProfileKeyDown = useCallback((e) => {
+		if (e.key === 'Enter' || e.key === ' ') setIsProfileOpen(true);
+	}, []);
 
 	return (
 		<>
 			{isOpen && (
-				<div className='sidebar-backdrop' onClick={onClose} aria-hidden='true' />
+				<div
+					className='sidebar-backdrop'
+					onClick={onClose}
+					aria-hidden='true'
+				/>
 			)}
 
-			<aside className={`sidebar${isOpen ? ' open' : ''}`} aria-label='Navigation'>
+			<aside
+				className={`sidebar${isOpen ? ' open' : ''}`}
+				aria-label='Navigation'
+			>
 				<div className='sidebar-header'>
 					<div className='sidebar-brand-wrap'>
 						<span className='sidebar-brand' aria-label='Mizuka'>
-							<span className='sidebar-brand-m' aria-hidden='true'>M</span>izuka
+							<span className='sidebar-brand-m' aria-hidden='true'>
+								M
+							</span>
+							izuka
 						</span>
 						<span className='sidebar-status' aria-hidden='true' />
 					</div>
@@ -220,7 +248,7 @@ function Sidebar({
 
 				<button
 					className='sidebar-institute-btn'
-					onClick={() => setPanelOpen(true)}
+					onClick={handleOpenPanel}
 					aria-label='Manage institutes'
 					aria-haspopup='dialog'
 				>
@@ -260,7 +288,9 @@ function Sidebar({
 						<InboxIcon size={14} />
 						Inbox
 						{unreadCount > 0 && (
-							<span className='sidebar-tab-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
+							<span className='sidebar-tab-badge'>
+								{unreadCount > 99 ? '99+' : unreadCount}
+							</span>
 						)}
 					</button>
 				</div>
@@ -270,27 +300,40 @@ function Sidebar({
 						{channels.length > 0 ? (
 							<>
 								<div className='sidebar-section-header'>
-									<span className='sidebar-section-label' id='channels-label'>Channels</span>
+									<span className='sidebar-section-label' id='channels-label'>
+										Channels
+									</span>
 									{isAdmin && (
 										<button
 											className='sidebar-add-channel-btn'
 											title='Create channel'
 											aria-label='Create channel'
-											onClick={() => setCreateModalOpen(true)}
+											onClick={handleOpenCreate}
 										>
 											<Plus size={13} strokeWidth={2.5} />
 										</button>
 									)}
 								</div>
-								<ul className='sidebar-channels' aria-labelledby='channels-label' role='list'>
+								<ul
+									className='sidebar-channels'
+									aria-labelledby='channels-label'
+									role='list'
+								>
 									{channels.map((ch) => (
 										<li key={ch.id} role='listitem'>
 											<button
 												className={`sidebar-channel-btn${activeChannel === ch.id ? ' active' : ''}`}
 												onClick={() => onChannelSelect(ch)}
-												aria-current={activeChannel === ch.id ? 'page' : undefined}
+												aria-current={
+													activeChannel === ch.id ? 'page' : undefined
+												}
 											>
-												<Hash className='sidebar-hash' size={14} strokeWidth={2} aria-hidden='true' />
+												<Hash
+													className='sidebar-hash'
+													size={14}
+													strokeWidth={2}
+													aria-hidden='true'
+												/>
 												<span>{ch.name}</span>
 											</button>
 										</li>
@@ -299,8 +342,15 @@ function Sidebar({
 							</>
 						) : (
 							<div className='sidebar-empty'>
-								<Building2 size={30} strokeWidth={1} className='sidebar-empty-icon' aria-hidden='true' />
-								<p className='sidebar-no-channels'>Select or join an institute to see channels.</p>
+								<Building2
+									size={30}
+									strokeWidth={1}
+									className='sidebar-empty-icon'
+									aria-hidden='true'
+								/>
+								<p className='sidebar-no-channels'>
+									Select or join an institute to see channels.
+								</p>
 							</div>
 						)}
 					</div>
@@ -320,19 +370,19 @@ function Sidebar({
 				{activeTab === 'inbox' && !activeInstitute && (
 					<div className='sidebar-empty'>
 						<Building2 size={30} strokeWidth={1} aria-hidden='true' />
-						<p className='sidebar-no-channels'>Select an institute to search members</p>
+						<p className='sidebar-no-channels'>
+							Select an institute to search members
+						</p>
 					</div>
 				)}
 
 				<div className='sidebar-footer'>
 					<div
 						className='sidebar-user'
-						onClick={() => setIsProfileOpen(true)}
+						onClick={handleOpenProfile}
 						role='button'
 						tabIndex={0}
-						onKeyDown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') setIsProfileOpen(true);
-						}}
+						onKeyDown={handleProfileKeyDown}
 					>
 						<div className='sidebar-avatar' aria-hidden='true'>
 							{user.username[0].toUpperCase()}
@@ -353,15 +403,15 @@ function Sidebar({
 				</div>
 			</aside>
 
-			{panelOpen && <InstitutePanel onClose={() => setPanelOpen(false)} />}
+			{panelOpen && <InstitutePanel onClose={handleClosePanel} />}
 			{createModalOpen && (
 				<CreateChannelModal
-					onClose={() => setCreateModalOpen(false)}
+					onClose={handleCloseCreate}
 					onConfirm={handleCreateChannel}
 				/>
 			)}
 			{isProfileOpen && (
-				<UserProfilePanel userId={user.id} onClose={() => setIsProfileOpen(false)} />
+				<UserProfilePanel userId={user.id} onClose={handleCloseProfile} />
 			)}
 		</>
 	);
