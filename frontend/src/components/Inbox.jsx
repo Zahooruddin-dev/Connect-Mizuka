@@ -1,11 +1,22 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle } from 'lucide-react';
 import { searchInstituteMembers } from '../services/api';
-import { getOrCreateP2PRoom, fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
+import {
+	getOrCreateP2PRoom,
+	fetchUnreadCounts,
+	markRoomAsRead,
+} from '../services/p2p-api';
 import socket from '../services/socket';
 import './styles/Inbox.css';
 
-function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set(), activeP2P, onUnreadUpdate }) {
+function Inbox({
+	activeInstitute,
+	currentUser,
+	onStartP2P,
+	onlineUsers = new Set(),
+	activeP2P,
+	onUnreadUpdate,
+}) {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [results, setResults] = useState([]);
 	const [recentChats, setRecentChats] = useState([]);
@@ -15,22 +26,29 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 
 	const debounceTimer = useRef(null);
 	const activeP2PRef = useRef(activeP2P);
+	// Ref so socket handler always calls the latest onUnreadUpdate without
+	// needing it as an effect dependency (avoids listener re-registration).
+	const onUnreadUpdateRef = useRef(onUnreadUpdate);
 
 	useEffect(() => {
 		activeP2PRef.current = activeP2P;
 	}, [activeP2P]);
+	useEffect(() => {
+		onUnreadUpdateRef.current = onUnreadUpdate;
+	}, [onUnreadUpdate]);
 
+	// Load recent chats from localStorage once on mount.
 	useEffect(() => {
 		const stored = localStorage.getItem('mizuka_recent_p2p_chats');
-		if (stored) {
-			try {
-				setRecentChats(JSON.parse(stored));
-			} catch {
-				setRecentChats([]);
-			}
+		if (!stored) return;
+		try {
+			setRecentChats(JSON.parse(stored));
+		} catch {
+			setRecentChats([]);
 		}
 	}, []);
 
+	// Fetch per-room unread counts on mount / user change.
 	useEffect(() => {
 		if (!currentUser?.id) return;
 		fetchUnreadCounts(currentUser.id).then((counts) => {
@@ -42,13 +60,12 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 		});
 	}, [currentUser?.id]);
 
+	// When the active P2P room changes, clear its badge and mark as read in DB.
 	useEffect(() => {
 		if (!activeP2P?.roomId || !currentUser?.id) return;
 
-		console.log('Inbox: Marking room as read for activeP2P:', activeP2P.roomId, currentUser.id);
-
 		markRoomAsRead(activeP2P.roomId, currentUser.id).then(() => {
-			if (onUnreadUpdate) onUnreadUpdate();
+			onUnreadUpdateRef.current?.();
 		});
 
 		setRoomUnread((prev) => {
@@ -57,18 +74,17 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 			delete next[activeP2P.roomId];
 			return next;
 		});
-	}, [activeP2P?.roomId, currentUser?.id, onUnreadUpdate]);
+	}, [activeP2P?.roomId, currentUser?.id]);
 
+	// Increment per-room badge on incoming messages, or mark as read immediately
+	// if the message arrived in the room the user currently has open.
 	useEffect(() => {
 		const handleMessage = (msg) => {
 			if (String(msg.sender_id) === String(currentUser.id)) return;
 
-			const currentRoom = activeP2PRef.current?.roomId;
-
-			if (currentRoom === msg.chatroom_id) {
-				console.log('Inbox: Received message in current room, marking as read:', msg.chatroom_id, currentUser.id);
+			if (activeP2PRef.current?.roomId === msg.chatroom_id) {
 				markRoomAsRead(msg.chatroom_id, currentUser.id).then(() => {
-					if (onUnreadUpdate) onUnreadUpdate();
+					onUnreadUpdateRef.current?.();
 				});
 				return;
 			}
@@ -81,7 +97,15 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 
 		socket.on('receive_p2p_message', handleMessage);
 		return () => socket.off('receive_p2p_message', handleMessage);
-	}, [currentUser.id, onUnreadUpdate]);
+		// Only user.id needed, activeP2P and onUnreadUpdate are read via refs.
+	}, [currentUser.id]);
+
+	// Clear debounce timer on unmount to prevent state updates on dead component.
+	useEffect(() => {
+		return () => {
+			if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		};
+	}, []);
 
 	const handleSearch = useCallback(
 		(val) => {
@@ -94,7 +118,11 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 			setLoading(true);
 			debounceTimer.current = setTimeout(async () => {
 				try {
-					const users = await searchInstituteMembers(activeInstitute.id, val, currentUser.id);
+					const users = await searchInstituteMembers(
+						activeInstitute.id,
+						val,
+						currentUser.id,
+					);
 					setResults(users || []);
 				} catch {
 					setResults([]);
@@ -106,19 +134,14 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 		[activeInstitute.id, currentUser.id],
 	);
 
-	const handleStartChat = async (user) => {
-		if (startingChat === user.id) return;
-		setStartingChat(user.id);
+	const handleStartChat = useCallback(
+		async (user) => {
+			if (startingChat === user.id) return;
+			setStartingChat(user.id);
+			try {
+				const res = await getOrCreateP2PRoom(currentUser.id, user.id);
+				if (res.error || !res.chatroom) return;
 
-		try {
-			const res = await getOrCreateP2PRoom(currentUser.id, user.id);
-
-			if (res.error) {
-				setStartingChat(null);
-				return;
-			}
-
-			if (res.chatroom && typeof onStartP2P === 'function') {
 				const newRecent = [
 					{
 						id: user.id,
@@ -132,31 +155,40 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 				].slice(0, 10);
 
 				setRecentChats(newRecent);
-				localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(newRecent));
+				localStorage.setItem(
+					'mizuka_recent_p2p_chats',
+					JSON.stringify(newRecent),
+				);
 
-				onStartP2P({
+				onStartP2P?.({
 					roomId: res.chatroom.id,
 					otherUserId: user.id,
 					otherUsername: user.username,
 				});
-
 				setSearchTerm('');
 				setResults([]);
+			} catch {
+				// silent for now
+			} finally {
+				setStartingChat(null);
 			}
-		} catch {
-			// silent
-		} finally {
-			setStartingChat(null);
-		}
-	};
+		},
+		[currentUser.id, recentChats, onStartP2P, startingChat],
+	);
 
-	const handleClearSearch = () => {
+	const handleClearSearch = useCallback(() => {
 		setSearchTerm('');
 		setResults([]);
-	};
+	}, []);
 
-	const isOnline = (userId) => onlineUsers.has(String(userId));
-	const getUnread = (roomId) => roomUnread[roomId] || 0;
+	const isOnline = useCallback(
+		(userId) => onlineUsers.has(String(userId)),
+		[onlineUsers],
+	);
+	const getUnread = useCallback(
+		(roomId) => roomUnread[roomId] || 0,
+		[roomUnread],
+	);
 
 	return (
 		<div className='inbox-container'>
@@ -174,7 +206,11 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 					className='inbox-search-input'
 				/>
 				{searchTerm && (
-					<button className='inbox-search-clear' onClick={handleClearSearch} aria-label='Clear search'>
+					<button
+						className='inbox-search-clear'
+						onClick={handleClearSearch}
+						aria-label='Clear search'
+					>
 						<X size={14} />
 					</button>
 				)}
@@ -243,7 +279,9 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 												<div className='inbox-user-avatar'>
 													{chat.username?.[0]?.toUpperCase() || 'U'}
 												</div>
-												{isOnline(chat.id) && <span className='inbox-online-dot' />}
+												{isOnline(chat.id) && (
+													<span className='inbox-online-dot' />
+												)}
 											</div>
 											<div className='inbox-user-info'>
 												<div className='inbox-user-name'>{chat.username}</div>
@@ -254,7 +292,10 @@ function Inbox({ activeInstitute, currentUser, onStartP2P, onlineUsers = new Set
 													{unread > 99 ? '99+' : unread}
 												</span>
 											) : (
-												<MessageCircle size={16} className='inbox-user-action' />
+												<MessageCircle
+													size={16}
+													className='inbox-user-action'
+												/>
 											)}
 										</button>
 									);
