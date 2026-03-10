@@ -6,24 +6,51 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import './styles/P2PChatArea.css';
 
+const messageCache = new Map();
+
 function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
-	const [messages, setMessages] = useState([]);
+	const cached = messageCache.get(roomId);
+
+	const [messages, setMessages] = useState(cached || []);
 	const [typingUsers, setTypingUsers] = useState([]);
-	const [loading, setLoading] = useState(true);
+	const [loading, setLoading] = useState(!cached);
 	const [error, setError] = useState(null);
+	const [retryCount, setRetryCount] = useState(0);
 
 	const activeRoomRef = useRef(roomId);
+	// Keeping a ref to the latest messages so the changed check below can read
+	// current state without stale closures.
+	const messagesRef = useRef(messages);
+	useEffect(() => {
+		messagesRef.current = messages;
+	}, [messages]);
+
+	// Write-through helper, updates both React state and the module cache
+	const setAndCacheMessages = useCallback((updater) => {
+		setMessages((prev) => {
+			const next = typeof updater === 'function' ? updater(prev) : updater;
+			messageCache.set(roomId, next);
+			return next;
+		});
+	}, [roomId]);
 
 	useEffect(() => {
 		activeRoomRef.current = roomId;
 
-		setLoading(true);
+		// Restore from cache immediately so the user sees something at start.
+		const hit = messageCache.get(roomId);
+		if (hit) {
+			setMessages(hit);
+			setLoading(false);
+		} else {
+			setMessages([]);
+			setLoading(true);
+		}
+
 		setError(null);
-		setMessages([]);
 		setTypingUsers([]);
 
 		const joinRoom = () => socket.emit('join_p2p', roomId);
-
 		if (socket.connected) {
 			joinRoom();
 		} else {
@@ -33,13 +60,20 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 		fetchP2PMessages(roomId, user.id)
 			.then((res) => {
 				if (activeRoomRef.current !== roomId) return;
-				const data = Array.isArray(res.data) ? res.data : res.data.messages || [];
-				setMessages(data);
+				const fresh = Array.isArray(res.data) ? res.data : res.data.messages || [];
+				const current = messagesRef.current;
+				const changed =
+					fresh.length !== current.length ||
+					fresh.some((m, i) => m.id !== current[i]?.id);
+
+				if (changed) {
+					setAndCacheMessages(fresh);
+				}
 			})
 			.catch(() => {
-				if (activeRoomRef.current === roomId) {
+				if (activeRoomRef.current !== roomId) return;
+				if (!messageCache.get(roomId)?.length) {
 					setError('Failed to load messages');
-					setMessages([]);
 				}
 			})
 			.finally(() => {
@@ -48,7 +82,28 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 
 		const handleReceive = (msg) => {
 			if (msg.chatroom_id && msg.chatroom_id !== roomId) return;
-			if (msg.sender_id === user.id) return;
+
+			if (msg.sender_id === user.id) {
+				setAndCacheMessages((prev) => {
+					const tempIndex = prev.findIndex(
+						(m) =>
+							String(m.id).startsWith('temp-') &&
+							m.content === msg.content &&
+							m.sender_id === user.id,
+					);
+					if (tempIndex === -1) return prev;
+					const next = [...prev];
+					next[tempIndex] = {
+						id: msg.id,
+						content: msg.content,
+						sender_id: msg.sender_id,
+						username: msg.username,
+						created_at: msg.created_at,
+					};
+					return next;
+				});
+				return;
+			}
 
 			const normalised = {
 				id: msg.id,
@@ -58,7 +113,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 				created_at: msg.created_at,
 			};
 
-			setMessages((prev) => {
+			setAndCacheMessages((prev) => {
 				if (prev.some((m) => m.id === normalised.id)) return prev;
 				return [...prev, normalised];
 			});
@@ -84,7 +139,9 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 			socket.off('Display_p2p_typing', handleDisplayTyping);
 			socket.off('hide_p2p_typing', handleHideTyping);
 		};
-	}, [roomId, user.id]);
+	// retryCount is intentionally a dependency — incrementing it re-runs the
+	// effect which re-triggers the fetch, acting as a simple retry mechanism.
+	}, [roomId, user.id, retryCount]);
 
 	const handleSend = useCallback(
 		(content) => {
@@ -95,7 +152,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 				username: user.username,
 				created_at: new Date().toISOString(),
 			};
-			setMessages((prev) => [...prev, tempMessage]);
+			setAndCacheMessages((prev) => [...prev, tempMessage]);
 			socket.emit('send_p2p_message', {
 				chatroom_id: roomId,
 				message: content,
@@ -103,7 +160,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 				username: user.username,
 			});
 		},
-		[roomId, user],
+		[roomId, user, setAndCacheMessages],
 	);
 
 	const handleTyping = useCallback(() => {
@@ -115,7 +172,13 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 	}, [roomId, user]);
 
 	const handleMessageDeleted = useCallback((id) => {
-		setMessages((prev) => prev.filter((m) => (m.id || m._id) !== id));
+		setAndCacheMessages((prev) => prev.filter((m) => (m.id || m._id) !== id));
+	}, [setAndCacheMessages]);
+
+	const handleRetry = useCallback(() => {
+		setError(null);
+		setLoading(true);
+		setRetryCount((c) => c + 1);
 	}, []);
 
 	return (
@@ -141,7 +204,7 @@ function P2PChatArea({ roomId, otherUsername, otherUserId, user, onClose }) {
 			) : error ? (
 				<div className='p2p-chat-error'>
 					<span>{error}</span>
-					<button onClick={() => window.location.reload()}>Reload</button>
+					<button onClick={handleRetry}>Try again</button>
 				</div>
 			) : (
 				<MessageList
