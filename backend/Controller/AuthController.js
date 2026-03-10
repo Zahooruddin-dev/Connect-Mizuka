@@ -89,11 +89,9 @@ async function updateProfile(req, res) {
 
 		if (newPassword) {
 			if (!currentPassword) {
-				return res
-					.status(400)
-					.json({
-						message: 'Current password is required to set a new password',
-					});
+				return res.status(400).json({
+					message: 'Current password is required to set a new password',
+				});
 			}
 			const match = await bcypt.compare(currentPassword, user.password_hash);
 			if (!match) {
@@ -179,6 +177,35 @@ async function getUserProfile(req, res) {
 			return res.status(404).json({ message: 'User not found' });
 		}
 		res.status(200).json({ user });
+	} catch (error) {
+		res.status(500).json({ message: error.message });
+	}
+}
+async function changePassword(req, res) {
+	const { userId } = req.params;
+	const { oldPassword, newPassword } = req.body;
+	if (!oldPassword || !newPassword) {
+		return res
+			.status(400)
+			.json({ message: 'Both old and new passwords are required' });
+	}
+	try {
+		const user = await db.getUserInfoQuery(userId);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+
+		const isMatch = await bcypt.compare(oldPassword, user.password_hash);
+		if (!isMatch) {
+			return res.status(401).json({ message: 'Incorrect current password' });
+		}
+		const newPassword_hash = await bcypt.hash(password, 10);
+		const updatedUser = await db.changePasswordQuery(userId, newPassword_hash);
+
+		res.status(200).json({
+			message: 'Password updated successfully',
+			user: updatedUser,
+		});
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
