@@ -68,6 +68,7 @@ export const updateProfile = async (
 	}
 };
 
+
 export const requestPasswordReset = async (email) => {
 	try {
 		const res = await api.post('/auth/request-reset', { email });
