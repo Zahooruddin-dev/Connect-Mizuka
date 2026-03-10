@@ -199,7 +199,7 @@ async function changePassword(req, res) {
 		if (!isMatch) {
 			return res.status(401).json({ message: 'Incorrect current password' });
 		}
-		const newPassword_hash = await bcypt.hash(password, 10);
+		const newPassword_hash = await bcypt.hash(newPassword, 10);
 		const updatedUser = await db.changePasswordQuery(userId, newPassword_hash);
 
 		res.status(200).json({

@@ -6,7 +6,7 @@ const resetController = require('../Controller/ResetController');
 router.post('/login', authController.Login);
 router.post('/register', authController.Register);
 router.post('/delete', authController.deleteUser);
-router.patch('/:userId/change-password', authController.changePassword);
+router.patch('/change-password/:userId', authController.changePassword);
 router.get('/user-info/:userId', authController.getUserInfo);
 router.get('/user-profile/:userId', authController.getUserProfile);
 router.put('/update-profile/:userId', authController.updateProfile);

@@ -69,7 +69,7 @@ export const updateProfile = async (
 };
 export const changePassword = async (userId, oldPassword, newPassword) => {
 	try {
-		const res = await api.post(`/auth/change-password/${userId}`, { oldPassword, newPassword });
+		const res = await api.patch(`/auth/change-password/${userId}`, { oldPassword, newPassword });
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
