@@ -1,34 +1,34 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Pencil, Check, X, Trash2, Hash } from 'lucide-react';
-import { useAuth } from '../services/AuthContext';
+import { Pencil, Check, X, Trash2, Hash, ArrowLeft } from 'lucide-react';
 import { deleteChannel, updateChannel } from '../services/api';
 import socket from '../services/socket';
 import './styles/ChatHeader.css';
 
 function ChatHeader({
+	// Channel mode props
 	channelId,
 	channelLabel,
 	instituteId,
 	onChannelDeleted,
 	onChannelRenamed,
+	isAdmin,
+	// P2P mode props
+	isP2P,
+	otherUsername,
+	onCloseP2P,
 }) {
-	const { user } = useAuth();
 	const [showConfirm, setShowConfirm] = useState(false);
-	const [deleting, setDeleting] = useState(false);
-	const [error, setError] = useState('');
-	const [editing, setEditing] = useState(false);
-	const [nameInput, setNameInput] = useState(channelLabel || '');
-	const [saving, setSaving] = useState(false);
+	const [deleting,    setDeleting]    = useState(false);
+	const [error,       setError]       = useState('');
+	const [editing,     setEditing]     = useState(false);
+	const [nameInput,   setNameInput]   = useState(channelLabel || '');
+	const [saving,      setSaving]      = useState(false);
 	const [displayName, setDisplayName] = useState(channelLabel || '');
-	const inputRef = useRef(null);
+
+	const inputRef     = useRef(null);
 	const channelIdRef = useRef(channelId);
 
-	const isAdmin = user?.role === 'admin';
-
-	// Keep ref in sync with channelId
-	useEffect(() => {
-		channelIdRef.current = channelId;
-	}, [channelId]);
+	useEffect(() => { channelIdRef.current = channelId; }, [channelId]);
 
 	useEffect(() => {
 		setNameInput(channelLabel || '');
@@ -42,129 +42,123 @@ function ChatHeader({
 		}
 	}, [editing]);
 
-	// Listen for real-time socket events
+	// Listen for real-time renames/deletes even if another admin triggers them.
 	useEffect(() => {
+		if (isP2P) return;
+
 		const handleSocketRenamed = ({ channel }) => {
 			if (channel.id === channelIdRef.current) {
 				setDisplayName(channel.name);
 				setNameInput(channel.name);
 			}
 		};
-
 		const handleSocketDeleted = ({ channelId: deletedId }) => {
-			if (deletedId === channelIdRef.current && typeof onChannelDeleted === 'function') {
-				onChannelDeleted(deletedId);
-			}
+			if (deletedId === channelIdRef.current) onChannelDeleted?.(deletedId);
 		};
 
 		socket.on('channel_renamed', handleSocketRenamed);
 		socket.on('channel_deleted', handleSocketDeleted);
-
 		return () => {
 			socket.off('channel_renamed', handleSocketRenamed);
 			socket.off('channel_deleted', handleSocketDeleted);
 		};
-	}, [onChannelDeleted]);
+	}, [isP2P, onChannelDeleted]);
 
-	function handleEditStart() {
+	const handleEditStart = useCallback(() => {
 		setNameInput(channelLabel || '');
 		setError('');
 		setEditing(true);
-	}
+	}, [channelLabel]);
 
-	function handleEditCancel() {
+	const handleEditCancel = useCallback(() => {
 		setEditing(false);
 		setNameInput(channelLabel || '');
 		setError('');
-	}
+	}, [channelLabel]);
 
-	async function handleEditSave() {
+	const handleEditSave = useCallback(async () => {
 		const trimmed = nameInput
 			.trim()
 			.toLowerCase()
 			.replace(/\s+/g, '-')
 			.replace(/[^a-z0-9-_]/g, '');
-		
-		if (!trimmed) {
-			setError('Channel name cannot be empty');
-			return;
-		}
 
-		if (trimmed === channelLabel) {
-			setEditing(false);
-			return;
-		}
+		if (!trimmed) { setError('Channel name cannot be empty'); return; }
+		if (trimmed === channelLabel) { setEditing(false); return; }
 
 		setSaving(true);
 		setError('');
-		
-		const res = await updateChannel(channelId, user.id, { name: trimmed });
+		const res = await updateChannel(channelId, undefined, { name: trimmed });
 		setSaving(false);
 
 		if (res?.channel) {
 			setDisplayName(res.channel.name);
-			// Emit socket event to broadcast to all users in institute
-			socket.emit('channel_renamed', { 
-				channel: res.channel, 
-				instituteId: instituteId 
-			});
+			socket.emit('channel_renamed', { channel: res.channel, instituteId });
 			setEditing(false);
-			
-			if (typeof onChannelRenamed === 'function') {
-				onChannelRenamed(res.channel);
-			}
+			onChannelRenamed?.(res.channel);
 		} else {
 			setError(res?.message || 'Failed to rename channel');
 		}
-	}
+	}, [nameInput, channelLabel, channelId, instituteId, onChannelRenamed]);
 
-	function handleKeyDown(e) {
-		if (e.key === 'Enter') handleEditSave();
+	const handleKeyDown = useCallback((e) => {
+		if (e.key === 'Enter')  handleEditSave();
 		if (e.key === 'Escape') handleEditCancel();
-	}
+	}, [handleEditSave, handleEditCancel]);
 
-	async function handleDeleteChannel() {
+	const handleDeleteChannel = useCallback(async () => {
 		setDeleting(true);
 		setError('');
-		
 		try {
-			const res = await deleteChannel(channelId, user.id);
-			
+			const res = await deleteChannel(channelId, undefined);
 			if (res?.error) {
 				setError(res.error);
 				setDeleting(false);
 				setShowConfirm(false);
 				return;
 			}
-
-			// Emit socket event to broadcast deletion to all users in institute
-			socket.emit('channel_deleted', { 
-				channelId: channelId, 
-				instituteId: instituteId 
-			});
-
-			if (typeof onChannelDeleted === 'function') {
-				onChannelDeleted(channelId);
-			}
-
-			setDeleting(false);
-			setShowConfirm(false);
-		} catch (err) {
+			socket.emit('channel_deleted', { channelId, instituteId });
+			onChannelDeleted?.(channelId);
+		} catch {
 			setError('Failed to delete channel');
+		} finally {
 			setDeleting(false);
 			setShowConfirm(false);
 		}
+	}, [channelId, instituteId, onChannelDeleted]);
+
+	// ── P2P header ──────────────────────────────────────────────────────────
+	if (isP2P) {
+		return (
+			<header className='chat-header chat-header--p2p'>
+				<div className='chat-header-left'>
+					{onCloseP2P && (
+						<button
+							className='chat-header-icon-btn chat-header-back'
+							onClick={onCloseP2P}
+							aria-label='Back to channels'
+							title='Back'
+						>
+							<ArrowLeft size={16} strokeWidth={2} />
+						</button>
+					)}
+					<div className='chat-header-p2p-avatar' aria-hidden='true'>
+						{otherUsername?.[0]?.toUpperCase() || 'U'}
+					</div>
+					<div className='chat-header-p2p-info'>
+						<span className='chat-header-name'>{otherUsername}</span>
+						<span className='chat-header-p2p-sub'>Direct Message</span>
+					</div>
+				</div>
+			</header>
+		);
 	}
 
+	// ── Channel header ──────────────────────────────────────────────────────
 	return (
 		<header className='chat-header'>
 			<div className='chat-header-left'>
-				<Hash
-					className='chat-header-hash'
-					size={18}
-					strokeWidth={2}
-					aria-hidden='true'
-				/>
+				<Hash className='chat-header-hash' size={18} strokeWidth={2} aria-hidden='true' />
 
 				{editing ? (
 					<div className='chat-header-edit'>
@@ -201,6 +195,7 @@ function ChatHeader({
 				) : (
 					<div className='chat-header-name-wrap'>
 						<span className='chat-header-name'>{displayName || channelId}</span>
+						{/* Rename only visible to admins */}
 						{isAdmin && (
 							<button
 								className='chat-header-icon-btn chat-header-edit-btn'
@@ -217,22 +212,16 @@ function ChatHeader({
 
 			<div className='chat-header-actions'>
 				{error && <span className='chat-header-error'>{error}</span>}
-				{isAdmin &&
-					!editing &&
-					(showConfirm ? (
+
+				{/* Delete only visible to admins */}
+				{isAdmin && !editing && (
+					showConfirm ? (
 						<div className='delete-confirm'>
 							<span>Delete channel?</span>
-							<button
-								className='confirm-yes'
-								onClick={handleDeleteChannel}
-								disabled={deleting}
-							>
+							<button className='confirm-yes' onClick={handleDeleteChannel} disabled={deleting}>
 								{deleting ? 'Deleting…' : 'Yes'}
 							</button>
-							<button
-								className='confirm-no'
-								onClick={() => setShowConfirm(false)}
-							>
+							<button className='confirm-no' onClick={() => setShowConfirm(false)}>
 								No
 							</button>
 						</div>
@@ -245,7 +234,8 @@ function ChatHeader({
 							<Trash2 size={14} strokeWidth={2} aria-hidden='true' />
 							Delete channel
 						</button>
-					))}
+					)
+				)}
 			</div>
 		</header>
 	);
