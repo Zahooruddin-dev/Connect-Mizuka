@@ -43,11 +43,22 @@ async function deleteChannelQuery(channelId) {
 	const { rows } = await pool.query(query, [channelId]);
 	return rows[0] || null;
 }
-
+async function searchChannelMessagesQuery(channelId, searchTerm) {
+  const { rows } = await pool.query(
+    `SELECT m.id, m.content, m.created_at, u.username 
+     FROM messages m
+     JOIN users u ON m.sender_id = u.id
+     WHERE m.channel_id = $1 AND m.content ILIKE $2
+     ORDER BY m.created_at DESC`,
+    [channelId, `%${searchTerm}%`] // The % symbols is used to match text anywhere in the sentence
+  );
+  return rows;
+}
 module.exports = {
 	createChannelQuery,
 	getChannelsByInstitute,
 	getChannelById,
 	deleteChannelQuery,
-  updateChannelQuery
+  updateChannelQuery,
+	searchChannelMessagesQuery,
 };
