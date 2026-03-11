@@ -25,6 +25,7 @@ function ChatArea({
 	roomId,
 	otherUsername,
 	user,
+	isAdmin,
 	onChannelRenamed,
 	onStartP2P,
 	onCloseP2P,
@@ -68,7 +69,6 @@ function ChatArea({
 				setTimeout(() => el.classList.remove('message-highlight'), 2000);
 				onHighlightConsumed?.();
 			} else if (tries < 8) {
-				// Message may still be rendering — retry a few times.
 				setTimeout(() => attempt(tries + 1), 120);
 			}
 		};
@@ -267,7 +267,7 @@ function ChatArea({
 		} catch (err) { console.error('failed to edit message', err); }
 	}, [roomId, user.id, setAndCache]);
 
-	const handleMessageDeleted  = useCallback((id) => {
+	const handleMessageDeleted = useCallback((id) => {
 		setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== id));
 	}, [setAndCache]);
 
@@ -290,6 +290,7 @@ function ChatArea({
 				isP2P={isP2P}
 				otherUsername={otherUsername}
 				onCloseP2P={onCloseP2P}
+				isAdmin={isAdmin}
 			/>
 			{loading ? (
 				<div className='chat-loading'>
