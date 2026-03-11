@@ -67,18 +67,36 @@ async function searchMembers(req, res) {
 	const { query, userId } = req.query;
 	const searchTerm = `%${query}%`;
 	try {
-		const users = await db.searchInstituteMembers(instituteId,userId,searchTerm);
+		const users = await db.searchInstituteMembers(
+			instituteId,
+			userId,
+			searchTerm,
+		);
 		if (!users) {
 			return res.status(404).json({ message: 'User not found' });
 		}
 		res.status(200).json({ users });
 	} catch (error) {
-		res.status(500).json({ error: 'Failed to search members' , error});
+		res.status(500).json({ error: 'Failed to search members', error });
+	}
+}
+async function getInstituteMembers(req, res) {
+	const { instituteId } = req.params;
+	try {
+		const members = await db.getInstituteMembersQuery(instituteId);
+		if (!members) {
+			return res.status(404).json({ message: 'members not found' });
+		}
+		res.status(200).json({ members });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to get members', error });
 	}
 }
 
 module.exports = {
 	createInstitute,
 	getGlobalKey,
-	getAdminDashboard,searchMembers
+	getAdminDashboard,
+	searchMembers,
+	getInstituteMembers
 };
