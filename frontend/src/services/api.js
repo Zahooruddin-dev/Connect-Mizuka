@@ -166,14 +166,12 @@ export const searchInstituteMembers = async (
 		return [];
 	}
 };
-export const searchChannelMessages = async (channelId) => {
+export const searchChannelMessages = async (channelId, searchTerm) => {
 	try {
 		const res = await api.get(`/channel/${channelId}/search-messages`, {
-			params: {
-				query: searchTerm,
-			},
+			params: { searchTerm },
 		});
-		return res.data.message;
+		return res.data.messages || res.data.message || [];
 	} catch (err) {
 		console.error('Search Error:', err);
 		return [];

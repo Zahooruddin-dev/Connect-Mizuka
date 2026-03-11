@@ -45,12 +45,12 @@ async function deleteChannelQuery(channelId) {
 }
 async function searchChannelMessagesQuery(channelId, searchTerm) {
   const { rows } = await pool.query(
-    `SELECT m.id, m.content, m.created_at, u.username 
+    `SELECT m.id, m.channel_id, m.content, m.created_at, u.username 
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      WHERE m.channel_id = $1 AND m.content ILIKE $2
      ORDER BY m.created_at DESC`,
-    [channelId, `%${searchTerm}%`] // The % symbols is used to match text anywhere in the sentence
+    [channelId, `%${searchTerm}%`]
   );
   return rows;
 }

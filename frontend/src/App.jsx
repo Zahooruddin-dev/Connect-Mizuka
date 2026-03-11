@@ -13,14 +13,15 @@ function App() {
 	const [activeChannel, setActiveChannel] = useState(null);
 	const [activeP2P, setActiveP2P] = useState(null);
 	const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
-	const [highlightMessageId, setHighlightMessageId] = useState(null);
 
+	// Responsive sidebar, derived from window width.
 	useEffect(() => {
 		const onResize = () => setSidebarOpen(window.innerWidth >= 768);
 		window.addEventListener('resize', onResize);
 		return () => window.removeEventListener('resize', onResize);
 	}, []);
 
+	// Join the institute socket room whenever the active institute changes.
 	useEffect(() => {
 		if (!activeInstitute) return;
 		const join = () => socket.emit('join_institute_room', activeInstitute.id);
@@ -29,11 +30,15 @@ function App() {
 		return () => socket.off('connect', join);
 	}, [activeInstitute]);
 
+	// Clear active channel if it gets deleted while open.
+	// Uses a ref stable callback so the listener isn't re-registered on every
+	// render, only when activeChannel.id actually changes.
 	useEffect(() => {
 		if (!activeChannel) return;
 		const handleChannelDeleted = ({ channelId }) => {
-			if (String(activeChannel.id) === String(channelId))
+			if (String(activeChannel.id) === String(channelId)) {
 				setActiveChannel(null);
+			}
 		};
 		socket.on('channel_deleted', handleChannelDeleted);
 		return () => socket.off('channel_deleted', handleChannelDeleted);
@@ -59,27 +64,12 @@ function App() {
 		setActiveP2P(null);
 	}, []);
 
-	const handleCloseP2P = useCallback(() => setActiveP2P(null), []);
+	const handleCloseP2P = useCallback(() => {
+		setActiveP2P(null);
+	}, []);
 
 	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
 	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
-
-	// Called from Sidebar when the user clicks a search result.
-	// Selects the channel (if not already active) and sets the highlight target.
-	const handleJumpToMessage = useCallback((channelId, messageId) => {
-		setActiveP2P(null);
-		setActiveChannel((prev) => {
-			if (prev && String(prev.id) === String(channelId)) return prev;
-			return { id: channelId, name: '' };
-		});
-		setHighlightMessageId(messageId);
-	}, []);
-
-	// ChatArea calls this once the highlight animation has been triggered
-	// so that switching channels doesn't re-trigger the old highlight.
-	const handleHighlightConsumed = useCallback(() => {
-		setHighlightMessageId(null);
-	}, []);
 
 	if (!user) return <LoginPage />;
 	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
@@ -104,7 +94,6 @@ function App() {
 					activeInstitute={activeInstitute}
 					onStartP2P={handleStartP2P}
 					activeP2P={activeP2P}
-					onJumpToMessage={handleJumpToMessage}
 				/>
 			)}
 
@@ -137,8 +126,6 @@ function App() {
 						onChannelRenamed={handleChannelRenamed}
 						onStartP2P={handleStartP2P}
 						isAdmin={isAdmin}
-						highlightMessageId={highlightMessageId}
-						onHighlightConsumed={handleHighlightConsumed}
 					/>
 				)}
 			</div>
