@@ -44,7 +44,22 @@ async function getP2PMessagesQuery(roomId) {
 		throw error;
 	}
 }
-
+async function searchP2PMessagesQuery(roomId, searchTerm) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT m.id, m.chatroom_id, m.sender_id, m.content, m.created_at, u.username 
+       FROM p2p_messages m
+       JOIN users u ON m.sender_id = u.id
+       WHERE m.chatroom_id = $1 AND m.content ILIKE $2
+       ORDER BY m.created_at DESC`,
+      [roomId, `%${searchTerm}%`]
+    );
+    return rows;
+  } catch (error) {
+    console.error('searchP2PMessagesQuery error:', error);
+    throw error;
+  }
+}
 async function deleteP2PMessagesQuery(message_id, userId) {
 	try {
 		const { rows } = await pool.query(
@@ -140,4 +155,5 @@ module.exports = {
 	getUnreadCountsForUser,
 	deleteP2PMessagesQuery,
 	editP2PMessagesQuery,
+	searchP2PMessagesQuery
 };
