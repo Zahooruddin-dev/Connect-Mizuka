@@ -142,11 +142,11 @@ async function searchChannelMessages(req, res) {
 	const { channelId } = req.params;
 	const { searchTerm } = req.query;
 	try {
-		const channel = await db.searchChannelMessagesQuery(channelId, searchTerm);
-		if (!channel) {
+		const message = await db.searchChannelMessagesQuery(channelId, searchTerm);
+		if (!message) {
 			return res.status(404).json({ error: 'Channel messages not found' });
 		}
-		res.status(200).json({ channel });
+		res.status(200).json({ message });
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to load channel messages' });
 	}

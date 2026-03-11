@@ -7,8 +7,13 @@ import {
 	X,
 	Building2,
 	Inbox as InboxIcon,
+	Search,
 } from 'lucide-react';
-import { fetchChannelsByInstitute, createChannel } from '../services/api';
+import {
+	fetchChannelsByInstitute,
+	createChannel,
+	searchChannelMessages,
+} from '../services/api';
 import { fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
 import InstitutePanel from './InstitutePanel';
@@ -28,6 +33,7 @@ function Sidebar({
 	activeInstitute,
 	onStartP2P,
 	activeP2P,
+	onJumpToMessage,
 }) {
 	const [panelOpen, setPanelOpen] = useState(false);
 	const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -37,12 +43,18 @@ function Sidebar({
 	const [unreadCount, setUnreadCount] = useState(0);
 	const [onlineUsers, setOnlineUsers] = useState(new Set());
 
-	// Refs let socket handlers always read current values without being
-	// recreated or added to effect dependency arrays.
+	// Search state
+	const [searchOpen, setSearchOpen] = useState(false);
+	const [searchTerm, setSearchTerm] = useState('');
+	const [searchResults, setSearchResults] = useState([]);
+	const [searchLoading, setSearchLoading] = useState(false);
+
 	const activeInstituteRef = useRef(activeInstitute?.id);
 	const activeChannelRef = useRef(activeChannel);
 	const activeTabRef = useRef(activeTab);
 	const activeP2PRef = useRef(activeP2P);
+	const searchDebounce = useRef(null);
+	const searchInputRef = useRef(null);
 
 	useEffect(() => {
 		activeInstituteRef.current = activeInstitute?.id;
@@ -57,8 +69,18 @@ function Sidebar({
 		activeP2PRef.current = activeP2P;
 	}, [activeP2P]);
 
-	// Stable reference, safe to pass as a prop to Inbox without causing
-	// re-renders every time Sidebar re-renders.
+	// Focus search input when it opens.
+	useEffect(() => {
+		if (searchOpen) searchInputRef.current?.focus();
+	}, [searchOpen]);
+
+	// Clear search when channel changes or tab switches.
+	useEffect(() => {
+		setSearchOpen(false);
+		setSearchTerm('');
+		setSearchResults([]);
+	}, [activeChannel, activeTab]);
+
 	const updateUnreadCount = useCallback(async () => {
 		if (!user?.id) return;
 		try {
@@ -70,19 +92,16 @@ function Sidebar({
 		}
 	}, [user?.id]);
 
-	// Register presence on mount / user change.
 	useEffect(() => {
 		if (!user?.id) return;
 		socket.emit('user_online', user.id);
 		socket.emit('get_online_users');
 	}, [user?.id]);
 
-	// Initial unread count fetch.
 	useEffect(() => {
 		updateUnreadCount();
 	}, [updateUnreadCount]);
 
-	// Online/offline presence events.
 	useEffect(() => {
 		const handleStatus = ({ userId, status }) => {
 			setOnlineUsers((prev) => {
@@ -94,7 +113,6 @@ function Sidebar({
 		};
 		const handleOnlineList = (userIds) =>
 			setOnlineUsers(new Set(userIds.map(String)));
-
 		socket.on('update_user_status', handleStatus);
 		socket.on('online_users_list', handleOnlineList);
 		return () => {
@@ -103,7 +121,6 @@ function Sidebar({
 		};
 	}, []);
 
-	// Increment sidebar badge on incoming P2P messages.
 	useEffect(() => {
 		const handleP2PMessage = (msg) => {
 			if (String(msg.sender_id) === String(user.id)) return;
@@ -118,12 +135,10 @@ function Sidebar({
 		return () => socket.off('receive_p2p_message', handleP2PMessage);
 	}, [user.id]);
 
-	// Re-sync unread count from DB when switching to the inbox tab.
 	useEffect(() => {
 		if (activeTab === 'inbox') updateUnreadCount();
 	}, [activeTab, updateUnreadCount]);
 
-	// Fetch channels and join institute room when the institute changes.
 	useEffect(() => {
 		if (!activeInstitute) {
 			setChannels([]);
@@ -132,23 +147,18 @@ function Sidebar({
 		fetchChannelsByInstitute(activeInstitute.id)
 			.then((res) => setChannels(res.data?.channels || res.channels || []))
 			.catch(() => setChannels([]));
-
 		socket.emit('join_institute_room', activeInstitute.id);
 	}, [activeInstitute]);
 
-	// Channel socket events, use refs for activeChannel and onChannelSelect
-	// so this effect never needs to re-register just because those values changed.
 	useEffect(() => {
 		const handleSocketDeleted = ({ channelId }) => {
 			if (!channelId) return;
 			setChannels((prev) =>
 				prev.filter((c) => String(c.id) !== String(channelId)),
 			);
-			if (String(activeChannelRef.current) === String(channelId)) {
+			if (String(activeChannelRef.current) === String(channelId))
 				onChannelSelect(null);
-			}
 		};
-
 		const handleSocketRenamed = ({ channel }) => {
 			if (!channel?.id) return;
 			setChannels((prev) =>
@@ -158,11 +168,9 @@ function Sidebar({
 						: c,
 				),
 			);
-			if (String(activeChannelRef.current) === String(channel.id)) {
+			if (String(activeChannelRef.current) === String(channel.id))
 				onChannelSelect(channel);
-			}
 		};
-
 		const handleChannelCreated = ({ channel }) => {
 			if (!channel?.id) return;
 			if (String(channel.institute_id) !== String(activeInstituteRef.current))
@@ -172,7 +180,6 @@ function Sidebar({
 				return [...prev, channel];
 			});
 		};
-
 		socket.on('channel_deleted', handleSocketDeleted);
 		socket.on('channel_renamed', handleSocketRenamed);
 		socket.on('channel_created', handleChannelCreated);
@@ -181,9 +188,70 @@ function Sidebar({
 			socket.off('channel_renamed', handleSocketRenamed);
 			socket.off('channel_created', handleChannelCreated);
 		};
-		// onChannelSelect is stable (memoized in App). No other deps needed
-		// because activeChannel and activeInstitute are read via refs.
 	}, [onChannelSelect]);
+
+	// ── Search ─────────────────────────────────────────────────────────────
+
+	const handleSearchInput = useCallback(
+		(val) => {
+			setSearchTerm(val);
+			clearTimeout(searchDebounce.current);
+
+			if (!val.trim() || val.length < 2) {
+				setSearchResults([]);
+				return;
+			}
+
+			setSearchLoading(true);
+			searchDebounce.current = setTimeout(async () => {
+				try {
+					// Search active channel if one is selected, otherwise search all
+					// channels by running against the first available channel.
+					const targetId = activeChannelRef.current || channels[0]?.id;
+					if (!targetId) {
+						setSearchLoading(false);
+						return;
+					}
+					const results = await searchChannelMessages(targetId, val);
+					setSearchResults(results || []);
+				} catch {
+					setSearchResults([]);
+				} finally {
+					setSearchLoading(false);
+				}
+			}, 300);
+		},
+		[channels],
+	);
+
+	const handleSearchResultClick = useCallback(
+		(result) => {
+			// If the result is from a different channel, select it first.
+			const targetChannel = channels.find(
+				(c) => String(c.id) === String(result.channel_id),
+			);
+			if (targetChannel) onChannelSelect(targetChannel);
+
+			// Tell App/ChatArea to jump to and highlight this message.
+			if (typeof onJumpToMessage === 'function') {
+				onJumpToMessage(result.channel_id, result.id);
+			}
+
+			setSearchOpen(false);
+			setSearchTerm('');
+			setSearchResults([]);
+		},
+		[channels, onChannelSelect, onJumpToMessage],
+	);
+
+	const handleCloseSearch = useCallback(() => {
+		setSearchOpen(false);
+		setSearchTerm('');
+		setSearchResults([]);
+	}, []);
+
+	// Cleanup debounce on unmount.
+	useEffect(() => () => clearTimeout(searchDebounce.current), []);
 
 	const handleCreateChannel = useCallback(
 		async (name) => {
@@ -303,17 +371,105 @@ function Sidebar({
 									<span className='sidebar-section-label' id='channels-label'>
 										Channels
 									</span>
-									{isAdmin && (
+									<div className='sidebar-section-actions'>
 										<button
 											className='sidebar-add-channel-btn'
-											title='Create channel'
-											aria-label='Create channel'
-											onClick={handleOpenCreate}
+											title='Search messages'
+											aria-label='Search messages'
+											onClick={() => setSearchOpen((v) => !v)}
+											aria-expanded={searchOpen}
 										>
-											<Plus size={13} strokeWidth={2.5} />
+											<Search size={13} strokeWidth={2.5} />
 										</button>
-									)}
+										{isAdmin && (
+											<button
+												className='sidebar-add-channel-btn'
+												title='Create channel'
+												aria-label='Create channel'
+												onClick={handleOpenCreate}
+											>
+												<Plus size={13} strokeWidth={2.5} />
+											</button>
+										)}
+									</div>
 								</div>
+
+								{searchOpen && (
+									<div className='sidebar-search-wrap'>
+										<div className='sidebar-search-input-row'>
+											<Search size={13} className='sidebar-search-icon' />
+											<input
+												ref={searchInputRef}
+												type='text'
+												className='sidebar-search-input'
+												placeholder='Search messages…'
+												value={searchTerm}
+												onChange={(e) => handleSearchInput(e.target.value)}
+												onKeyDown={(e) =>
+													e.key === 'Escape' && handleCloseSearch()
+												}
+											/>
+											{searchTerm && (
+												<button
+													className='sidebar-search-clear'
+													onClick={handleCloseSearch}
+													aria-label='Clear search'
+												>
+													<X size={12} />
+												</button>
+											)}
+										</div>
+
+										{searchLoading && (
+											<div className='sidebar-search-status'>Searching…</div>
+										)}
+
+										{!searchLoading &&
+											searchTerm.length >= 2 &&
+											searchResults.length === 0 && (
+												<div className='sidebar-search-status'>
+													No results found
+												</div>
+											)}
+
+										{searchResults.length > 0 && (
+											<ul className='sidebar-search-results'>
+												{searchResults.map((result) => {
+													const ch = channels.find(
+														(c) => String(c.id) === String(result.channel_id),
+													);
+													return (
+														<li key={result.id}>
+															<button
+																className='sidebar-search-result'
+																onClick={() => handleSearchResultClick(result)}
+																title={result.content}
+															>
+																{ch && (
+																	<span className='sidebar-search-result-channel'>
+																		<Hash size={10} strokeWidth={2.5} />
+																		{ch.name}
+																	</span>
+																)}
+																<span className='sidebar-search-result-content'>
+																	{result.content?.length > 80
+																		? result.content.slice(0, 80) + '…'
+																		: result.content}
+																</span>
+																{result.username && (
+																	<span className='sidebar-search-result-meta'>
+																		{result.username}
+																	</span>
+																)}
+															</button>
+														</li>
+													);
+												})}
+											</ul>
+										)}
+									</div>
+								)}
+
 								<ul
 									className='sidebar-channels'
 									aria-labelledby='channels-label'

@@ -43,12 +43,12 @@ export const fetchUserInfo = async (userId) => {
 	}
 };
 export const getUserProfile = async (userId) => {
-  try {
-    const res = await api.get(`/auth/user-profile/${userId}`);
-    return res.data;
-  } catch (err) {
-    return err.response?.data || { message: 'User not found or Network error' };
-  }
+	try {
+		const res = await api.get(`/auth/user-profile/${userId}`);
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'User not found or Network error' };
+	}
 };
 
 export const updateProfile = async (
@@ -69,13 +69,15 @@ export const updateProfile = async (
 };
 export const changePassword = async (userId, oldPassword, newPassword) => {
 	try {
-		const res = await api.patch(`/auth/change-password/${userId}`, { oldPassword, newPassword });
+		const res = await api.patch(`/auth/change-password/${userId}`, {
+			oldPassword,
+			newPassword,
+		});
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
-
 
 export const requestPasswordReset = async (email) => {
 	try {
@@ -146,28 +148,45 @@ export const fetchChannel = async (channelId) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
-export const searchInstituteMembers = async (instituteId, searchTerm, currentUserId) => {
-  try {
-    const res = await api.get(`/institute/${instituteId}/search-members`, {
-      params: { 
-        query: searchTerm, 
-        userId: currentUserId 
-      }
-    });
-    return res.data.users;
-  } catch (err) {
-    console.error("Search Error:", err);
-    return [];
-  }
+export const searchInstituteMembers = async (
+	instituteId,
+	searchTerm,
+	currentUserId,
+) => {
+	try {
+		const res = await api.get(`/institute/${instituteId}/search-members`, {
+			params: {
+				query: searchTerm,
+				userId: currentUserId,
+			},
+		});
+		return res.data.users;
+	} catch (err) {
+		console.error('Search Error:', err);
+		return [];
+	}
+};
+export const searchChannelMessages = async (channelId) => {
+	try {
+		const res = await api.get(`/channel/${channelId}/search-messages`, {
+			params: {
+				query: searchTerm,
+			},
+		});
+		return res.data.message;
+	} catch (err) {
+		console.error('Search Error:', err);
+		return [];
+	}
 };
 export const getInstituteMembers = async (instituteId) => {
-  try {
-    const res = await api.get(`/institute/${instituteId}/institute-members`);
-    return res.data.members;
-  } catch (err) {
-    console.error("Error in getting members:", err);
-    return [];
-  }
+	try {
+		const res = await api.get(`/institute/${instituteId}/institute-members`);
+		return res.data.members;
+	} catch (err) {
+		console.error('Error in getting members:', err);
+		return [];
+	}
 };
 export const fetchChannelsByInstitute = async (instituteId) => {
 	try {
@@ -185,15 +204,16 @@ export const getOrCreateP2PRoom = async (user1, user2) => {
 		});
 		return res.data;
 	} catch (err) {
-		return { error: err.response?.data?.message || 'Failed to create chat room' };
+		return {
+			error: err.response?.data?.message || 'Failed to create chat room',
+		};
 	}
 };
 
 export const fetchP2PMessages = (roomId, limit = 50, offset = 0) =>
 	api.get(`/p2p/messages/${roomId}`, { params: { limit, offset } });
 
-
-export const deleteP2PMessage = async (messageId, userId,roomId) => {
+export const deleteP2PMessage = async (messageId, userId, roomId) => {
 	try {
 		const res = await api.patch(`/p2p/messages/${messageId}/delete`, {
 			userId,
@@ -205,12 +225,12 @@ export const deleteP2PMessage = async (messageId, userId,roomId) => {
 		throw error;
 	}
 };
-export const editP2PMessage = async (messageId, userId,roomId,content) => {
+export const editP2PMessage = async (messageId, userId, roomId, content) => {
 	try {
 		const res = await api.patch(`/p2p/messages/${messageId}/edit`, {
 			userId,
 			roomId,
-			content
+			content,
 		});
 		return res.data;
 	} catch (error) {

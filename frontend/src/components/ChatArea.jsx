@@ -11,11 +11,8 @@ import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 import './styles/ChatArea.css';
 
-// Two separate module-level caches — one per conversation type.
-// Both survive room/channel switches for the lifetime of the tab.
-
 const channelCache = new Map();
-const p2pCache = new Map();
+const p2pCache     = new Map();
 
 function getCache(isP2P) {
 	return isP2P ? p2pCache : channelCache;
@@ -31,62 +28,67 @@ function ChatArea({
 	onChannelRenamed,
 	onStartP2P,
 	onCloseP2P,
+	highlightMessageId,
+	onHighlightConsumed,
 }) {
-	const isP2P = !!roomId;
+	const isP2P    = !!roomId;
 	const activeId = isP2P ? roomId : channelId;
-	const cached = getCache(isP2P).get(activeId);
+	const cached   = getCache(isP2P).get(activeId);
 
-	const [messages, setMessages] = useState(cached || []);
-	const [typingUsers, setTypingUsers] = useState([]);
-	const [loading, setLoading] = useState(!cached);
-	const [currentLabel, setCurrentLabel] = useState(
-		channelLabel || otherUsername,
-	);
-	const [retryCount, setRetryCount] = useState(0);
+	const [messages,     setMessages]     = useState(cached || []);
+	const [typingUsers,  setTypingUsers]  = useState([]);
+	const [loading,      setLoading]      = useState(!cached);
+	const [currentLabel, setCurrentLabel] = useState(channelLabel || otherUsername);
+	const [retryCount,   setRetryCount]   = useState(0);
 
 	const activeIdRef = useRef(activeId);
 	const messagesRef = useRef(messages);
 
-	useEffect(() => {
-		messagesRef.current = messages;
-	}, [messages]);
-	useEffect(() => {
-		setCurrentLabel(channelLabel || otherUsername);
-	}, [channelLabel, otherUsername]);
+	useEffect(() => { messagesRef.current = messages; }, [messages]);
+	useEffect(() => { setCurrentLabel(channelLabel || otherUsername); }, [channelLabel, otherUsername]);
 
-	// Write through helper  keeps cache and state in sync in one call.
-	const setAndCache = useCallback(
-		(updater) => {
-			setMessages((prev) => {
-				const next = typeof updater === 'function' ? updater(prev) : updater;
-				getCache(isP2P).set(activeId, next);
-				return next;
-			});
-		},
-		[isP2P, activeId],
-	);
+	const setAndCache = useCallback((updater) => {
+		setMessages((prev) => {
+			const next = typeof updater === 'function' ? updater(prev) : updater;
+			getCache(isP2P).set(activeId, next);
+			return next;
+		});
+	}, [isP2P, activeId]);
+
+	// ── Scroll-to + highlight on jumpToMessage ──────────────────────────────
+	// Requires message elements to have data-message-id={msg.id} in MessageList.
+	useEffect(() => {
+		if (!highlightMessageId || loading) return;
+
+		const attempt = (tries = 0) => {
+			const el = document.querySelector(`[data-message-id="${highlightMessageId}"]`);
+			if (el) {
+				el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				el.classList.add('message-highlight');
+				setTimeout(() => el.classList.remove('message-highlight'), 2000);
+				onHighlightConsumed?.();
+			} else if (tries < 8) {
+				// Message may still be rendering — retry a few times.
+				setTimeout(() => attempt(tries + 1), 120);
+			}
+		};
+
+		attempt();
+	}, [highlightMessageId, loading]);
 
 	useEffect(() => {
 		activeIdRef.current = activeId;
 
-		// Restore cache immediately , skip spinner on revisit.
 		const hit = getCache(isP2P).get(activeId);
-		if (hit) {
-			setMessages(hit);
-			setLoading(false);
-		} else {
-			setMessages([]);
-			setLoading(true);
-		}
+		if (hit) { setMessages(hit); setLoading(false); }
+		else      { setMessages([]); setLoading(true);  }
+
 		setTypingUsers([]);
 
-		// Join the right socket room.
-		const joinRoom = () =>
-			socket.emit(isP2P ? 'join_p2p' : 'join_institute', activeId);
+		const joinRoom = () => socket.emit(isP2P ? 'join_p2p' : 'join_institute', activeId);
 		if (socket.connected) joinRoom();
 		else socket.once('connect', joinRoom);
 
-		// Fetch  silent background refresh on cache hit, full load on miss.
 		const fetchFn = isP2P
 			? () => fetchP2PMessages(activeId, user.id)
 			: () => fetchMessages(activeId);
@@ -94,16 +96,11 @@ function ChatArea({
 		fetchFn()
 			.then((res) => {
 				if (activeIdRef.current !== activeId) return;
-				const fresh = Array.isArray(res.data)
-					? res.data
-					: res.data.messages || [];
-
-				// Only update when data actually changed  avoids pointless re-renders.
+				const fresh = Array.isArray(res.data) ? res.data : res.data.messages || [];
 				const current = messagesRef.current;
 				const changed =
 					fresh.length !== current.length ||
 					fresh.some((m, i) => m.id !== current[i]?.id);
-
 				if (changed) setAndCache(fresh);
 			})
 			.catch(() => {
@@ -114,32 +111,19 @@ function ChatArea({
 				if (activeIdRef.current === activeId) setLoading(false);
 			});
 
-		// ── Incoming messages ─
-
 		const handleReceive = (msg) => {
 			if (activeIdRef.current !== activeId) return;
 
 			if (isP2P) {
 				if (msg.chatroom_id && msg.chatroom_id !== activeId) return;
-
-				// Own message confirmed by server — reconcile temp placeholder.
 				if (msg.sender_id === user.id) {
 					setAndCache((prev) => {
 						const idx = prev.findIndex(
-							(m) =>
-								String(m.id).startsWith('temp-') &&
-								m.content === msg.content &&
-								m.sender_id === user.id,
+							(m) => String(m.id).startsWith('temp-') && m.content === msg.content && m.sender_id === user.id,
 						);
 						if (idx === -1) return prev;
 						const next = [...prev];
-						next[idx] = {
-							id: msg.id,
-							content: msg.content,
-							sender_id: msg.sender_id,
-							username: msg.username,
-							created_at: msg.created_at,
-						};
+						next[idx] = { id: msg.id, content: msg.content, sender_id: msg.sender_id, username: msg.username, created_at: msg.created_at };
 						return next;
 					});
 					return;
@@ -163,14 +147,10 @@ function ChatArea({
 			});
 		};
 
-		// ── Typing ──
-
 		const handleDisplayTyping = ({ username, channel_id, room_id }) => {
 			const relevantRoom = room_id || channel_id;
 			if (relevantRoom && relevantRoom !== activeId) return;
-			setTypingUsers((prev) =>
-				prev.includes(username) ? prev : [...prev, username],
-			);
+			setTypingUsers((prev) => (prev.includes(username) ? prev : [...prev, username]));
 		};
 
 		const handleHideTyping = ({ channel_id, room_id } = {}) => {
@@ -178,8 +158,6 @@ function ChatArea({
 			if (relevantRoom && relevantRoom !== activeId) return;
 			setTypingUsers([]);
 		};
-
-		// ── Channel-only handlers ─────────────
 
 		const handleChannelDeleted = ({ channelId: deletedId }) => {
 			if (deletedId === activeIdRef.current) setMessages([]);
@@ -191,36 +169,28 @@ function ChatArea({
 			if (typeof onChannelRenamed === 'function') onChannelRenamed(channel);
 		};
 
-		// ── P2P delete / edit from other user
-
 		const handleP2PDeleted = ({ messageId }) => {
 			setAndCache((prev) =>
-				prev.map((msg) =>
-					msg.id === messageId
-						? { ...msg, content: 'This message was deleted', is_deleted: true }
-						: msg,
-				),
+				prev.map((msg) => msg.id === messageId
+					? { ...msg, content: 'This message was deleted', is_deleted: true }
+					: msg),
 			);
 		};
 
 		const handleP2PEdited = ({ messageId, newContent }) => {
 			setAndCache((prev) =>
-				prev.map((msg) =>
-					msg.id === messageId
-						? { ...msg, content: newContent, is_deleted: false }
-						: msg,
-				),
+				prev.map((msg) => msg.id === messageId
+					? { ...msg, content: newContent, is_deleted: false }
+					: msg),
 			);
 		};
 
-		// ── Register
+		const receiveEvent    = isP2P ? 'receive_p2p_message' : 'receive_message';
+		const typingEvent     = isP2P ? 'Display_p2p_typing'  : 'Display_typing';
+		const stopTypingEvent = isP2P ? 'hide_p2p_typing'     : 'hide_typing';
 
-		const receiveEvent = isP2P ? 'receive_p2p_message' : 'receive_message';
-		const typingEvent = isP2P ? 'Display_p2p_typing' : 'Display_typing';
-		const stopTypingEvent = isP2P ? 'hide_p2p_typing' : 'hide_typing';
-
-		socket.on(receiveEvent, handleReceive);
-		socket.on(typingEvent, handleDisplayTyping);
+		socket.on(receiveEvent,    handleReceive);
+		socket.on(typingEvent,     handleDisplayTyping);
 		socket.on(stopTypingEvent, handleHideTyping);
 
 		if (!isP2P) {
@@ -228,143 +198,84 @@ function ChatArea({
 			socket.on('channel_renamed', handleChannelRenamed);
 		} else {
 			socket.on('p2p_message_deleted', handleP2PDeleted);
-			socket.on('p2p_message_edited', handleP2PEdited);
+			socket.on('p2p_message_edited',  handleP2PEdited);
 		}
 
 		return () => {
 			socket.emit(isP2P ? 'leave_p2p' : 'leave_institute', activeId);
-			socket.off(receiveEvent, handleReceive);
-			socket.off(typingEvent, handleDisplayTyping);
+			socket.off(receiveEvent,    handleReceive);
+			socket.off(typingEvent,     handleDisplayTyping);
 			socket.off(stopTypingEvent, handleHideTyping);
-			socket.off('connect', joinRoom);
-
+			socket.off('connect',       joinRoom);
 			if (!isP2P) {
 				socket.off('channel_deleted', handleChannelDeleted);
 				socket.off('channel_renamed', handleChannelRenamed);
 			} else {
 				socket.off('p2p_message_deleted', handleP2PDeleted);
-				socket.off('p2p_message_edited', handleP2PEdited);
+				socket.off('p2p_message_edited',  handleP2PEdited);
 			}
 		};
 	}, [channelId, roomId, isP2P, user.id, retryCount, onChannelRenamed]);
 
-	// ── Send ─
-
-	const handleSend = useCallback(
-		(content) => {
-			const tempMessage = {
-				id: `temp-${Date.now()}`,
-				content,
-				sender_id: user.id,
-				username: user.username,
-				created_at: new Date().toISOString(),
-			};
-			setAndCache((prev) => [...prev, tempMessage]);
-
-			if (isP2P) {
-				socket.emit('send_p2p_message', {
-					chatroom_id: roomId,
-					message: content,
-					sender_id: user.id,
-					username: user.username,
-				});
-			} else {
-				socket.emit('send_message', {
-					channel_id: channelId,
-					message: content,
-					sender_id: user.id,
-					username: user.username,
-				});
-			}
-		},
-		[channelId, roomId, isP2P, user, setAndCache],
-	);
+	const handleSend = useCallback((content) => {
+		const tempMessage = {
+			id: `temp-${Date.now()}`,
+			content,
+			sender_id: user.id,
+			username: user.username,
+			created_at: new Date().toISOString(),
+		};
+		setAndCache((prev) => [...prev, tempMessage]);
+		if (isP2P) {
+			socket.emit('send_p2p_message', { chatroom_id: roomId, message: content, sender_id: user.id, username: user.username });
+		} else {
+			socket.emit('send_message', { channel_id: channelId, message: content, sender_id: user.id, username: user.username });
+		}
+	}, [channelId, roomId, isP2P, user, setAndCache]);
 
 	const handleTyping = useCallback(() => {
-		if (isP2P)
-			socket.emit('typing_p2p', { room_id: roomId, username: user.username });
-		else
-			socket.emit('typing', { channel_id: channelId, username: user.username });
+		if (isP2P) socket.emit('typing_p2p',  { room_id: roomId,    username: user.username });
+		else        socket.emit('typing',       { channel_id: channelId, username: user.username });
 	}, [channelId, roomId, isP2P, user]);
 
 	const handleStopTyping = useCallback(() => {
-		if (isP2P)
-			socket.emit('stop_typing_p2p', {
-				room_id: roomId,
-				username: user.username,
-			});
-		else
-			socket.emit('stop_typing', {
-				channel_id: channelId,
-				username: user.username,
-			});
+		if (isP2P) socket.emit('stop_typing_p2p', { room_id: roomId,    username: user.username });
+		else        socket.emit('stop_typing',      { channel_id: channelId, username: user.username });
 	}, [channelId, roomId, isP2P, user]);
 
-	// ── P2P delete / edit (own actions) ──────
+	const handleP2PDelete = useCallback(async (messageId) => {
+		try {
+			await deleteP2PMessage(messageId, user.id, roomId);
+			setAndCache((prev) =>
+				prev.map((msg) => msg.id === messageId
+					? { ...msg, content: 'This message was deleted', is_deleted: true }
+					: msg),
+			);
+			socket.emit('delete_p2p_message', { roomId, messageId });
+		} catch (err) { console.error('failed to delete message', err); }
+	}, [roomId, user.id, setAndCache]);
 
-	const handleP2PDelete = useCallback(
-		async (messageId) => {
-			try {
-				await deleteP2PMessage(messageId, user.id, roomId);
-				setAndCache((prev) =>
-					prev.map((msg) =>
-						msg.id === messageId
-							? {
-									...msg,
-									content: 'This message was deleted',
-									is_deleted: true,
-								}
-							: msg,
-					),
-				);
-				socket.emit('delete_p2p_message', { roomId, messageId });
-			} catch (err) {
-				console.error('failed to delete message', err);
-			}
-		},
-		[roomId, user.id, setAndCache],
-	);
+	const handleP2PEdit = useCallback(async (messageId, newContent) => {
+		try {
+			await editP2PMessage(messageId, user.id, roomId, newContent);
+			setAndCache((prev) =>
+				prev.map((msg) => msg.id === messageId
+					? { ...msg, content: newContent, is_deleted: false }
+					: msg),
+			);
+			socket.emit('edit_p2p_message', { roomId, messageId, content: newContent });
+		} catch (err) { console.error('failed to edit message', err); }
+	}, [roomId, user.id, setAndCache]);
 
-	const handleP2PEdit = useCallback(
-		async (messageId, newContent) => {
-			try {
-				await editP2PMessage(messageId, user.id, roomId, newContent);
-				setAndCache((prev) =>
-					prev.map((msg) =>
-						msg.id === messageId
-							? { ...msg, content: newContent, is_deleted: false }
-							: msg,
-					),
-				);
-				socket.emit('edit_p2p_message', {
-					roomId,
-					messageId,
-					content: newContent,
-				});
-			} catch (err) {
-				console.error('failed to edit message', err);
-			}
-		},
-		[roomId, user.id, setAndCache],
-	);
-
-	const handleMessageDeleted = useCallback(
-		(id) => {
-			setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== id));
-		},
-		[setAndCache],
-	);
+	const handleMessageDeleted  = useCallback((id) => {
+		setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== id));
+	}, [setAndCache]);
 
 	const handleChannelDeletedCb = useCallback(() => setMessages([]), []);
-
-	const handleChannelRenamedCb = useCallback(
-		(updatedChannel) => {
-			setCurrentLabel(updatedChannel.name);
-			if (typeof onChannelRenamed === 'function')
-				onChannelRenamed(updatedChannel);
-		},
-		[onChannelRenamed],
-	);
+	const handleChannelRenamedCb = useCallback((updatedChannel) => {
+		setCurrentLabel(updatedChannel.name);
+		if (typeof onChannelRenamed === 'function') onChannelRenamed(updatedChannel);
+	}, [onChannelRenamed]);
 
 	const handleRetry = useCallback(() => setRetryCount((c) => c + 1), []);
 
@@ -383,9 +294,7 @@ function ChatArea({
 			{loading ? (
 				<div className='chat-loading'>
 					<div className='chat-loading-dots'>
-						<span />
-						<span />
-						<span />
+						<span /><span /><span />
 					</div>
 				</div>
 			) : (
