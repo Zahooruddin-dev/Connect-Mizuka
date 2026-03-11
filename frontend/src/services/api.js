@@ -160,6 +160,15 @@ export const searchInstituteMembers = async (instituteId, searchTerm, currentUse
     return [];
   }
 };
+export const getInstituteMembers = async (instituteId) => {
+  try {
+    const res = await api.get(`/institute/${instituteId}/institute-members`);
+    return res.data.members;
+  } catch (err) {
+    console.error("Error in getting members:", err);
+    return [];
+  }
+};
 export const fetchChannelsByInstitute = async (instituteId) => {
 	try {
 		const res = await api.get(`/channel/institute/${instituteId}`);
