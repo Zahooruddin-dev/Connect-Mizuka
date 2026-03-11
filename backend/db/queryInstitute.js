@@ -65,6 +65,17 @@ async function searchInstituteMembers(instituteId, userId, searchTerm) {
 	);
 	return rows ;
 }
+async function getInstituteMembersQuery(instituteId) {
+  const { rows } = await pool.query(
+    `SELECT u.id, u.username, u.email, ui.role
+     FROM users u
+     JOIN user_institutes ui ON u.id = ui.user_id
+     WHERE ui.institute_id = $1
+     ORDER BY u.username ASC`,
+    [instituteId]
+  );
+  return rows;
+}
 
 module.exports = {
 	createInstituteQuery,
@@ -74,5 +85,6 @@ module.exports = {
 	verifyAdminOfInstitute,
   getAdminInstitutes,
 		searchInstituteMembers,
+		getInstituteMembersQuery
 
 };
