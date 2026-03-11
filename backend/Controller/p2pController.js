@@ -49,6 +49,17 @@ async function getMessages(req, res) {
 		res.status(500).json({ error: 'Could not load message history' });
 	}
 }
+async function searchP2PMessages(req, res) {
+  const { roomId } = req.params;
+  const { searchTerm } = req.query; 
+
+  try {
+    const messages = await p2pDb.searchP2PMessagesQuery(roomId, searchTerm);
+    res.status(200).json({ messages });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to search P2P messages' });
+  }
+}
 async function deleteMsg(req, res) {
 	const { messageId } = req.params;
 	const { userId } = req.body;
@@ -147,6 +158,7 @@ async function markRoomAsRead(req, res) {
 module.exports = {
 	getOrCreateChatroom,
 	getMessages,
+	searchP2PMessages,
 	getUnreadCounts,
 	markRoomAsRead,
 	deleteMsg,
