@@ -468,6 +468,12 @@
   padding: 7px 10px;
   border-radius: 8px;
   transition: background 0.12s;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
 }
 .ipanel-member-row:hover { background: var(--bg-hover); }
 
