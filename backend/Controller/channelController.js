@@ -104,7 +104,7 @@ async function getChannelsForInstitute(req, res) {
 	try {
 		const channels = await db.getChannelsByInstitute(instituteId);
 		res.status(200).json({
-			channels: channels.map(ch => ({
+			channels: channels.map((ch) => ({
 				id: ch.id || ch._id,
 				name: ch.name,
 				institute_id: ch.institute_id,
@@ -135,6 +135,20 @@ async function getChannelById(req, res) {
 		});
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to load channel' });
+	}
+}
+
+async function searchChannelMessages(req, res) {
+	const { channelId } = req.params;
+	const { searchTerm } = req.query;
+	try {
+		const channel = await db.searchChannelMessagesQuery(channelId, searchTerm);
+		if (!channel) {
+			return res.status(404).json({ error: 'Channel messages not found' });
+		}
+		res.status(200).json({ channel });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to load channel messages' });
 	}
 }
 
@@ -193,4 +207,5 @@ module.exports = {
 	getChannelById,
 	deleteChannelById,
 	updateChannel,
+	searchChannelMessages
 };
