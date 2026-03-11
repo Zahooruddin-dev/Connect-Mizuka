@@ -177,6 +177,19 @@ export const searchChannelMessages = async (channelId, searchTerm) => {
 		return [];
 	}
 };
+
+export const searchP2PMessages = async (roomId, searchTerm) => {
+	try {
+		const res = await api.get(`/messages/${roomId}/search`, {
+			params: { searchTerm },
+		});
+		return res.data.messages || res.data.message || [];
+	} catch (err) {
+		console.error('Search Error:', err);
+		return [];
+	}
+};
+
 export const getInstituteMembers = async (instituteId) => {
 	try {
 		const res = await api.get(`/institute/${instituteId}/institute-members`);
