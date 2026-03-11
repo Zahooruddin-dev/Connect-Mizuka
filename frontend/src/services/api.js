@@ -180,7 +180,7 @@ export const searchChannelMessages = async (channelId, searchTerm) => {
 
 export const searchP2PMessages = async (roomId, searchTerm) => {
 	try {
-		const res = await api.get(`/messages/${roomId}/search`, {
+		const res = await api.get(`/p2p/messages/${roomId}/search`, {
 			params: { searchTerm },
 		});
 		return res.data.messages || res.data.message || [];

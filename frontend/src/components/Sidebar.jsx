@@ -30,6 +30,7 @@ function Sidebar({
 	onStartP2P,
 	activeP2P,
 	onJumpToMessage,
+	onJumpToP2PMessage,
 }) {
 	const [panelOpen,       setPanelOpen]       = useState(false);
 	const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -430,6 +431,7 @@ function Sidebar({
 						onlineUsers={onlineUsers}
 						activeP2P={activeP2P}
 						onUnreadUpdate={updateUnreadCount}
+						onJumpToP2PMessage={onJumpToP2PMessage}
 					/>
 				)}
 

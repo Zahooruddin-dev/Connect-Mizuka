@@ -54,7 +54,7 @@ async function searchP2PMessages(req, res) {
   const { searchTerm } = req.query; 
 
   try {
-    const messages = await p2pDb.searchP2PMessagesQuery(roomId, searchTerm);
+    const messages = await db.searchP2PMessagesQuery(roomId, searchTerm);
     res.status(200).json({ messages });
   } catch (error) {
     res.status(500).json({ error: 'Failed to search P2P messages' });
