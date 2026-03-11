@@ -12,7 +12,7 @@ import {
 import { fetchChannelsByInstitute, createChannel, searchChannelMessages } from '../services/api';
 import { fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
-import InstitutePanel from './InstitutePanel';
+import InstitutePanel from './Institutepanel';
 import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
 import Inbox from './Inbox';
@@ -464,7 +464,7 @@ function Sidebar({
 				</div>
 			</aside>
 
-			{panelOpen       && <InstitutePanel onClose={handleClosePanel} />}
+			{panelOpen       && <InstitutePanel onClose={handleClosePanel} onStartP2P={onStartP2P} />}
 			{createModalOpen && <CreateChannelModal onClose={handleCloseCreate} onConfirm={handleCreateChannel} />}
 			{isProfileOpen   && <UserProfilePanel userId={user.id} onClose={handleCloseProfile} />}
 		</>
