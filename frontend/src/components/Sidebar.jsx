@@ -9,11 +9,7 @@ import {
 	Inbox as InboxIcon,
 	Search,
 } from 'lucide-react';
-import {
-	fetchChannelsByInstitute,
-	createChannel,
-	searchChannelMessages,
-} from '../services/api';
+import { fetchChannelsByInstitute, createChannel, searchChannelMessages } from '../services/api';
 import { fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
 import InstitutePanel from './InstitutePanel';
@@ -35,39 +31,31 @@ function Sidebar({
 	activeP2P,
 	onJumpToMessage,
 }) {
-	const [panelOpen, setPanelOpen] = useState(false);
+	const [panelOpen,       setPanelOpen]       = useState(false);
 	const [createModalOpen, setCreateModalOpen] = useState(false);
-	const [isProfileOpen, setIsProfileOpen] = useState(false);
-	const [channels, setChannels] = useState([]);
-	const [activeTab, setActiveTab] = useState('channels');
-	const [unreadCount, setUnreadCount] = useState(0);
-	const [onlineUsers, setOnlineUsers] = useState(new Set());
+	const [isProfileOpen,   setIsProfileOpen]   = useState(false);
+	const [channels,        setChannels]        = useState([]);
+	const [activeTab,       setActiveTab]       = useState('channels');
+	const [unreadCount,     setUnreadCount]     = useState(0);
+	const [onlineUsers,     setOnlineUsers]     = useState(new Set());
 
 	// Search state
-	const [searchOpen, setSearchOpen] = useState(false);
-	const [searchTerm, setSearchTerm] = useState('');
+	const [searchOpen,    setSearchOpen]    = useState(false);
+	const [searchTerm,    setSearchTerm]    = useState('');
 	const [searchResults, setSearchResults] = useState([]);
 	const [searchLoading, setSearchLoading] = useState(false);
 
 	const activeInstituteRef = useRef(activeInstitute?.id);
-	const activeChannelRef = useRef(activeChannel);
-	const activeTabRef = useRef(activeTab);
-	const activeP2PRef = useRef(activeP2P);
-	const searchDebounce = useRef(null);
-	const searchInputRef = useRef(null);
+	const activeChannelRef   = useRef(activeChannel);
+	const activeTabRef       = useRef(activeTab);
+	const activeP2PRef       = useRef(activeP2P);
+	const searchDebounce     = useRef(null);
+	const searchInputRef     = useRef(null);
 
-	useEffect(() => {
-		activeInstituteRef.current = activeInstitute?.id;
-	}, [activeInstitute]);
-	useEffect(() => {
-		activeChannelRef.current = activeChannel;
-	}, [activeChannel]);
-	useEffect(() => {
-		activeTabRef.current = activeTab;
-	}, [activeTab]);
-	useEffect(() => {
-		activeP2PRef.current = activeP2P;
-	}, [activeP2P]);
+	useEffect(() => { activeInstituteRef.current = activeInstitute?.id; }, [activeInstitute]);
+	useEffect(() => { activeChannelRef.current   = activeChannel;       }, [activeChannel]);
+	useEffect(() => { activeTabRef.current       = activeTab;           }, [activeTab]);
+	useEffect(() => { activeP2PRef.current       = activeP2P;          }, [activeP2P]);
 
 	// Focus search input when it opens.
 	useEffect(() => {
@@ -98,9 +86,7 @@ function Sidebar({
 		socket.emit('get_online_users');
 	}, [user?.id]);
 
-	useEffect(() => {
-		updateUnreadCount();
-	}, [updateUnreadCount]);
+	useEffect(() => { updateUnreadCount(); }, [updateUnreadCount]);
 
 	useEffect(() => {
 		const handleStatus = ({ userId, status }) => {
@@ -111,13 +97,12 @@ function Sidebar({
 				return next;
 			});
 		};
-		const handleOnlineList = (userIds) =>
-			setOnlineUsers(new Set(userIds.map(String)));
+		const handleOnlineList = (userIds) => setOnlineUsers(new Set(userIds.map(String)));
 		socket.on('update_user_status', handleStatus);
-		socket.on('online_users_list', handleOnlineList);
+		socket.on('online_users_list',  handleOnlineList);
 		return () => {
 			socket.off('update_user_status', handleStatus);
-			socket.off('online_users_list', handleOnlineList);
+			socket.off('online_users_list',  handleOnlineList);
 		};
 	}, []);
 
@@ -140,10 +125,7 @@ function Sidebar({
 	}, [activeTab, updateUnreadCount]);
 
 	useEffect(() => {
-		if (!activeInstitute) {
-			setChannels([]);
-			return;
-		}
+		if (!activeInstitute) { setChannels([]); return; }
 		fetchChannelsByInstitute(activeInstitute.id)
 			.then((res) => setChannels(res.data?.channels || res.channels || []))
 			.catch(() => setChannels([]));
@@ -153,28 +135,19 @@ function Sidebar({
 	useEffect(() => {
 		const handleSocketDeleted = ({ channelId }) => {
 			if (!channelId) return;
-			setChannels((prev) =>
-				prev.filter((c) => String(c.id) !== String(channelId)),
-			);
-			if (String(activeChannelRef.current) === String(channelId))
-				onChannelSelect(null);
+			setChannels((prev) => prev.filter((c) => String(c.id) !== String(channelId)));
+			if (String(activeChannelRef.current) === String(channelId)) onChannelSelect(null);
 		};
 		const handleSocketRenamed = ({ channel }) => {
 			if (!channel?.id) return;
 			setChannels((prev) =>
-				prev.map((c) =>
-					String(c.id) === String(channel.id)
-						? { ...c, name: channel.name }
-						: c,
-				),
+				prev.map((c) => String(c.id) === String(channel.id) ? { ...c, name: channel.name } : c),
 			);
-			if (String(activeChannelRef.current) === String(channel.id))
-				onChannelSelect(channel);
+			if (String(activeChannelRef.current) === String(channel.id)) onChannelSelect(channel);
 		};
 		const handleChannelCreated = ({ channel }) => {
 			if (!channel?.id) return;
-			if (String(channel.institute_id) !== String(activeInstituteRef.current))
-				return;
+			if (String(channel.institute_id) !== String(activeInstituteRef.current)) return;
 			setChannels((prev) => {
 				if (prev.some((c) => String(c.id) === String(channel.id))) return prev;
 				return [...prev, channel];
@@ -192,57 +165,53 @@ function Sidebar({
 
 	// ── Search ─────────────────────────────────────────────────────────────
 
-	const handleSearchInput = useCallback(
-		(val) => {
-			setSearchTerm(val);
-			clearTimeout(searchDebounce.current);
+	const handleSearchInput = useCallback((val) => {
+		setSearchTerm(val);
+		clearTimeout(searchDebounce.current);
 
-			if (!val.trim() || val.length < 2) {
-				setSearchResults([]);
-				return;
-			}
-
-			setSearchLoading(true);
-			searchDebounce.current = setTimeout(async () => {
-				try {
-					// Search active channel if one is selected, otherwise search all
-					// channels by running against the first available channel.
-					const targetId = activeChannelRef.current || channels[0]?.id;
-					if (!targetId) {
-						setSearchLoading(false);
-						return;
-					}
-					const results = await searchChannelMessages(targetId, val);
-					setSearchResults(results || []);
-				} catch {
-					setSearchResults([]);
-				} finally {
-					setSearchLoading(false);
-				}
-			}, 300);
-		},
-		[channels],
-	);
-
-	const handleSearchResultClick = useCallback(
-		(result) => {
-			// If the result is from a different channel, select it first.
-			const targetChannel = channels.find(
-				(c) => String(c.id) === String(result.channel_id),
-			);
-			if (targetChannel) onChannelSelect(targetChannel);
-
-			// Tell App/ChatArea to jump to and highlight this message.
-			if (typeof onJumpToMessage === 'function') {
-				onJumpToMessage(result.channel_id, result.id);
-			}
-
-			setSearchOpen(false);
-			setSearchTerm('');
+		if (!val.trim() || val.length < 2) {
 			setSearchResults([]);
-		},
-		[channels, onChannelSelect, onJumpToMessage],
-	);
+			return;
+		}
+
+		if (!channels.length) { setSearchResults([]); return; }
+
+		setSearchLoading(true);
+		searchDebounce.current = setTimeout(async () => {
+			try {
+				// Search every channel in parallel — no need to have one selected.
+				// Each result already carries channel_id so we know where it lives.
+				const settled = await Promise.allSettled(
+					channels.map((ch) => searchChannelMessages(ch.id, val))
+				);
+				const merged = settled.flatMap((r) =>
+					r.status === 'fulfilled' ? (r.value || []) : []
+				);
+				// Sort newest first across all channels.
+				merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+				setSearchResults(merged);
+			} catch {
+				setSearchResults([]);
+			} finally {
+				setSearchLoading(false);
+			}
+		}, 300);
+	}, [channels]);
+
+	const handleSearchResultClick = useCallback((result) => {
+		// If the result is from a different channel, select it first.
+		const targetChannel = channels.find((c) => String(c.id) === String(result.channel_id));
+		if (targetChannel) onChannelSelect(targetChannel);
+
+		// Tell App/ChatArea to jump to and highlight this message.
+		if (typeof onJumpToMessage === 'function') {
+			onJumpToMessage(result.channel_id, result.id);
+		}
+
+		setSearchOpen(false);
+		setSearchTerm('');
+		setSearchResults([]);
+	}, [channels, onChannelSelect, onJumpToMessage]);
 
 	const handleCloseSearch = useCallback(() => {
 		setSearchOpen(false);
@@ -253,28 +222,22 @@ function Sidebar({
 	// Cleanup debounce on unmount.
 	useEffect(() => () => clearTimeout(searchDebounce.current), []);
 
-	const handleCreateChannel = useCallback(
-		async (name) => {
-			const res = await createChannel(user.id, activeInstitute.id, name);
-			if (res.channel) {
-				socket.emit('channel_created', {
-					channel: res.channel,
-					instituteId: activeInstitute.id,
-				});
-				setChannels((prev) => [...prev, res.channel]);
-				return {};
-			}
-			return { error: res.message || 'Failed to create channel' };
-		},
-		[user.id, activeInstitute?.id],
-	);
+	const handleCreateChannel = useCallback(async (name) => {
+		const res = await createChannel(user.id, activeInstitute.id, name);
+		if (res.channel) {
+			socket.emit('channel_created', { channel: res.channel, instituteId: activeInstitute.id });
+			setChannels((prev) => [...prev, res.channel]);
+			return {};
+		}
+		return { error: res.message || 'Failed to create channel' };
+	}, [user.id, activeInstitute?.id]);
 
-	const handleOpenPanel = useCallback(() => setPanelOpen(true), []);
-	const handleClosePanel = useCallback(() => setPanelOpen(false), []);
-	const handleOpenCreate = useCallback(() => setCreateModalOpen(true), []);
-	const handleCloseCreate = useCallback(() => setCreateModalOpen(false), []);
-	const handleOpenProfile = useCallback(() => setIsProfileOpen(true), []);
-	const handleCloseProfile = useCallback(() => setIsProfileOpen(false), []);
+	const handleOpenPanel      = useCallback(() => setPanelOpen(true),       []);
+	const handleClosePanel     = useCallback(() => setPanelOpen(false),      []);
+	const handleOpenCreate     = useCallback(() => setCreateModalOpen(true),  []);
+	const handleCloseCreate    = useCallback(() => setCreateModalOpen(false), []);
+	const handleOpenProfile    = useCallback(() => setIsProfileOpen(true),    []);
+	const handleCloseProfile   = useCallback(() => setIsProfileOpen(false),   []);
 	const handleProfileKeyDown = useCallback((e) => {
 		if (e.key === 'Enter' || e.key === ' ') setIsProfileOpen(true);
 	}, []);
@@ -282,33 +245,19 @@ function Sidebar({
 	return (
 		<>
 			{isOpen && (
-				<div
-					className='sidebar-backdrop'
-					onClick={onClose}
-					aria-hidden='true'
-				/>
+				<div className='sidebar-backdrop' onClick={onClose} aria-hidden='true' />
 			)}
 
-			<aside
-				className={`sidebar${isOpen ? ' open' : ''}`}
-				aria-label='Navigation'
-			>
+			<aside className={`sidebar${isOpen ? ' open' : ''}`} aria-label='Navigation'>
 				<div className='sidebar-header'>
 					<div className='sidebar-brand-wrap'>
 						<span className='sidebar-brand' aria-label='Mizuka'>
-							<span className='sidebar-brand-m' aria-hidden='true'>
-								M
-							</span>
-							izuka
+							<span className='sidebar-brand-m' aria-hidden='true'>M</span>izuka
 						</span>
 						<span className='sidebar-status' aria-hidden='true' />
 					</div>
 					{onClose && (
-						<button
-							className='sidebar-icon-btn sidebar-close-btn'
-							onClick={onClose}
-							aria-label='Close navigation'
-						>
+						<button className='sidebar-icon-btn sidebar-close-btn' onClick={onClose} aria-label='Close navigation'>
 							<X size={18} strokeWidth={2} />
 						</button>
 					)}
@@ -321,11 +270,7 @@ function Sidebar({
 					aria-haspopup='dialog'
 				>
 					<span className='sidebar-institute-icon' aria-hidden='true'>
-						{activeInstitute ? (
-							activeInstitute.label[0].toUpperCase()
-						) : (
-							<Building2 size={14} />
-						)}
+						{activeInstitute ? activeInstitute.label[0].toUpperCase() : <Building2 size={14} />}
 					</span>
 					<span className='sidebar-institute-info'>
 						<span className='sidebar-institute-label'>
@@ -333,12 +278,7 @@ function Sidebar({
 						</span>
 						<span className='sidebar-institute-hint'>click to manage</span>
 					</span>
-					<ChevronDown
-						className='sidebar-institute-chevron'
-						size={14}
-						strokeWidth={2}
-						aria-hidden='true'
-					/>
+					<ChevronDown className='sidebar-institute-chevron' size={14} strokeWidth={2} aria-hidden='true' />
 				</button>
 
 				<div className='sidebar-tabs'>
@@ -356,9 +296,7 @@ function Sidebar({
 						<InboxIcon size={14} />
 						Inbox
 						{unreadCount > 0 && (
-							<span className='sidebar-tab-badge'>
-								{unreadCount > 99 ? '99+' : unreadCount}
-							</span>
+							<span className='sidebar-tab-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
 						)}
 					</button>
 				</div>
@@ -368,9 +306,7 @@ function Sidebar({
 						{channels.length > 0 ? (
 							<>
 								<div className='sidebar-section-header'>
-									<span className='sidebar-section-label' id='channels-label'>
-										Channels
-									</span>
+									<span className='sidebar-section-label' id='channels-label'>Channels</span>
 									<div className='sidebar-section-actions'>
 										<button
 											className='sidebar-add-channel-btn'
@@ -405,9 +341,7 @@ function Sidebar({
 												placeholder='Search messages…'
 												value={searchTerm}
 												onChange={(e) => handleSearchInput(e.target.value)}
-												onKeyDown={(e) =>
-													e.key === 'Escape' && handleCloseSearch()
-												}
+												onKeyDown={(e) => e.key === 'Escape' && handleCloseSearch()}
 											/>
 											{searchTerm && (
 												<button
@@ -424,20 +358,14 @@ function Sidebar({
 											<div className='sidebar-search-status'>Searching…</div>
 										)}
 
-										{!searchLoading &&
-											searchTerm.length >= 2 &&
-											searchResults.length === 0 && (
-												<div className='sidebar-search-status'>
-													No results found
-												</div>
-											)}
+										{!searchLoading && searchTerm.length >= 2 && searchResults.length === 0 && (
+											<div className='sidebar-search-status'>No results found</div>
+										)}
 
 										{searchResults.length > 0 && (
 											<ul className='sidebar-search-results'>
 												{searchResults.map((result) => {
-													const ch = channels.find(
-														(c) => String(c.id) === String(result.channel_id),
-													);
+													const ch = channels.find((c) => String(c.id) === String(result.channel_id));
 													return (
 														<li key={result.id}>
 															<button
@@ -470,26 +398,15 @@ function Sidebar({
 									</div>
 								)}
 
-								<ul
-									className='sidebar-channels'
-									aria-labelledby='channels-label'
-									role='list'
-								>
+								<ul className='sidebar-channels' aria-labelledby='channels-label' role='list'>
 									{channels.map((ch) => (
 										<li key={ch.id} role='listitem'>
 											<button
 												className={`sidebar-channel-btn${activeChannel === ch.id ? ' active' : ''}`}
 												onClick={() => onChannelSelect(ch)}
-												aria-current={
-													activeChannel === ch.id ? 'page' : undefined
-												}
+												aria-current={activeChannel === ch.id ? 'page' : undefined}
 											>
-												<Hash
-													className='sidebar-hash'
-													size={14}
-													strokeWidth={2}
-													aria-hidden='true'
-												/>
+												<Hash className='sidebar-hash' size={14} strokeWidth={2} aria-hidden='true' />
 												<span>{ch.name}</span>
 											</button>
 										</li>
@@ -498,15 +415,8 @@ function Sidebar({
 							</>
 						) : (
 							<div className='sidebar-empty'>
-								<Building2
-									size={30}
-									strokeWidth={1}
-									className='sidebar-empty-icon'
-									aria-hidden='true'
-								/>
-								<p className='sidebar-no-channels'>
-									Select or join an institute to see channels.
-								</p>
+								<Building2 size={30} strokeWidth={1} className='sidebar-empty-icon' aria-hidden='true' />
+								<p className='sidebar-no-channels'>Select or join an institute to see channels.</p>
 							</div>
 						)}
 					</div>
@@ -526,9 +436,7 @@ function Sidebar({
 				{activeTab === 'inbox' && !activeInstitute && (
 					<div className='sidebar-empty'>
 						<Building2 size={30} strokeWidth={1} aria-hidden='true' />
-						<p className='sidebar-no-channels'>
-							Select an institute to search members
-						</p>
+						<p className='sidebar-no-channels'>Select an institute to search members</p>
 					</div>
 				)}
 
@@ -548,27 +456,15 @@ function Sidebar({
 							<span className='sidebar-user-role'>{user.role || 'member'}</span>
 						</div>
 					</div>
-					<button
-						className='sidebar-icon-btn sidebar-logout'
-						onClick={onLogout}
-						aria-label='Sign out'
-						title='Sign out'
-					>
+					<button className='sidebar-icon-btn sidebar-logout' onClick={onLogout} aria-label='Sign out' title='Sign out'>
 						<LogOut size={16} strokeWidth={2} aria-hidden='true' />
 					</button>
 				</div>
 			</aside>
 
-			{panelOpen && <InstitutePanel onClose={handleClosePanel} />}
-			{createModalOpen && (
-				<CreateChannelModal
-					onClose={handleCloseCreate}
-					onConfirm={handleCreateChannel}
-				/>
-			)}
-			{isProfileOpen && (
-				<UserProfilePanel userId={user.id} onClose={handleCloseProfile} />
-			)}
+			{panelOpen       && <InstitutePanel onClose={handleClosePanel} />}
+			{createModalOpen && <CreateChannelModal onClose={handleCloseCreate} onConfirm={handleCreateChannel} />}
+			{isProfileOpen   && <UserProfilePanel userId={user.id} onClose={handleCloseProfile} />}
 		</>
 	);
 }
