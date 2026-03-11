@@ -3,13 +3,14 @@ import { X, LogOut, Plus, Building2, Check, Copy, Users, ChevronDown } from 'luc
 import { useAuth } from '../services/AuthContext'
 import { linkToInstitute, getInstituteMembers } from '../services/api'
 import Toast from './Toast'
+import UserProfilePopover from './Userprofilepopover'
 import './styles/InstitutePanel.css'
 
 // Module-level cache — members lists don't change often, no need to refetch
 // every time the panel opens. Shape: Map<instituteId, Member[]>
 const membersCache = new Map()
 
-export default function InstitutePanel({ onClose }) {
+export default function InstitutePanel({ onClose, onStartP2P }) {
 	const {
 		user,
 		institutes,
@@ -30,6 +31,7 @@ export default function InstitutePanel({ onClose }) {
 	const [members,      setMembers]      = useState(membersCache.get(activeInstitute?.id) || [])
 	const [membersOpen,  setMembersOpen]  = useState(false)
 	const [membersLoading, setMembersLoading] = useState(false)
+	const [selectedUser, setSelectedUser]    = useState(null)
 
 	const toastTimer   = useRef(null)
 	const panelRef     = useRef(null)
@@ -308,13 +310,13 @@ export default function InstitutePanel({ onClose }) {
 												<p className='ipanel-members-group-label'>Admins</p>
 											)}
 											{members.filter(m => m.role === 'admin').map(m => (
-												<MemberRow key={m.id} member={m} isYou={m.id === user.id} />
+												<MemberRow key={m.id} member={m} isYou={m.id === user.id} onClick={() => setSelectedUser(m.id)} />
 											))}
 											{members.filter(m => m.role !== 'admin').length > 0 && (
 												<p className='ipanel-members-group-label'>Members</p>
 											)}
 											{members.filter(m => m.role !== 'admin').map(m => (
-												<MemberRow key={m.id} member={m} isYou={m.id === user.id} />
+												<MemberRow key={m.id} member={m} isYou={m.id === user.id} onClick={() => setSelectedUser(m.id)} />
 											))}
 										</>
 									)}
@@ -345,13 +347,24 @@ export default function InstitutePanel({ onClose }) {
 					</div>
 				</div>
 			)}
+
+			{selectedUser && (
+				<UserProfilePopover
+					userId={selectedUser}
+					onClose={() => setSelectedUser(null)}
+					onStartP2P={(p2pData) => {
+						onStartP2P?.(p2pData)
+						onClose()
+					}}
+				/>
+			)}
 		</div>
 	)
 }
 
-function MemberRow({ member, isYou }) {
+function MemberRow({ member, isYou, onClick }) {
 	return (
-		<div className='ipanel-member-row'>
+		<button className='ipanel-member-row' onClick={onClick} title={`View ${member.username}'s profile`}>
 			<div className='ipanel-member-avatar'>
 				{member.username?.[0]?.toUpperCase() || 'U'}
 			</div>
@@ -367,6 +380,6 @@ function MemberRow({ member, isYou }) {
 			<span className={`ipanel-member-role ${member.role === 'admin' ? 'admin' : ''}`}>
 				{member.role || 'member'}
 			</span>
-		</div>
+		</button>
 	)
 }
