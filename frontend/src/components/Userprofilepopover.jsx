@@ -129,7 +129,6 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 							</div>
 
 							<div className="popover-actions">
-								<button className="popover-action-btn">@Mention</button>
 								{!isOwnProfile && (
 									<button
 										className="popover-action-btn"
