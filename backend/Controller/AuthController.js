@@ -1,4 +1,4 @@
-const bcypt = require('bcrypt');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../db/queryAuth');
 
@@ -10,7 +10,7 @@ async function Login(req, res) {
 		if (!user) {
 			return res.status(401).json({ message: 'Invalid email or password' });
 		}
-		const match = await bcypt.compare(password, user.password_hash);
+		const match = await bcrypt.compare(password, user.password_hash);
 		if (!match) {
 			return res.status(401).json({ message: 'Invalid email or password' });
 		}
@@ -50,7 +50,7 @@ async function Register(req, res) {
 	const { username, email, password, role, institute_id } = req.body;
 	const instId = institute_id === '' ? null : institute_id;
 	try {
-		const password_hash = await bcypt.hash(password, 10);
+		const password_hash = await bcrypt.hash(password, 10);
 		const newUser = await db.registerQuery(
 			username,
 			email,
@@ -93,7 +93,7 @@ async function updateProfile(req, res) {
 					message: 'Current password is required to set a new password',
 				});
 			}
-			const match = await bcypt.compare(currentPassword, user.password_hash);
+			const match = await bcrypt.compare(currentPassword, user.password_hash);
 			if (!match) {
 				return res
 					.status(401)
@@ -105,7 +105,7 @@ async function updateProfile(req, res) {
 			username: username ?? user.username,
 			email: email ?? user.email,
 			password_hash: newPassword
-				? await bcypt.hash(newPassword, 10)
+				? await bcrypt.hash(newPassword, 10)
 				: undefined,
 		});
 
@@ -125,7 +125,7 @@ async function deleteUser(req, res) {
 		if (!user) {
 			return res.status(401).json({ message: 'Invalid Email or Password' });
 		}
-		const match = await bcypt.compare(password, user.password_hash);
+		const match = await bcrypt.compare(password, user.password_hash);
 		if (!match) {
 			return res.status(401).json({ message: 'Invalid Email or Password' });
 		}
@@ -195,11 +195,11 @@ async function changePassword(req, res) {
 			return res.status(404).json({ message: 'User not found' });
 		}
 
-		const isMatch = await bcypt.compare(oldPassword, user.password_hash);
+		const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
 		if (!isMatch) {
 			return res.status(401).json({ message: 'Incorrect current password' });
 		}
-		const newPassword_hash = await bcypt.hash(newPassword, 10);
+		const newPassword_hash = await bcrypt.hash(newPassword, 10);
 		const updatedUser = await db.changePasswordQuery(userId, newPassword_hash);
 
 		res.status(200).json({
