@@ -17,13 +17,11 @@ export const getOrCreateP2PRoom = async (otherUserId) => {
 export const fetchP2PMessages = (roomId, limit = 50, offset = 0) =>
   api.get(`/p2p/messages/${roomId}`, { params: { limit, offset } });
 
-export const fetchP2PChatrooms = () => 
-  api.get(`/p2p/chatrooms`);
 
 export const fetchUnreadCounts = async () => {
   try {
-    const res = await api.get(`/p2p/unread-counts`);
-    return res.data.unreadCounts || [];
+    const res = await api.get('/p2p/unread-counts');
+    return Array.isArray(res.data) ? res.data : res.data.unreadCounts || [];
   } catch {
     return [];
   }
