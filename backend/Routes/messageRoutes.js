@@ -7,7 +7,6 @@ router.use(verifyToken);
 
 router.get('/:channelId', messageController.getChatHistory);
 router.delete('/message/:messageId', messageController.deleteMessage);
-
 router.delete('/channel/:channelId', restrictToAdmin, messageController.deleteChannel);
 
 module.exports = router;
