@@ -106,6 +106,7 @@ mizuka-frontend/
     ├── services/
     │   ├── AuthContext.jsx             ← Context: user, token, institutes, all actions
     │   ├── api.js                      ← All HTTP calls + JWT interceptor
+    │   ├── p2p-api.js                  ← Direct message HTTP endpoints
     │   └── socket.js                   ← socket.io-client singleton
     │
     ├── utils/
@@ -685,6 +686,26 @@ Axios instance at `http://localhost:3000/api`, 10s timeout. JWT interceptor inje
 | `deleteMessage(messageId, userId)` | DELETE | `/messages/message/:messageId` |
 | `deleteChannel(channelId, userId)` | DELETE | `/messages/channel/:channelId` |
 
+### `src/services/p2p-api.js`
+
+Direct-message HTTP endpoints. All requests inherit the JWT interceptor from `api.js`.
+
+| Function | Method | Endpoint | Parameters |
+|---|---|---|---|
+| `getOrCreateP2PRoom(otherUserId)` | POST | `/p2p/room` | `{ otherUserId }` |
+| `fetchP2PMessages(roomId, limit, offset)` | GET | `/p2p/messages/:roomId` | query: `limit`, `offset` |
+| `fetchUnreadCounts()` | GET | `/p2p/unread-counts` | — |
+| `markRoomAsRead(roomId)` | POST | `/p2p/read/:roomId` | — |
+
+**Error handling:**
+- `getOrCreateP2PRoom` returns `{ error: string }` on failure (never throws).
+- `fetchUnreadCounts` returns `[]` on failure (never throws).
+- `markRoomAsRead` silently logs errors, never throws.
+
+**Return shapes:**
+- `getOrCreateP2PRoom` success: `{ chatroom: { id, created_at, … } }`
+- `fetchUnreadCounts` success: `[{ chatroom_id, unread_count }, …]`
+
 ### `src/services/socket.js`
 
 Module-level singleton. Connects to `http://localhost:5173` (Vite dev server) with `transports: ['websocket']`. The Vite proxy handles the WebSocket upgrade through to port 3000. `reconnectionAttempts: 5`, `reconnectionDelay: 1000ms`.
@@ -714,6 +735,13 @@ One rule: `.app-layout { display: flex; height: 100vh; width: 100vw; overflow: h
 | `send_message` | `{ channel_id, message, sender_id, username }` | `ChatArea.handleSend` |
 | `typing` | `{ channel_id, username }` | `MessageInput` on first keystroke |
 | `stop_typing` | `{ channel_id, username }` | `MessageInput` after 2s idle or on send |
+| `join_p2p` | `roomId` (raw UUID string) | `ChatArea` on mount (P2P mode) |
+| `leave_p2p` | `roomId` (raw UUID string) | `ChatArea` cleanup (P2P mode) |
+| `send_p2p_message` | `{ chatroom_id, message, sender_id, username }` | `ChatArea.handleSend` (P2P mode) |
+| `typing_p2p` | `{ room_id, username }` | `MessageInput` on first keystroke (P2P mode) |
+| `stop_typing_p2p` | `{ room_id, username }` | `MessageInput` after 2s idle or on send (P2P mode) |
+| `delete_p2p_message` | `{ roomId, messageId }` | `ChatArea.handleP2PDelete` |
+| `edit_p2p_message` | `{ roomId, messageId, content }` | `ChatArea.handleP2PEdit` |
 
 ### Listened by frontend
 
@@ -722,6 +750,14 @@ One rule: `.app-layout { display: flex; height: 100vh; width: 100vw; overflow: h
 | `receive_message` | `{ id, text, from, username, timestamp, channel_id }` | Filtered by channel, deduplicated, normalised → appended to `messages[]` |
 | `Display_typing` | `{ username, channel_id }` | Filtered by channel → added to `typingUsers[]` |
 | `hide_typing` | `{ channel_id }` | Filtered by channel → `typingUsers[]` cleared |
+| `receive_p2p_message` | `{ id, content, sender_id, username, created_at, chatroom_id }` | Filtered by room, deduped, normalised → appended to `messages[]` (P2P mode) |
+| `Display_p2p_typing` | `{ username, room_id }` | Filtered by room → added to `typingUsers[]` |
+| `hide_p2p_typing` | `{ room_id }` | Filtered by room → `typingUsers[]` cleared |
+| `channel_deleted` | `{ channelId }` | `App` and `ChatArea` check if active channel was deleted |
+| `channel_renamed` | `{ channel }` | `ChatHeader` and `Sidebar` update display name |
+| `channel_created` | `{ channel, instituteId }` | `Sidebar` appends new channel to list |
+| `p2p_message_deleted` | `{ messageId }` | `ChatArea` marks message as deleted (P2P mode) |
+| `p2p_message_edited` | `{ messageId, newContent }` | `ChatArea` updates message content (P2P mode) |
 
 ---
 
@@ -748,6 +784,15 @@ All requests go to `http://localhost:3000/api`. JWT sent as `Authorization: Bear
 | DELETE | `/messages/message/:messageId` | body: `{ userId }` | `{ message: 'Message deleted successfully' }` |
 | DELETE | `/messages/channel/:channelId` | body: `{ userId }` | `{ message: 'Channel deleted successfully' }` |
 
+### P2P — `/api/p2p/`
+
+| Method | Path | Body / Query | Success |
+|---|---|---|---|
+| POST | `/p2p/room` | `{ otherUserId }` | `{ chatroom: { id, created_at, … } }` |
+| GET | `/p2p/messages/:roomId` | query: `limit`, `offset` | Array of message objects |
+| GET | `/p2p/unread-counts` | — | `[{ chatroom_id, unread_count }, …]` |
+| POST | `/p2p/read/:roomId` | — | `{ message: 'Room marked as read' }` |
+
 ---
 
 ## localStorage Keys
@@ -758,8 +803,9 @@ All requests go to `http://localhost:3000/api`. JWT sent as `Authorization: Bear
 | `mizuka_token` | JWT string |
 | `mizuka_institutes` | JSON array — `[{ id: UUID, label: string }, …]` |
 | `mizuka_active_institute` | JSON object — `{ id: UUID, label: string }` |
+| `mizuka_recent_p2p_chats` | JSON array — `[{ id, username, email, role, roomId, lastChat }, …]` |
 
-All four are removed on `logout()`.
+All auth keys are removed on `logout()`. Recent chats are persisted after each P2P room creation.
 
 ---
 
@@ -788,6 +834,32 @@ All four are removed on `logout()`.
   username:  "hiroshi",          // ← included since backend fix
   timestamp: "2025-03-12T…",     // ← 'timestamp' not 'created_at'
   channel_id: "uuid"             // ← used for cross-channel filtering
+}
+```
+
+### P2P from REST (`GET /p2p/messages/:roomId`)
+
+```js
+{
+  id:         "uuid",
+  content:    "hello world",
+  sender_id:  "uuid",
+  username:   "hiroshi",
+  chatroom_id: "uuid",
+  created_at: "2025-03-12T14:22:00.000Z"
+}
+```
+
+### P2P from socket (`receive_p2p_message` event)
+
+```js
+{
+  id:         "uuid",
+  content:    "hello world",
+  sender_id:  "uuid",
+  username:   "hiroshi",
+  chatroom_id: "uuid",
+  created_at: "2025-03-12T…"
 }
 ```
 
@@ -893,6 +965,16 @@ socket.emit('send_message', {
 })
 ```
 
+For P2P:
+```js
+socket.emit('send_p2p_message', {
+  chatroom_id: roomId,     // must be 'chatroom_id'
+  message:     content,    // must be 'message'
+  sender_id:   user.id,    // must be 'sender_id'
+  username:    user.username
+})
+```
+
 ---
 
 ### Messages appear blank after receiving
@@ -925,7 +1007,7 @@ Axios DELETE requests need `{ data: { userId } }` to send a body — using `{ bo
 
 Messages emit but `receive_message` never fires. `join_institute` was called with `{ channelId }` (an object) instead of `channelId` (the raw string). The backend does `socket.join(channel_id)` where the argument is used directly — passing an object makes it join a room literally named `[object Object]`.
 
-Always emit: `socket.emit('join_institute', channelId)` — the raw UUID string. Same applies to `leave_institute`.
+Always emit: `socket.emit('join_institute', channelId)` — the raw UUID string. Same applies to `leave_institute` and P2P rooms.
 
 ---
 
@@ -943,6 +1025,18 @@ const link = await db.linkToInstituteQuery(institute_id, userId)
 ### UserProfilePopover not appearing
 
 Verify `api.js` includes the `getUserProfile` function and that the backend has the GET `/auth/user-profile/:userId` endpoint. The endpoint must return `{ user: { id, username, email, role, created_at } }`. Also check that `UserProfilePopover.jsx` is imported and rendered conditionally in `MessageList.jsx`.
+
+---
+
+### P2P rooms not loading or showing stale messages
+
+Ensure `fetchP2PMessages` is called with the correct `roomId` (the UUID, not a slug). The `ChatArea` component now handles both channel mode and P2P mode — verify the conditional logic gates the correct socket events and fetch calls per `isP2P` flag.
+
+---
+
+### Unread badge not updating in Inbox
+
+The `fetchUnreadCounts` function must be called after every P2P message arrives. Verify that `Sidebar` is listening to `receive_p2p_message` socket events and calling `updateUnreadCount()` when appropriate. Also confirm that `markRoomAsRead` is fired when a P2P room is opened via `activeP2P` effect in `Inbox`.
 
 ---
 
