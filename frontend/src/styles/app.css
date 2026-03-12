@@ -1,11 +1,73 @@
+/* ── Root layout ─────────────────────────────────────────────────────── */
+
 .app-layout {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+	display: flex;
+	height: 100vh;
+	height: 100dvh; /* handles mobile browser chrome */
+	width: 100vw;
+	overflow: hidden;
+	background: var(--bg-base);
 }
 
 .main-content {
-  flex: 1;
-  position: relative;
+	flex: 1;
+	min-width: 0; /* prevent flex children from overflowing */
+	display: flex;
+	flex-direction: column; /* topbar stacks above ChatArea */
+	overflow: hidden;
+}
+
+/* ── Top bar (sidebar closed) ────────────────────────────────────────── */
+/*
+   Shown on both desktop and mobile whenever the sidebar is closed.
+   On desktop the sidebar is open by default so this is rarely seen,
+   but it must exist so the user can reopen it after closing.
+   Lives in the .main-content flex column — never overlaps ChatArea.
+*/
+
+.mobile-topbar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0 14px;
+	height: 48px;
+	min-height: 48px;
+	background: var(--bg-surface);
+	border-bottom: 1px solid var(--border);
+	flex-shrink: 0;
+}
+
+.mobile-menu-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border: none;
+	background: none;
+	color: var(--text-secondary);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+	flex-shrink: 0;
+}
+
+.mobile-menu-btn:hover {
+	background: var(--bg-hover);
+	color: var(--teal-400);
+}
+
+.mobile-menu-btn:focus-visible {
+	outline: 2px solid var(--teal-500);
+	outline-offset: 2px;
+}
+
+.mobile-topbar-title {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	letter-spacing: -0.2px;
 }

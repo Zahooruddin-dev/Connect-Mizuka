@@ -49,13 +49,10 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 			alert('You cannot message yourself');
 			return;
 		}
-
-		console.log('[P2P] Starting DM with:', { currentUserId: currentUser.id, otherUserId: userId });
 		setCreatingRoom(true);
 
 		try {
 			const res = await getOrCreateP2PRoom(currentUser.id, userId);
-			console.log('[P2P] Room creation response:', res);
 
 			if (res.error) {
 				console.error('[P2P] Failed to create room:', res.error);
@@ -65,7 +62,6 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 			}
 
 			if (res.chatroom && typeof onStartP2P === 'function') {
-				console.log('[P2P] Opening chat with room:', res.chatroom.id);
 				onStartP2P({
 					roomId: res.chatroom.id,
 					otherUserId: userId,
@@ -86,52 +82,52 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	const isOwnProfile = currentUser?.id === userId;
 
 	return (
-		<div className="popover-overlay" onClick={handleOverlayClick}>
+		<div className='popover-overlay' onClick={handleOverlayClick}>
 			<div
-				className="user-popover"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby="popover-title"
+				className='user-popover'
+				role='dialog'
+				aria-modal='true'
+				aria-labelledby='popover-title'
 			>
 				{loading ? (
-					<div className="popover-loading">
+					<div className='popover-loading'>
 						<span>Loading...</span>
 					</div>
 				) : user ? (
 					<>
-						<div className="popover-header">
+						<div className='popover-header'>
 							<button
-								className="popover-close"
+								className='popover-close'
 								onClick={onClose}
-								aria-label="Close popover"
+								aria-label='Close popover'
 							>
 								<X size={18} strokeWidth={2} />
 							</button>
 						</div>
 
-						<div className="popover-body">
-							<div className="popover-header-center">
-								<div className="popover-avatar">
+						<div className='popover-body'>
+							<div className='popover-header-center'>
+								<div className='popover-avatar'>
 									{user.username?.[0]?.toUpperCase() || 'U'}
 								</div>
-								<div className="popover-name">{user.username}</div>
-								<div className="popover-role">{user.role || 'Member'}</div>
+								<div className='popover-name'>{user.username}</div>
+								<div className='popover-role'>{user.role || 'Member'}</div>
 							</div>
 
-							<div className="popover-info-group">
-								<span className="popover-info-label">Email</span>
-								<span className="popover-info-value">{user.email}</span>
+							<div className='popover-info-group'>
+								<span className='popover-info-label'>Email</span>
+								<span className='popover-info-value'>{user.email}</span>
 							</div>
 
-							<div className="popover-info-group">
-								<span className="popover-info-label">Member Since</span>
-								<span className="popover-info-value">{formattedDate}</span>
+							<div className='popover-info-group'>
+								<span className='popover-info-label'>Member Since</span>
+								<span className='popover-info-value'>{formattedDate}</span>
 							</div>
 
-							<div className="popover-actions">
+							<div className='popover-actions'>
 								{!isOwnProfile && (
 									<button
-										className="popover-action-btn"
+										className='popover-action-btn'
 										onClick={handleStartDirectMessage}
 										disabled={creatingRoom}
 									>
@@ -142,7 +138,7 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 						</div>
 					</>
 				) : (
-					<div className="popover-loading">
+					<div className='popover-loading'>
 						<span>User not found</span>
 					</div>
 				)}

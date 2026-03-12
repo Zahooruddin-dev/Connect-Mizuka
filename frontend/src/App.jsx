@@ -2,16 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './services/AuthContext';
 import socket from './services/socket';
 import LoginPage from './pages/LoginPage';
-import InstituteGate from './components/InstituteGate';
+import InstituteGate from './components/Institutegate';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import './styles/app.css';
 
 function App() {
-	const { user, institutes, activeInstitute, logout, isActiveAdmin } = useAuth();
-	const [activeChannel,      setActiveChannel]      = useState(null);
-	const [activeP2P,          setActiveP2P]          = useState(null);
-	const [sidebarOpen,        setSidebarOpen]        = useState(window.innerWidth >= 768);
+	const { user, institutes, activeInstitute, logout, isActiveAdmin } =
+		useAuth();
+	const [activeChannel, setActiveChannel] = useState(null);
+	const [activeP2P, setActiveP2P] = useState(null);
+	const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 	const [highlightMessageId, setHighlightMessageId] = useState(null);
 
 	useEffect(() => {
@@ -31,7 +32,8 @@ function App() {
 	useEffect(() => {
 		if (!activeChannel) return;
 		const handleChannelDeleted = ({ channelId }) => {
-			if (String(activeChannel.id) === String(channelId)) setActiveChannel(null);
+			if (String(activeChannel.id) === String(channelId))
+				setActiveChannel(null);
 		};
 		socket.on('channel_deleted', handleChannelDeleted);
 		return () => socket.off('channel_deleted', handleChannelDeleted);
@@ -44,10 +46,13 @@ function App() {
 		});
 	}, []);
 
-	const handleStartP2P = useCallback(({ roomId, otherUserId, otherUsername }) => {
-		setActiveP2P({ roomId, otherUserId, otherUsername });
-		setActiveChannel(null);
-	}, []);
+	const handleStartP2P = useCallback(
+		({ roomId, otherUserId, otherUsername }) => {
+			setActiveP2P({ roomId, otherUserId, otherUsername });
+			setActiveChannel(null);
+		},
+		[],
+	);
 
 	const handleChannelSelect = useCallback((channel) => {
 		setActiveChannel(channel);
@@ -57,7 +62,7 @@ function App() {
 	const handleCloseP2P = useCallback(() => setActiveP2P(null), []);
 
 	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
-	const handleOpenSidebar  = useCallback(() => setSidebarOpen(true),  []);
+	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
 
 	// Called from Sidebar when the user clicks a channel search result.
 	const handleJumpToMessage = useCallback((channelId, messageId) => {
@@ -70,11 +75,14 @@ function App() {
 	}, []);
 
 	// Called from Inbox when the user clicks a P2P message search result.
-	const handleJumpToP2PMessage = useCallback((roomId, messageId, otherUserId, otherUsername) => {
-		setActiveChannel(null);
-		setActiveP2P({ roomId, otherUserId, otherUsername });
-		setHighlightMessageId(messageId);
-	}, []);
+	const handleJumpToP2PMessage = useCallback(
+		(roomId, messageId, otherUserId, otherUsername) => {
+			setActiveChannel(null);
+			setActiveP2P({ roomId, otherUserId, otherUsername });
+			setHighlightMessageId(messageId);
+		},
+		[],
+	);
 
 	// ChatArea calls this once the highlight animation fires so it doesn't
 	// re-trigger when the user switches rooms.
@@ -85,7 +93,10 @@ function App() {
 	if (!user) return <LoginPage />;
 	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
 
-	const effectiveChannel = activeChannel ?? { id: activeInstitute.id, name: 'general' };
+	const effectiveChannel = activeChannel ?? {
+		id: activeInstitute.id,
+		name: 'general',
+	};
 	const isAdmin = isActiveAdmin();
 
 	return (

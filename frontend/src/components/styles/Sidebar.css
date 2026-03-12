@@ -586,6 +586,7 @@
 	position: fixed;
 	top: 12px;
 	left: 12px;
+	margin-left: 5px;
 	z-index: 1200;
 	background: var(--bg-surface);
 	border: 1px solid var(--border);

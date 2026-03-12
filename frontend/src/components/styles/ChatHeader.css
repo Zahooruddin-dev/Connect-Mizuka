@@ -23,6 +23,8 @@
 
 .chat-header-name-wrap {
 	display: flex;
+	margin-left: 20px;
+
 	align-items: center;
 	gap: 8px;
 	min-width: 0;

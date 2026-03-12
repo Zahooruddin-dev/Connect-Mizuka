@@ -84,9 +84,6 @@ async function deleteMsg(req, res) {
 async function editMsg(req, res) {
 	const { messageId } = req.params;
 	const { userId, content } = req.body;
-	console.log(
-		`[Backend] Attempting to edit message: ${messageId} for user: ${userId} content :${content}`,
-	);
 	if (!messageId || !userId || !content) {
 		return res
 			.status(400)
@@ -94,9 +91,6 @@ async function editMsg(req, res) {
 	}
 
 	try {
-		console.log(
-			`[Backend] Attempting to edit message: ${messageId} for user: ${userId} content :${content}`,
-		);
 		const editIds = await db.editP2PMessagesQuery(
 			messageId,
 			userId,
@@ -104,17 +98,11 @@ async function editMsg(req, res) {
 		);
 
 		if (!editIds || editIds.length === 0) {
-			console.log(
-				`[Backend] Failed: Message not found, or user ${userId} is not the sender.`,
-			);
 			return res
 				.status(404)
 				.json({ error: 'Message not found or unauthorized' });
 		}
 
-		console.log(
-			`[Backend] Success! Marked message ${editIds[0]} as edit.`,
-		);
 		return res.status(200).json({ success: true, deletedId: editIds[0] });
 	} catch (error) {
 		console.error('editmesage error:', error);
