@@ -2,6 +2,8 @@ const db = require('../db/queryReset');
 const dbAuth = require('../db/queryAuth');
 const userDb = require('../db/queryAuth');
 const bcrypt = require('bcrypt');
+const { sendResetEmail } = require('../utility/emailSender');
+
 async function resetPassword(req, res) {
 	const { email, code, newPassword } = req.body;
 	try {
@@ -30,8 +32,7 @@ async function requestPasswordReset(req, res) {
 		const code = Math.floor(100000 + Math.random() * 900000).toString();
 		const expires = new Date(Date.now() + 15 * 60000);
 		await db.saveResetCode(email, code, expires);
-		console.log(`Reset Code Sent To ${email}`);
-		console.log(`Reset Code is ${code}`);
+		await sendResetEmail(user.email, code);
 
 		return res.status(200).json({ message: 'reset code sent' });
 	} catch (error) {
