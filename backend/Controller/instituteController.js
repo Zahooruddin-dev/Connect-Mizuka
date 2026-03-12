@@ -1,24 +1,25 @@
 const db = require('../db/queryInstitute');
 const dbAuth = require('../db/queryAuth');
-
 async function createInstitute(req, res) {
-	const { name, adminId } = req.body;
-	if (!adminId || !name) {
-		return res.status(400).json({ message: 'Name and Admin ID are required' });
-	}
+	const { name } = req.body;
+	const adminId = req.user.id;
+	const userRole = req.user.role;
+
+	if (!name) return res.status(400).json({ message: 'Name is required' });
+
 	try {
-		const user = await dbAuth.getUserById(adminId);
-		if (!user || user.role !== 'admin') {
-			return res.status(403).json({
-				message:
-					'Access Denied: Only users with the Admin role can create institutes.',
-			});
+		if (userRole !== 'admin') {
+			return res
+				.status(403)
+				.json({ message: 'Only Global Admins can create institutes.' });
 		}
+
 		const newInst = await db.createInstituteQuery(name);
 		await db.createDefaultChannelQuery(newInst.id);
 		const membership = await db.linkToAdminQuery(newInst.id, adminId);
+
 		res.status(201).json({
-			message: 'Institute created and admin linked successfully',
+			message: 'Institute created successfully',
 			institute: newInst,
 			membership,
 		});
@@ -27,57 +28,49 @@ async function createInstitute(req, res) {
 	}
 }
 async function getGlobalKey(req, res) {
-	const { instituteId, adminId } = req.params;
+	const { instituteId } = req.params;
+	const adminId = req.user.id;
+
 	try {
-		const user = await dbAuth.getUserById(adminId);
-		if (!user || user.role !== 'admin') {
-			return res.status(403).json({
-				message:
-					'Access Denied: Only users with the Admin role can create institutes.',
-			});
+		const isAuthorized = await db.verifyAdminOfInstitute(adminId, instituteId);
+		if (!isAuthorized) {
+			return res
+				.status(403)
+				.json({ message: 'Not authorized for this institute' });
 		}
 		const institute = await db.getInstituteByIdQuery(instituteId);
-		res.status(201).json({
-			message: 'Global key/id sent',
-			institute,
-		});
+		res.status(200).json({ message: 'Global key sent', institute });
 	} catch (error) {
-		res.status(500).json({ error: 'Failed to get institute id' });
+		res.status(500).json({ error: 'Failed to get institute info' });
 	}
 }
-
 async function getAdminDashboard(req, res) {
-	const { adminId } = req.params;
+	const adminId = req.user.id;
 	try {
 		const institutes = await db.getAdminInstitutes(adminId);
 		if (!institutes || institutes.length === 0) {
-			return res
-				.status(404)
-				.json({ message: 'No institutes found for this admin' });
+			return res.status(404).json({ message: 'No institutes found' });
 		}
-		res.status(200).json({
-			managedInstitutes: institutes,
-		});
+		res.status(200).json({ managedInstitutes: institutes });
 	} catch (error) {
 		res.status(500).json({ message: 'Error loading dashboard' });
 	}
 }
 async function searchMembers(req, res) {
 	const { instituteId } = req.params;
-	const { query, userId } = req.query;
+	const { query } = req.query;
+	const userId = req.user.id;
 	const searchTerm = `%${query}%`;
+
 	try {
 		const users = await db.searchInstituteMembers(
 			instituteId,
 			userId,
 			searchTerm,
 		);
-		if (!users) {
-			return res.status(404).json({ message: 'User not found' });
-		}
 		res.status(200).json({ users });
 	} catch (error) {
-		res.status(500).json({ error: 'Failed to search members', error });
+		res.status(500).json({ error: 'Failed to search members' });
 	}
 }
 async function getInstituteMembers(req, res) {
@@ -98,5 +91,5 @@ module.exports = {
 	getGlobalKey,
 	getAdminDashboard,
 	searchMembers,
-	getInstituteMembers
+	getInstituteMembers,
 };
