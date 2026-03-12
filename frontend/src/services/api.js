@@ -42,6 +42,7 @@ export const fetchUserInfo = async (userId) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
+
 export const getUserProfile = async (userId) => {
 	try {
 		const res = await api.get(`/auth/user-profile/${userId}`);
@@ -67,6 +68,7 @@ export const updateProfile = async (
 		return err.response?.data || { message: 'Network error' };
 	}
 };
+
 export const changePassword = async (userId, oldPassword, newPassword) => {
 	try {
 		const res = await api.patch(`/auth/change-password/${userId}`, {
@@ -122,18 +124,57 @@ export const fetchMemberships = async (userId) => {
 	}
 };
 
-export const fetchInstituteDashboard = async (adminId) => {
+// --- INSTITUTE ROUTES ---
+
+export const fetchInstituteDashboard = async () => {
 	try {
-		const res = await api.get(`/institute/dashboard/${adminId}`);
+		const res = await api.get(`/institute/dashboard`);
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
 
-export const createInstitute = async (adminId, name) => {
+export const createInstitute = async (name) => {
 	try {
-		const res = await api.post('/institute/create', { adminId, name });
+		const res = await api.post('/institute/create', { name });
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
+
+export const getInstituteMembers = async (instituteId) => {
+	try {
+		const res = await api.get(`/institute/${instituteId}/institute-members`);
+		return res.data.members;
+	} catch (err) {
+		console.error('Error in getting members:', err);
+		return [];
+	}
+};
+
+export const searchInstituteMembers = async (instituteId, searchTerm) => {
+	try {
+		const res = await api.get(`/institute/${instituteId}/search-members`, {
+			params: { query: searchTerm },
+		});
+		return res.data.users;
+	} catch (err) {
+		console.error('Search Error:', err);
+		return [];
+	}
+};
+
+// --- CHANNEL ROUTES ---
+
+export const createChannel = async (instituteId, name, isPrivate = false) => {
+	try {
+		const res = await api.post('/channel/create', {
+			institute_id: instituteId,
+			name,
+			is_private: isPrivate,
+		});
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -148,24 +189,37 @@ export const fetchChannel = async (channelId) => {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
-export const searchInstituteMembers = async (
-	instituteId,
-	searchTerm,
-	currentUserId,
-) => {
+
+export const fetchChannelsByInstitute = async (instituteId) => {
 	try {
-		const res = await api.get(`/institute/${instituteId}/search-members`, {
-			params: {
-				query: searchTerm,
-				userId: currentUserId,
-			},
-		});
-		return res.data.users;
+		const res = await api.get(`/channel/institute/${instituteId}`);
+		return res.data;
 	} catch (err) {
-		console.error('Search Error:', err);
-		return [];
+		return err.response?.data || { message: 'Network error' };
 	}
 };
+
+export const updateChannel = async (channelId, { name, isPrivate } = {}) => {
+	try {
+		const res = await api.put(`/channel/${channelId}`, {
+			...(name !== undefined && { name }),
+			...(isPrivate !== undefined && { is_private: isPrivate }),
+		});
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
+
+export const deleteChannel = async (channelId) => {
+	try {
+		const res = await api.delete(`/channel/${channelId}`);
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
+
 export const searchChannelMessages = async (channelId, searchTerm) => {
 	try {
 		const res = await api.get(`/channel/${channelId}/search-messages`, {
@@ -177,6 +231,30 @@ export const searchChannelMessages = async (channelId, searchTerm) => {
 		return [];
 	}
 };
+
+// --- MESSAGE ROUTES ---
+
+export const fetchMessages = (channelId, limit = 20, offset = 0) =>
+	api.get(`/messages/${channelId}`, { params: { limit, offset } });
+
+export const deleteMessage = (messageId) =>
+	api.delete(`/messages/message/${messageId}`);
+
+// --- P2P ROUTES ---
+
+export const getOrCreateP2PRoom = async (otherUserId) => {
+	try {
+		const res = await api.post('/p2p/room', { otherUserId });
+		return res.data;
+	} catch (err) {
+		return {
+			error: err.response?.data?.message || 'Failed to create chat room',
+		};
+	}
+};
+
+export const fetchP2PMessages = (roomId, limit = 50, offset = 0) =>
+	api.get(`/p2p/messages/${roomId}`, { params: { limit, offset } });
 
 export const searchP2PMessages = async (roomId, searchTerm) => {
 	try {
@@ -190,59 +268,9 @@ export const searchP2PMessages = async (roomId, searchTerm) => {
 	}
 };
 
-export const getInstituteMembers = async (instituteId) => {
+export const editP2PMessage = async (messageId, content) => {
 	try {
-		const res = await api.get(`/institute/${instituteId}/institute-members`);
-		return res.data.members;
-	} catch (err) {
-		console.error('Error in getting members:', err);
-		return [];
-	}
-};
-export const fetchChannelsByInstitute = async (instituteId) => {
-	try {
-		const res = await api.get(`/channel/institute/${instituteId}`);
-		return res.data;
-	} catch (err) {
-		return err.response?.data || { message: 'Network error' };
-	}
-};
-export const getOrCreateP2PRoom = async (user1, user2) => {
-	try {
-		const res = await api.post('/p2p/room', {
-			user1,
-			user2,
-		});
-		return res.data;
-	} catch (err) {
-		return {
-			error: err.response?.data?.message || 'Failed to create chat room',
-		};
-	}
-};
-
-export const fetchP2PMessages = (roomId, limit = 50, offset = 0) =>
-	api.get(`/p2p/messages/${roomId}`, { params: { limit, offset } });
-
-export const deleteP2PMessage = async (messageId, userId, roomId) => {
-	try {
-		const res = await api.patch(`/p2p/messages/${messageId}/delete`, {
-			userId,
-			roomId,
-		});
-		return res.data;
-	} catch (error) {
-		console.error('Error deleting messages', error);
-		throw error;
-	}
-};
-export const editP2PMessage = async (messageId, userId, roomId, content) => {
-	try {
-		const res = await api.patch(`/p2p/messages/${messageId}/edit`, {
-			userId,
-			roomId,
-			content,
-		});
+		const res = await api.patch(`/p2p/messages/${messageId}/edit`, { content });
 		return res.data;
 	} catch (error) {
 		console.error('Error editing messages', error);
@@ -250,60 +278,16 @@ export const editP2PMessage = async (messageId, userId, roomId, content) => {
 	}
 };
 
-export const fetchP2PChatrooms = (userId) =>
-	api.get(`/p2p/chatrooms/${userId}`);
-
-export const createChannel = async (
-	adminId,
-	instituteId,
-	name,
-	isPrivate = false,
-) => {
+export const deleteP2PMessage = async (messageId) => {
 	try {
-		const res = await api.post('/channel/create', {
-			adminId,
-			institute_id: instituteId,
-			name,
-			is_private: isPrivate,
-		});
+		const res = await api.patch(`/p2p/messages/${messageId}/delete`);
 		return res.data;
-	} catch (err) {
-		return err.response?.data || { message: 'Network error' };
+	} catch (error) {
+		console.error('Error deleting messages', error);
+		throw error;
 	}
 };
 
-export const updateChannel = async (
-	channelId,
-	adminId,
-	{ name, isPrivate } = {},
-) => {
-	try {
-		const res = await api.put(`/channel/${channelId}`, {
-			adminId,
-			...(name !== undefined && { name }),
-			...(isPrivate !== undefined && { is_private: isPrivate }),
-		});
-		return res.data;
-	} catch (err) {
-		return err.response?.data || { message: 'Network error' };
-	}
-};
-
-export const deleteChannel = async (channelId, adminId) => {
-	try {
-		const res = await api.delete(`/channel/${channelId}`, {
-			data: { adminId },
-		});
-		return res.data;
-	} catch (err) {
-		return err.response?.data || { message: 'Network error' };
-	}
-};
-
-export const fetchMessages = (channelId, limit = 20, offset = 0) =>
-	api.get(`/messages/${channelId}`, { params: { limit, offset } });
-
-export const deleteMessage = (messageId, userId) =>
-	api.delete(`/messages/message/${messageId}`, { data: { userId } });
+export const fetchP2PChatrooms = () => api.get(`/p2p/chatrooms`);
 
 export default api;
