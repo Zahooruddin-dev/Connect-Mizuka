@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { createServer } = require('http');
@@ -114,7 +115,7 @@ io.on('connection', (socket) => {
 			messageId: data.messageId,
 			newContent: 'This message was deleted',
 		});
-	});	
+	});
 	socket.on('edit_p2p_message', (data) => {
 		io.to(data.roomId).emit('p2p_message_edited', {
 			messageId: data.messageId,
