@@ -1,18 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const { verifyToken } = require('../middleware/authMiddleware');
 const authController = require('../Controller/AuthController');
 const resetController = require('../Controller/ResetController');
 
+// Public
 router.post('/login', authController.Login);
 router.post('/register', authController.Register);
-router.post('/delete', authController.deleteUser);
-router.patch('/change-password/:userId', authController.changePassword);
-router.get('/user-info/:userId', authController.getUserInfo);
-router.get('/user-profile/:userId', authController.getUserProfile);
-router.put('/update-profile/:userId', authController.updateProfile);
-router.post('/link-to-institute', authController.linkToInstitute);
-router.get('/my-memberships/:userId', authController.myMemberships);
 router.post('/request-reset', resetController.requestPasswordReset);
 router.post('/reset-password', resetController.resetPassword);
+
+// Protected routes
+router.get('/my-memberships', verifyToken, authController.myMemberships);
+router.get('/user-info', verifyToken, authController.getUserInfo);
+router.put('/update-profile', verifyToken, authController.updateProfile);
+router.patch('/change-password', verifyToken, authController.changePassword);
+router.post('/link-to-institute', verifyToken, authController.linkToInstitute);
+
+// For viewing other's profiles
+
+router.get('/user-profile/:userId', verifyToken, authController.getUserProfile);
+
+// Delete requires and email/pass
+router.post('/delete', verifyToken, authController.deleteUser);
 
 module.exports = router;
