@@ -150,7 +150,7 @@ async function linkToInstitute(req, res) {
 }
 
 async function myMemberships(req, res) {
-	const { userId } = req.params;
+	const userId = req.user.id;
 	try {
 		const memberships = await db.getUserMemberships(userId);
 		res.status(200).json({ memberships });
@@ -160,7 +160,7 @@ async function myMemberships(req, res) {
 }
 
 async function getUserInfo(req, res) {
-	const { userId } = req.params;
+	const userId = req.user.id;
 	try {
 		const user = await db.getUserInfoQuery(userId);
 		res.status(200).json({ user });
@@ -182,7 +182,7 @@ async function getUserProfile(req, res) {
 	}
 }
 async function changePassword(req, res) {
-	const { userId } = req.params;
+	const userId = req.user.id;
 	const { oldPassword, newPassword } = req.body;
 	if (!oldPassword || !newPassword) {
 		return res
