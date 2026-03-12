@@ -1,5 +1,18 @@
 const pool = require('./Pool');
 
+async function getRoomById(roomId) {
+	try {
+		const { rows } = await pool.query(
+			`SELECT * FROM p2p_chatrooms WHERE id = $1`,
+			[roomId],
+		);
+		return rows[0] || null;
+	} catch (error) {
+		console.error('getRoomById error:', error);
+		throw error;
+	}
+}
+
 async function findExistingRoomQuery(u1, u2) {
 	try {
 		const { rows } = await pool.query(
@@ -44,54 +57,56 @@ async function getP2PMessagesQuery(roomId) {
 		throw error;
 	}
 }
+
 async function searchP2PMessagesQuery(roomId, searchTerm) {
-  try {
-    const { rows } = await pool.query(
-      `SELECT m.id, m.chatroom_id, m.sender_id, m.content, m.created_at, u.username 
-       FROM p2p_messages m
-       JOIN users u ON m.sender_id = u.id
-       WHERE m.chatroom_id = $1 AND m.content ILIKE $2
-       ORDER BY m.created_at DESC`,
-      [roomId, `%${searchTerm}%`]
-    );
-    return rows;
-  } catch (error) {
-    console.error('searchP2PMessagesQuery error:', error);
-    throw error;
-  }
+	try {
+		const { rows } = await pool.query(
+			`SELECT m.id, m.chatroom_id, m.sender_id, m.content, m.created_at, u.username 
+			 FROM p2p_messages m
+			 JOIN users u ON m.sender_id = u.id
+			 WHERE m.chatroom_id = $1 AND m.content ILIKE $2
+			 ORDER BY m.created_at DESC`,
+			[roomId, `%${searchTerm}%`],
+		);
+		return rows;
+	} catch (error) {
+		console.error('searchP2PMessagesQuery error:', error);
+		throw error;
+	}
 }
+
 async function deleteP2PMessagesQuery(message_id, userId) {
 	try {
 		const { rows } = await pool.query(
 			`UPDATE p2p_messages 
-     SET is_deleted = true, content = 'This message was deleted' 
-     WHERE id = $1 AND sender_id = $2 
-     RETURNING id`,
+			 SET is_deleted = true, content = 'This message was deleted' 
+			 WHERE id = $1 AND sender_id = $2 
+			 RETURNING id`,
 			[message_id, userId],
 		);
-		console.log('Query soft deleted row:', rows.length);
 		return rows.length > 0 ? [rows[0].id] : null;
 	} catch (error) {
 		console.error('deleteP2PMessagesQuery error:', error);
 		throw error;
 	}
 }
+
 async function editP2PMessagesQuery(message_id, userId, content) {
 	try {
 		const { rows } = await pool.query(
 			`UPDATE p2p_messages 
-     SET is_deleted = false, content = $1 
-     WHERE id = $2 AND sender_id = $3 
-     RETURNING id`,
+			 SET is_deleted = false, content = $1 
+			 WHERE id = $2 AND sender_id = $3 
+			 RETURNING id`,
 			[content, message_id, userId],
 		);
-		console.log('Query edited row:', rows.length);
 		return rows.length > 0 ? [rows[0].id] : null;
 	} catch (error) {
-		console.error('deleteP2PMessagesQuery error:', error);
+		console.error('editP2PMessagesQuery error:', error);
 		throw error;
 	}
 }
+
 async function saveP2PMessage(chatroom_id, sender_id, content) {
 	try {
 		const { rows } = await pool.query(
@@ -109,7 +124,6 @@ async function saveP2PMessage(chatroom_id, sender_id, content) {
 
 async function markMessagesAsRead(chatroom_id, reader_id) {
 	try {
-		console.log('Executing markMessagesAsRead query:', chatroom_id, reader_id);
 		const { rows } = await pool.query(
 			`UPDATE p2p_messages
 			 SET is_read = TRUE
@@ -119,7 +133,6 @@ async function markMessagesAsRead(chatroom_id, reader_id) {
 			 RETURNING id`,
 			[chatroom_id, reader_id],
 		);
-		console.log('Query result rows:', rows.length);
 		return rows.map((r) => r.id);
 	} catch (error) {
 		console.error('markMessagesAsRead error:', error);
@@ -147,6 +160,7 @@ async function getUnreadCountsForUser(userId) {
 }
 
 module.exports = {
+	getRoomById,
 	findExistingRoomQuery,
 	createNewRoom,
 	getP2PMessagesQuery,
@@ -155,5 +169,5 @@ module.exports = {
 	getUnreadCountsForUser,
 	deleteP2PMessagesQuery,
 	editP2PMessagesQuery,
-	searchP2PMessagesQuery
+	searchP2PMessagesQuery,
 };

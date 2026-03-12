@@ -10,7 +10,15 @@ function verifyToken(req, res, next) {
 
 	try {
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
-		req.user = decoded;
+		req.user = {
+			...decoded,
+			id: decoded.id ?? decoded.userId ?? decoded.user_id,
+		};
+
+		if (!req.user.id) {
+			return res.status(401).json({ error: 'Invalid token payload' });
+		}
+
 		next();
 	} catch (error) {
 		if (error.name === 'TokenExpiredError') {
@@ -19,10 +27,12 @@ function verifyToken(req, res, next) {
 		return res.status(403).json({ error: 'Invalid token' });
 	}
 }
+
 function restrictToAdmin(req, res, next) {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: "Admin privileges required" });
-  }
-  next();
+	if (req.user.role !== 'admin') {
+		return res.status(403).json({ error: 'Admin privileges required' });
+	}
+	next();
 }
-module.exports = { verifyToken,restrictToAdmin };
+
+module.exports = { verifyToken, restrictToAdmin };

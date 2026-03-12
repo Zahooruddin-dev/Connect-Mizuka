@@ -10,7 +10,6 @@ export default function InstituteGate() {
   const [label, setLabel] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [creating, setCreating] = useState(false)
   const [instName, setInstName] = useState('')
   const [createError, setCreateError] = useState('')
   const [createLoading, setCreateLoading] = useState(false)

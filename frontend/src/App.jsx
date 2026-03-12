@@ -182,7 +182,7 @@ function App() {
 						onHighlightConsumed={handleHighlightConsumed}
 					/>
 				) : (
-					// Channels are still loading — show a neutral placeholder.
+					// Channels are still loading — shows a neutral placeholder.
 					<div className='chat-area-empty'>
 						<div className='chat-area-empty-inner'>
 							<span className='chat-area-empty-icon'>#</span>

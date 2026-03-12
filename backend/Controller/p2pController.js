@@ -2,7 +2,11 @@ const db = require('../db/queryP2P');
 
 async function isParticipant(roomId, userId) {
 	const room = await db.getRoomById(roomId);
-	return room && (room.user1 === userId || room.user2 === userId);
+	if (!room) return false;
+	return (
+		String(room.user_one_id) === String(userId) ||
+		String(room.user_two_id) === String(userId)
+	);
 }
 
 async function getOrCreateChatroom(req, res) {
@@ -11,7 +15,7 @@ async function getOrCreateChatroom(req, res) {
 
 	if (!otherUserId)
 		return res.status(400).json({ message: 'Target user required' });
-	if (myUserId === otherUserId)
+	if (String(myUserId) === String(otherUserId))
 		return res.status(400).json({ message: 'Cannot chat with self' });
 
 	const [u1, u2] = [myUserId, otherUserId].sort();
@@ -33,18 +37,17 @@ async function getMessages(req, res) {
 
 	try {
 		if (!(await isParticipant(roomId, myUserId))) {
-			return res
-				.status(403)
-				.json({ error: 'Access Denied: Not a participant' });
+			return res.status(403).json({ error: 'Access Denied: Not a participant' });
 		}
 
 		const messages = await db.getP2PMessagesQuery(roomId);
 		await db.markMessagesAsRead(roomId, myUserId);
 		res.status(200).json({ messages: messages || [] });
 	} catch (error) {
-		res.status(500).json({ error: 'History load failed' });
+		res.status(500).json({ error: 'History load failed: ' + error.message });
 	}
 }
+
 async function searchP2PMessages(req, res) {
 	const { roomId } = req.params;
 	const { searchTerm } = req.query;
@@ -58,9 +61,10 @@ async function searchP2PMessages(req, res) {
 		const messages = await db.searchP2PMessagesQuery(roomId, searchTerm);
 		res.status(200).json({ messages });
 	} catch (error) {
-		res.status(500).json({ error: 'Search failed' });
+		res.status(500).json({ error: 'Search failed: ' + error.message });
 	}
 }
+
 async function deleteMsg(req, res) {
 	const { messageId } = req.params;
 	const myUserId = req.user.id;
@@ -68,15 +72,14 @@ async function deleteMsg(req, res) {
 	try {
 		const deletedIds = await db.deleteP2PMessagesQuery(messageId, myUserId);
 		if (!deletedIds || deletedIds.length === 0) {
-			return res
-				.status(404)
-				.json({ error: 'Message not found or unauthorized' });
+			return res.status(404).json({ error: 'Message not found or unauthorized' });
 		}
 		return res.status(200).json({ success: true, deletedId: deletedIds[0] });
 	} catch (error) {
-		res.status(500).json({ error: 'Delete failed' });
+		res.status(500).json({ error: 'Delete failed: ' + error.message });
 	}
 }
+
 async function editMsg(req, res) {
 	const { messageId } = req.params;
 	const { content } = req.body;
@@ -86,16 +89,12 @@ async function editMsg(req, res) {
 
 	try {
 		const editIds = await db.editP2PMessagesQuery(messageId, myUserId, content);
-
 		if (!editIds || editIds.length === 0) {
-			return res
-				.status(404)
-				.json({ error: 'Message not found or unauthorized' });
+			return res.status(404).json({ error: 'Message not found or unauthorized' });
 		}
-
 		res.status(200).json({ success: true, messageId: editIds[0] });
 	} catch (error) {
-		res.status(500).json({ error: 'Edit failed' });
+		res.status(500).json({ error: 'Edit failed: ' + error.message });
 	}
 }
 
@@ -111,14 +110,15 @@ async function markRoomAsRead(req, res) {
 		await db.markMessagesAsRead(roomId, myUserId);
 		res.status(200).json({ success: true });
 	} catch (error) {
-		res.status(500).json({ error: 'Update failed' });
+		res.status(500).json({ error: 'Update failed: ' + error.message });
 	}
 }
+
 async function getUnreadCounts(req, res) {
 	const myUserId = req.user.id;
 	try {
 		const counts = await db.getUnreadCountsForUser(myUserId);
-		res.status(200).json({ unreadCounts: counts || [] });
+		res.status(200).json(counts || []);
 	} catch (error) {
 		res.status(500).json({ error: error.message });
 	}

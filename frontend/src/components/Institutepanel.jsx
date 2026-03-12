@@ -1,14 +1,23 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, LogOut, Plus, Building2, Check, Copy, Users, ChevronDown } from 'lucide-react'
-import { useAuth } from '../services/AuthContext'
-import { linkToInstitute, getInstituteMembers } from '../services/api'
-import Toast from './Toast'
-import UserProfilePopover from './Userprofilepopover'
-import './styles/InstitutePanel.css'
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+	X,
+	LogOut,
+	Plus,
+	Building2,
+	Check,
+	Copy,
+	Users,
+	ChevronDown,
+} from 'lucide-react';
+import { useAuth } from '../services/AuthContext';
+import { linkToInstitute, getInstituteMembers } from '../services/api';
+import Toast from './Toast';
+import UserProfilePopover from './Userprofilepopover';
+import './styles/InstitutePanel.css';
 
 // Module-level cache — members lists don't change often, no need to refetch
 // every time the panel opens. Shape: Map<instituteId, Member[]>
-const membersCache = new Map()
+const membersCache = new Map();
 
 export default function InstitutePanel({ onClose, onStartP2P }) {
 	const {
@@ -18,123 +27,158 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 		addInstitute,
 		removeInstitute,
 		setActiveInstitute,
-	} = useAuth()
+	} = useAuth();
 
-	const [adding,       setAdding]       = useState(false)
-	const [newId,        setNewId]        = useState('')
-	const [newLabel,     setNewLabel]     = useState('')
-	const [addError,     setAddError]     = useState('')
-	const [addLoading,   setAddLoading]   = useState(false)
-	const [leaveTarget,  setLeaveTarget]  = useState(null)
-	const [copiedId,     setCopiedId]     = useState(null)
-	const [toast,        setToast]        = useState({ visible: false, message: '', type: 'success' })
-	const [members,      setMembers]      = useState(membersCache.get(activeInstitute?.id) || [])
-	const [membersOpen,  setMembersOpen]  = useState(false)
-	const [membersLoading, setMembersLoading] = useState(false)
-	const [selectedUser, setSelectedUser]    = useState(null)
+	const [adding, setAdding] = useState(false);
+	const [newId, setNewId] = useState('');
+	const [newLabel, setNewLabel] = useState('');
+	const [addError, setAddError] = useState('');
+	const [addLoading, setAddLoading] = useState(false);
+	const [leaveTarget, setLeaveTarget] = useState(null);
+	const [copiedId, setCopiedId] = useState(null);
+	const [toast, setToast] = useState({
+		visible: false,
+		message: '',
+		type: 'success',
+	});
+	const [members, setMembers] = useState(
+		membersCache.get(activeInstitute?.id) || [],
+	);
+	const [membersOpen, setMembersOpen] = useState(false);
+	const [membersLoading, setMembersLoading] = useState(false);
+	const [selectedUser, setSelectedUser] = useState(null);
 
-	const toastTimer   = useRef(null)
-	const panelRef     = useRef(null)
-	const firstFocusRef = useRef(null)
-
-	useEffect(() => { firstFocusRef.current?.focus() }, [])
+	const toastTimer = useRef(null);
+	const panelRef = useRef(null);
+	const firstFocusRef = useRef(null);
 
 	useEffect(() => {
-		const handleKey = (e) => { if (e.key === 'Escape') onClose() }
-		window.addEventListener('keydown', handleKey)
-		return () => window.removeEventListener('keydown', handleKey)
-	}, [onClose])
+		firstFocusRef.current?.focus();
+	}, []);
 
-	useEffect(() => () => clearTimeout(toastTimer.current), [])
+	useEffect(() => {
+		const handleKey = (e) => {
+			if (e.key === 'Escape') onClose();
+		};
+		window.addEventListener('keydown', handleKey);
+		return () => window.removeEventListener('keydown', handleKey);
+	}, [onClose]);
+
+	useEffect(() => () => clearTimeout(toastTimer.current), []);
 
 	// Fetch members when panel opens or active institute changes.
 	// Stale-while-revalidate — show cache instantly, refresh silently.
 	useEffect(() => {
-		if (!activeInstitute?.id) return
+		if (!activeInstitute?.id) return;
 
-		const hit = membersCache.get(activeInstitute.id)
-		if (hit) setMembers(hit)
-		else setMembersLoading(true)
+		const hit = membersCache.get(activeInstitute.id);
+		if (hit) setMembers(hit);
+		else setMembersLoading(true);
 
-		getInstituteMembers(activeInstitute.id).then((fresh) => {
-			if (!fresh) return
-			membersCache.set(activeInstitute.id, fresh)
-			setMembers(fresh)
-		}).finally(() => setMembersLoading(false))
-	}, [activeInstitute?.id])
+		getInstituteMembers(activeInstitute.id)
+			.then((fresh) => {
+				if (!fresh) return;
+				membersCache.set(activeInstitute.id, fresh);
+				setMembers(fresh);
+			})
+			.finally(() => setMembersLoading(false));
+	}, [activeInstitute?.id]);
 
 	const showToast = useCallback((message, type = 'success') => {
-		setToast({ visible: true, message, type })
-		clearTimeout(toastTimer.current)
+		setToast({ visible: true, message, type });
+		clearTimeout(toastTimer.current);
 		toastTimer.current = setTimeout(() => {
-			setToast(prev => ({ ...prev, visible: false }))
-			setTimeout(() => setCopiedId(null), 300)
-		}, 2200)
-	}, [])
+			setToast((prev) => ({ ...prev, visible: false }));
+			setTimeout(() => setCopiedId(null), 300);
+		}, 2200);
+	}, []);
 
-	const handleBackdropClick = useCallback((e) => {
-		if (e.target === e.currentTarget) onClose()
-	}, [onClose])
+	const handleBackdropClick = useCallback(
+		(e) => {
+			if (e.target === e.currentTarget) onClose();
+		},
+		[onClose],
+	);
 
-	const handleCopyId = useCallback(async (id) => {
-		try {
-			await navigator.clipboard.writeText(id)
-			setCopiedId(id)
-			showToast('ID copied to clipboard', 'success')
-		} catch {
-			showToast('Failed to copy', 'error')
-		}
-	}, [showToast])
+	const handleCopyId = useCallback(
+		async (id) => {
+			try {
+				await navigator.clipboard.writeText(id);
+				setCopiedId(id);
+				showToast('ID copied to clipboard', 'success');
+			} catch {
+				showToast('Failed to copy', 'error');
+			}
+		},
+		[showToast],
+	);
 
-	const handleSelect = useCallback((institute) => {
-		setActiveInstitute(institute)
-		onClose()
-	}, [setActiveInstitute, onClose])
+	const handleSelect = useCallback(
+		(institute) => {
+			setActiveInstitute(institute);
+			onClose();
+		},
+		[setActiveInstitute, onClose],
+	);
 
 	const handleLeaveConfirm = useCallback(() => {
-		const label = leaveTarget.label
-		removeInstitute(leaveTarget.id)
+		const label = leaveTarget.label;
+		removeInstitute(leaveTarget.id);
 		// Evict from cache on leave
-		membersCache.delete(leaveTarget.id)
-		setLeaveTarget(null)
-		showToast(`Left ${label}`, 'error')
-	}, [leaveTarget, removeInstitute, showToast])
+		membersCache.delete(leaveTarget.id);
+		setLeaveTarget(null);
+		showToast(`Left ${label}`, 'error');
+	}, [leaveTarget, removeInstitute, showToast]);
 
 	const resetAddForm = useCallback(() => {
-		setAdding(false)
-		setAddError('')
-		setNewId('')
-		setNewLabel('')
-	}, [])
+		setAdding(false);
+		setAddError('');
+		setNewId('');
+		setNewLabel('');
+	}, []);
 
-	const handleAddSubmit = useCallback(async (e) => {
-		e.preventDefault()
-		const trimmedId = newId.trim()
-		if (!trimmedId) { setAddError('Institute ID is required'); return }
-		if (institutes.find((i) => i.id === trimmedId)) {
-			setAddError('You already belong to this institute')
-			return
-		}
-		setAddLoading(true)
-		const res = await linkToInstitute(user.id, trimmedId)
-		setAddLoading(false)
-		if (res.message && res.message !== 'Linked to institute') {
-			setAddError(res.message)
-			return
-		}
-		addInstitute({
-			id: res.membership.institute_id,
-			label: newLabel.trim() || trimmedId,
-			role: res.membership.role || 'member',
-		})
-		setNewId('')
-		setNewLabel('')
-		setAdding(false)
-		showToast('Joined institute', 'success')
-	}, [newId, newLabel, institutes, user.id, addInstitute, linkToInstitute, showToast])
+	const handleAddSubmit = useCallback(
+		async (e) => {
+			e.preventDefault();
+			const trimmedId = newId.trim();
+			if (!trimmedId) {
+				setAddError('Institute ID is required');
+				return;
+			}
+			if (institutes.find((i) => i.id === trimmedId)) {
+				setAddError('You already belong to this institute');
+				return;
+			}
+			setAddLoading(true);
+			const res = await linkToInstitute(user.id, trimmedId);
+			setAddLoading(false);
+			if (res.message && res.message !== 'Linked to institute') {
+				setAddError(res.message);
+				return;
+			}
+			addInstitute({
+				id: res.membership.institute_id,
+				label: newLabel.trim() || trimmedId,
+				role: res.membership.role || 'member',
+			});
+			setNewId('');
+			setNewLabel('');
+			setAdding(false);
+			showToast('Joined institute', 'success');
+		},
+		[
+			newId,
+			newLabel,
+			institutes,
+			user.id,
+			addInstitute,
+			linkToInstitute,
+			showToast,
+		],
+	);
 
-	const adminCount  = members.filter(m => m.role === 'admin').length
-	const memberCount = members.length
+	const adminCount = members.filter((m) => m.role === 'admin').length;
+	const memberCount = members.length;
 
 	return (
 		<div
@@ -144,15 +188,29 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 			aria-modal='true'
 			aria-label='Manage institutes'
 		>
-			<Toast message={toast.message} visible={toast.visible} type={toast.type} />
+			<Toast
+				message={toast.message}
+				visible={toast.visible}
+				type={toast.type}
+			/>
 
 			<div className='ipanel' ref={panelRef}>
 				<div className='ipanel-header'>
 					<div className='ipanel-header-left'>
-						<Building2 size={16} strokeWidth={1.5} className='ipanel-header-icon' aria-hidden='true' />
+						<Building2
+							size={16}
+							strokeWidth={1.5}
+							className='ipanel-header-icon'
+							aria-hidden='true'
+						/>
 						<h2 className='ipanel-title'>Institutes</h2>
 					</div>
-					<button className='ipanel-close' onClick={onClose} aria-label='Close panel' ref={firstFocusRef}>
+					<button
+						className='ipanel-close'
+						onClick={onClose}
+						aria-label='Close panel'
+						ref={firstFocusRef}
+					>
 						<X size={16} strokeWidth={2} aria-hidden='true' />
 					</button>
 				</div>
@@ -160,11 +218,22 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 				<div className='ipanel-body'>
 					{institutes.length === 0 ? (
 						<div className='ipanel-empty-state'>
-							<Building2 size={36} strokeWidth={1} className='ipanel-empty-icon' aria-hidden='true' />
-							<p className='ipanel-empty'>You haven't joined any institutes yet.</p>
+							<Building2
+								size={36}
+								strokeWidth={1}
+								className='ipanel-empty-icon'
+								aria-hidden='true'
+							/>
+							<p className='ipanel-empty'>
+								You haven't joined any institutes yet.
+							</p>
 						</div>
 					) : (
-						<ul className='ipanel-list' role='listbox' aria-label='Your institutes'>
+						<ul
+							className='ipanel-list'
+							role='listbox'
+							aria-label='Your institutes'
+						>
 							{institutes.map((inst) => (
 								<li key={inst.id} className='ipanel-item'>
 									<button
@@ -181,12 +250,16 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 											{inst.label !== inst.id && (
 												<span
 													className='ipanel-item-id'
-													onClick={(e) => { e.stopPropagation(); handleCopyId(inst.id) }}
+													onClick={(e) => {
+														e.stopPropagation();
+														handleCopyId(inst.id);
+													}}
 													role='button'
 													tabIndex={0}
 													onKeyDown={(e) => {
 														if (e.key === 'Enter' || e.key === ' ') {
-															e.stopPropagation(); handleCopyId(inst.id)
+															e.stopPropagation();
+															handleCopyId(inst.id);
 														}
 													}}
 												>
@@ -196,7 +269,8 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 										</span>
 										{activeInstitute?.id === inst.id && (
 											<span className='ipanel-active-badge' aria-hidden='true'>
-												<Check size={10} strokeWidth={3} />active
+												<Check size={10} strokeWidth={3} />
+												active
 											</span>
 										)}
 									</button>
@@ -207,10 +281,11 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 										aria-label={`Copy ID for ${inst.label}`}
 										title='Copy institute ID'
 									>
-										{copiedId === inst.id
-											? <Check size={13} strokeWidth={3} aria-hidden='true' />
-											: <Copy  size={13} strokeWidth={2} aria-hidden='true' />
-										}
+										{copiedId === inst.id ? (
+											<Check size={13} strokeWidth={3} aria-hidden='true' />
+										) : (
+											<Copy size={13} strokeWidth={2} aria-hidden='true' />
+										)}
 									</button>
 
 									<button
@@ -232,16 +307,29 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 							Join an institute
 						</button>
 					) : (
-						<form className='ipanel-add-form' onSubmit={handleAddSubmit} noValidate>
+						<form
+							className='ipanel-add-form'
+							onSubmit={handleAddSubmit}
+							noValidate
+						>
 							<p className='ipanel-add-heading'>Join a new institute</p>
-							{addError && <p className='ipanel-add-error' role='alert'>{addError}</p>}
-							<label className='ipanel-label' htmlFor='new-inst-id'>Institute ID</label>
+							{addError && (
+								<p className='ipanel-add-error' role='alert'>
+									{addError}
+								</p>
+							)}
+							<label className='ipanel-label' htmlFor='new-inst-id'>
+								Institute ID
+							</label>
 							<input
 								id='new-inst-id'
 								className='ipanel-input'
 								type='text'
 								value={newId}
-								onChange={(e) => { setNewId(e.target.value); setAddError('') }}
+								onChange={(e) => {
+									setNewId(e.target.value);
+									setAddError('');
+								}}
 								placeholder='Paste the UUID here'
 								required
 								autoFocus
@@ -261,10 +349,18 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 								autoComplete='off'
 							/>
 							<div className='ipanel-add-actions'>
-								<button type='submit' className='ipanel-confirm-btn' disabled={addLoading}>
+								<button
+									type='submit'
+									className='ipanel-confirm-btn'
+									disabled={addLoading}
+								>
 									{addLoading ? 'Joining…' : 'Join'}
 								</button>
-								<button type='button' className='ipanel-cancel-btn' onClick={resetAddForm}>
+								<button
+									type='button'
+									className='ipanel-cancel-btn'
+									onClick={resetAddForm}
+								>
 									Cancel
 								</button>
 							</div>
@@ -276,7 +372,7 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 						<div className='ipanel-members-section'>
 							<button
 								className='ipanel-members-toggle'
-								onClick={() => setMembersOpen(v => !v)}
+								onClick={() => setMembersOpen((v) => !v)}
 								aria-expanded={membersOpen}
 							>
 								<div className='ipanel-members-toggle-left'>
@@ -309,15 +405,29 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 											{adminCount > 0 && (
 												<p className='ipanel-members-group-label'>Admins</p>
 											)}
-											{members.filter(m => m.role === 'admin').map(m => (
-												<MemberRow key={m.id} member={m} isYou={m.id === user.id} onClick={() => setSelectedUser(m.id)} />
-											))}
-											{members.filter(m => m.role !== 'admin').length > 0 && (
+											{members
+												.filter((m) => m.role === 'admin')
+												.map((m) => (
+													<MemberRow
+														key={m.id}
+														member={m}
+														isYou={m.id === user.id}
+														onClick={() => setSelectedUser(m.id)}
+													/>
+												))}
+											{members.filter((m) => m.role !== 'admin').length > 0 && (
 												<p className='ipanel-members-group-label'>Members</p>
 											)}
-											{members.filter(m => m.role !== 'admin').map(m => (
-												<MemberRow key={m.id} member={m} isYou={m.id === user.id} onClick={() => setSelectedUser(m.id)} />
-											))}
+											{members
+												.filter((m) => m.role !== 'admin')
+												.map((m) => (
+													<MemberRow
+														key={m.id}
+														member={m}
+														isYou={m.id === user.id}
+														onClick={() => setSelectedUser(m.id)}
+													/>
+												))}
 										</>
 									)}
 								</div>
@@ -341,8 +451,18 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 							won't see its channels until you rejoin.
 						</p>
 						<div className='ipanel-leave-actions'>
-							<button className='ipanel-leave-confirm' onClick={handleLeaveConfirm}>Leave</button>
-							<button className='ipanel-leave-cancel' onClick={() => setLeaveTarget(null)}>Keep it</button>
+							<button
+								className='ipanel-leave-confirm'
+								onClick={handleLeaveConfirm}
+							>
+								Leave
+							</button>
+							<button
+								className='ipanel-leave-cancel'
+								onClick={() => setLeaveTarget(null)}
+							>
+								Keep it
+							</button>
 						</div>
 					</div>
 				</div>
@@ -353,18 +473,22 @@ export default function InstitutePanel({ onClose, onStartP2P }) {
 					userId={selectedUser}
 					onClose={() => setSelectedUser(null)}
 					onStartP2P={(p2pData) => {
-						onStartP2P?.(p2pData)
-						onClose()
+						onStartP2P?.(p2pData);
+						onClose();
 					}}
 				/>
 			)}
 		</div>
-	)
+	);
 }
 
 function MemberRow({ member, isYou, onClick }) {
 	return (
-		<button className='ipanel-member-row' onClick={onClick} title={`View ${member.username}'s profile`}>
+		<button
+			className='ipanel-member-row'
+			onClick={onClick}
+			title={`View ${member.username}'s profile`}
+		>
 			<div className='ipanel-member-avatar'>
 				{member.username?.[0]?.toUpperCase() || 'U'}
 			</div>
@@ -377,9 +501,11 @@ function MemberRow({ member, isYou, onClick }) {
 					<span className='ipanel-member-email'>{member.email}</span>
 				)}
 			</div>
-			<span className={`ipanel-member-role ${member.role === 'admin' ? 'admin' : ''}`}>
+			<span
+				className={`ipanel-member-role ${member.role === 'admin' ? 'admin' : ''}`}
+			>
 				{member.role || 'member'}
 			</span>
 		</button>
-	)
+	);
 }
