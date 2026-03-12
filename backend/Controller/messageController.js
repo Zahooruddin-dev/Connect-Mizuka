@@ -52,7 +52,6 @@ async function deleteChannel(req, res) {
 
 module.exports = {
   getChatHistory,
-  getSingleMessage,
   deleteMessage,
   deleteChannel,
 };

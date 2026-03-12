@@ -1,75 +1,72 @@
 const db = require('../db/queryP2P');
 
+async function isParticipant(roomId, userId) {
+	const room = await db.getRoomById(roomId);
+	return room && (room.user1 === userId || room.user2 === userId);
+}
+
 async function getOrCreateChatroom(req, res) {
-	const { user1, user2 } = req.body;
+	const { otherUserId } = req.body;
+	const myUserId = req.user.id;
 
-	if (!user1 || !user2) {
-		return res.status(400).json({ message: 'user1 and user2 are required' });
-	}
-
-	if (user1 === user2) {
+	if (!otherUserId)
+		return res.status(400).json({ message: 'Target user required' });
+	if (myUserId === otherUserId)
 		return res.status(400).json({ message: 'Cannot chat with self' });
-	}
 
-	const [u1, u2] = [user1, user2].sort();
+	const [u1, u2] = [myUserId, otherUserId].sort();
 
 	try {
 		const existingRoom = await db.findExistingRoomQuery(u1, u2);
-
-		if (existingRoom) {
-			return res.json({ chatroom: existingRoom, isNew: false });
-		}
+		if (existingRoom) return res.json({ chatroom: existingRoom, isNew: false });
 
 		const newRoom = await db.createNewRoom(u1, u2);
 		res.status(201).json({ chatroom: newRoom, isNew: true });
 	} catch (error) {
-		console.error('getOrCreateChatroom error:', error);
 		res.status(500).json({ error: error.message });
 	}
 }
 
 async function getMessages(req, res) {
 	const { roomId } = req.params;
-	const { userId } = req.query;
-
-	if (!roomId) {
-		return res.status(400).json({ message: 'roomId is required' });
-	}
+	const myUserId = req.user.id;
 
 	try {
-		const messages = await db.getP2PMessagesQuery(roomId);
-
-		if (userId) {
-			await db.markMessagesAsRead(roomId, userId);
+		if (!(await isParticipant(roomId, myUserId))) {
+			return res
+				.status(403)
+				.json({ error: 'Access Denied: Not a participant' });
 		}
 
+		const messages = await db.getP2PMessagesQuery(roomId);
+		await db.markMessagesAsRead(roomId, myUserId);
 		res.status(200).json({ messages: messages || [] });
 	} catch (error) {
-		console.error('getMessages error:', error);
-		res.status(500).json({ error: 'Could not load message history' });
+		res.status(500).json({ error: 'History load failed' });
 	}
 }
 async function searchP2PMessages(req, res) {
-  const { roomId } = req.params;
-  const { searchTerm } = req.query; 
+	const { roomId } = req.params;
+	const { searchTerm } = req.query;
+	const myUserId = req.user.id;
 
-  try {
-    const messages = await db.searchP2PMessagesQuery(roomId, searchTerm);
-    res.status(200).json({ messages });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to search P2P messages' });
-  }
+	try {
+		if (!(await isParticipant(roomId, myUserId))) {
+			return res.status(403).json({ error: 'Access Denied' });
+		}
+
+		const messages = await db.searchP2PMessagesQuery(roomId, searchTerm);
+		res.status(200).json({ messages });
+	} catch (error) {
+		res.status(500).json({ error: 'Search failed' });
+	}
 }
 async function deleteMsg(req, res) {
 	const { messageId } = req.params;
-	const { userId } = req.body;
-	if (!messageId || !userId) {
-		return res
-			.status(400)
-			.json({ message: 'messageId nad userId is required' });
-	}
+	const myUserId = req.user.id;
+
 	try {
-		const deletedIds = await db.deleteP2PMessagesQuery(messageId, userId);
+		const deletedIds = await db.deleteP2PMessagesQuery(messageId, myUserId);
 		if (!deletedIds || deletedIds.length === 0) {
 			return res
 				.status(404)
@@ -77,25 +74,18 @@ async function deleteMsg(req, res) {
 		}
 		return res.status(200).json({ success: true, deletedId: deletedIds[0] });
 	} catch (error) {
-		console.error('deleteMsg error:', error);
-		res.status(500).json({ error: 'Could not load message to delete' });
+		res.status(500).json({ error: 'Delete failed' });
 	}
 }
 async function editMsg(req, res) {
 	const { messageId } = req.params;
-	const { userId, content } = req.body;
-	if (!messageId || !userId || !content) {
-		return res
-			.status(400)
-			.json({ message: 'messageId, userId and content is required' });
-	}
+	const { content } = req.body;
+	const myUserId = req.user.id;
+
+	if (!content) return res.status(400).json({ message: 'Content is required' });
 
 	try {
-		const editIds = await db.editP2PMessagesQuery(
-			messageId,
-			userId,
-			content,
-		);
+		const editIds = await db.editP2PMessagesQuery(messageId, myUserId, content);
 
 		if (!editIds || editIds.length === 0) {
 			return res
@@ -103,42 +93,33 @@ async function editMsg(req, res) {
 				.json({ error: 'Message not found or unauthorized' });
 		}
 
-		return res.status(200).json({ success: true, deletedId: editIds[0] });
+		res.status(200).json({ success: true, messageId: editIds[0] });
 	} catch (error) {
-		console.error('editmesage error:', error);
-		res.status(500).json({ error: 'Could not load message to edit' });
-	}
-}
-
-async function getUnreadCounts(req, res) {
-	const { userId } = req.params;
-
-	if (!userId) {
-		return res.status(400).json({ message: 'userId is required' });
-	}
-
-	try {
-		const counts = await db.getUnreadCountsForUser(userId);
-		res.status(200).json({ unreadCounts: counts || [] });
-	} catch (error) {
-		console.error('getUnreadCounts error:', error);
-		res.status(500).json({ error: error.message });
+		res.status(500).json({ error: 'Edit failed' });
 	}
 }
 
 async function markRoomAsRead(req, res) {
 	const { roomId } = req.params;
-	const { userId } = req.body;
-
-	if (!roomId || !userId) {
-		return res.status(400).json({ message: 'roomId and userId are required' });
-	}
+	const myUserId = req.user.id;
 
 	try {
-		await db.markMessagesAsRead(roomId, userId);
+		if (!(await isParticipant(roomId, myUserId))) {
+			return res.status(403).json({ error: 'Unauthorized' });
+		}
+
+		await db.markMessagesAsRead(roomId, myUserId);
 		res.status(200).json({ success: true });
 	} catch (error) {
-		console.error('markRoomAsRead error:', error);
+		res.status(500).json({ error: 'Update failed' });
+	}
+}
+async function getUnreadCounts(req, res) {
+	const myUserId = req.user.id;
+	try {
+		const counts = await db.getUnreadCountsForUser(myUserId);
+		res.status(200).json({ unreadCounts: counts || [] });
+	} catch (error) {
 		res.status(500).json({ error: error.message });
 	}
 }
@@ -150,5 +131,5 @@ module.exports = {
 	getUnreadCounts,
 	markRoomAsRead,
 	deleteMsg,
-	editMsg
+	editMsg,
 };
