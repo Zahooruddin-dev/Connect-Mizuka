@@ -37,23 +37,15 @@ async function createChannel(req, res) {
 
 async function updateChannel(req, res) {
 	const { channelId } = req.params;
-	const { name, is_private, adminId } = req.body;
-
-	if (!adminId) {
-		return res.status(400).json({ message: 'Missing admin ID' });
-	}
-	if (!name && is_private === undefined) {
-		return res.status(400).json({ message: 'Nothing to update' });
-	}
+	const { name, is_private } = req.body;
+	const adminId = req.user.id;
 
 	try {
-		const user = await dbAuth.getUserById(adminId);
-		if (!user || user.role !== 'admin') {
-			return res.status(403).json({
-				message: 'Access Denied: Only admins can update channels.',
-			});
+		if (req.user.role !== 'admin') {
+			return res
+				.status(403)
+				.json({ message: 'Only admins can update channels.' });
 		}
-
 		const existing = await dbChannel.getChannelById(channelId);
 		if (!existing) {
 			return res.status(404).json({ error: 'Channel not found' });
@@ -73,17 +65,7 @@ async function updateChannel(req, res) {
 			name: name ?? existing.name,
 			is_private: is_private ?? existing.is_private,
 		});
-
-		res.status(200).json({
-			message: 'Channel updated successfully',
-			channel: {
-				id: updated.id || updated._id,
-				name: updated.name,
-				institute_id: updated.institute_id,
-				is_private: updated.is_private,
-				created_at: updated.created_at,
-			},
-		});
+		res.status(200).json({ message: 'Channel updated', channel: updated });
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to update channel' });
 	}
@@ -144,25 +126,15 @@ async function searchChannelMessages(req, res) {
 
 async function deleteChannelById(req, res) {
 	const { channelId } = req.params;
-	const { adminId } = req.body;
-
-	if (!adminId) {
-		return res.status(400).json({ message: 'Missing admin ID' });
-	}
-
+	const adminId = req.user.id;
 	try {
-		const user = await dbAuth.getUserById(adminId);
-		if (!user || user.role !== 'admin') {
-			return res.status(403).json({
-				message: 'Access Denied: Only admins can delete channels.',
-			});
+		if (req.user.role !== 'admin') {
+			return res.status(403).json({ message: 'Admins only.' });
 		}
-
 		const channel = await dbChannel.getChannelById(channelId);
 		if (!channel) {
 			return res.status(404).json({ error: 'Channel not found' });
 		}
-
 		const isAuthorized = await dbInstitute.verifyAdminOfInstitute(
 			adminId,
 			channel.institute_id,
@@ -172,20 +144,8 @@ async function deleteChannelById(req, res) {
 				message: 'Access Denied: You are not an admin of this institute',
 			});
 		}
-
 		const deleted = await dbChannel.deleteChannelQuery(channelId);
-		if (!deleted) {
-			return res.status(404).json({ error: 'Channel not found' });
-		}
-
-		res.status(200).json({
-			message: 'Channel deleted successfully',
-			channel: {
-				id: deleted.id || deleted._id,
-				name: deleted.name,
-				institute_id: deleted.institute_id,
-			},
-		});
+		res.status(200).json({ message: 'Channel deleted', channel: deleted });
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to delete channel' });
 	}
