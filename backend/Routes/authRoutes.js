@@ -17,7 +17,7 @@ router.put('/update-profile', verifyToken, authController.updateProfile);
 router.patch('/change-password', verifyToken, authController.changePassword);
 router.post('/link-to-institute', verifyToken, authController.linkToInstitute);
 
-// For viewing other's profiles
+// For viewing others profiles
 
 router.get('/user-profile/:userId', verifyToken, authController.getUserProfile);
 

@@ -11,6 +11,8 @@ api.interceptors.request.use((config) => {
 	return config;
 });
 
+// ── AUTH ──────────────────────────────────────────────────────────────────
+
 export const login = async (email, password) => {
 	try {
 		const res = await api.post('/auth/login', { email, password });
@@ -22,21 +24,16 @@ export const login = async (email, password) => {
 
 export const register = async (username, email, password, role) => {
 	try {
-		const res = await api.post('/auth/register', {
-			username,
-			email,
-			password,
-			role,
-		});
+		const res = await api.post('/auth/register', { username, email, password, role });
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
 
-export const fetchUserInfo = async (userId) => {
+export const fetchUserInfo = async () => {
 	try {
-		const res = await api.get(`/auth/user-info/${userId}`);
+		const res = await api.get('/auth/user-info');
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -52,16 +49,13 @@ export const getUserProfile = async (userId) => {
 	}
 };
 
-export const updateProfile = async (
-	userId,
-	{ username, email, currentPassword, newPassword } = {},
-) => {
+export const updateProfile = async ({ username, email, currentPassword, newPassword } = {}) => {
 	try {
-		const res = await api.put(`/auth/update-profile/${userId}`, {
-			...(username !== undefined && { username }),
-			...(email !== undefined && { email }),
+		const res = await api.put('/auth/update-profile', {
+			...(username        !== undefined && { username }),
+			...(email           !== undefined && { email }),
 			...(currentPassword !== undefined && { currentPassword }),
-			...(newPassword !== undefined && { newPassword }),
+			...(newPassword     !== undefined && { newPassword }),
 		});
 		return res.data;
 	} catch (err) {
@@ -69,12 +63,9 @@ export const updateProfile = async (
 	}
 };
 
-export const changePassword = async (userId, oldPassword, newPassword) => {
+export const changePassword = async (oldPassword, newPassword) => {
 	try {
-		const res = await api.patch(`/auth/change-password/${userId}`, {
-			oldPassword,
-			newPassword,
-		});
+		const res = await api.patch('/auth/change-password', { oldPassword, newPassword });
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -92,11 +83,7 @@ export const requestPasswordReset = async (email) => {
 
 export const resetPassword = async (email, code, newPassword) => {
 	try {
-		const res = await api.post('/auth/reset-password', {
-			email,
-			code,
-			newPassword,
-		});
+		const res = await api.post('/auth/reset-password', { email, code, newPassword });
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -115,20 +102,20 @@ export const linkToInstitute = async (userId, instituteId) => {
 	}
 };
 
-export const fetchMemberships = async (userId) => {
+export const fetchMemberships = async () => {
 	try {
-		const res = await api.get(`/auth/my-memberships/${userId}`);
+		const res = await api.get('/auth/my-memberships');
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
 	}
 };
 
-// --- INSTITUTE ROUTES ---
+// ── INSTITUTE ─────────────────────────────────────────────────────────────
 
 export const fetchInstituteDashboard = async () => {
 	try {
-		const res = await api.get(`/institute/dashboard`);
+		const res = await api.get('/institute/dashboard');
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -166,7 +153,7 @@ export const searchInstituteMembers = async (instituteId, searchTerm) => {
 	}
 };
 
-// --- CHANNEL ROUTES ---
+// ── CHANNEL ───────────────────────────────────────────────────────────────
 
 export const createChannel = async (instituteId, name, isPrivate = false) => {
 	try {
@@ -202,7 +189,7 @@ export const fetchChannelsByInstitute = async (instituteId) => {
 export const updateChannel = async (channelId, { name, isPrivate } = {}) => {
 	try {
 		const res = await api.put(`/channel/${channelId}`, {
-			...(name !== undefined && { name }),
+			...(name      !== undefined && { name }),
 			...(isPrivate !== undefined && { is_private: isPrivate }),
 		});
 		return res.data;
@@ -232,7 +219,7 @@ export const searchChannelMessages = async (channelId, searchTerm) => {
 	}
 };
 
-// --- MESSAGE ROUTES ---
+// ── MESSAGES ──────────────────────────────────────────────────────────────
 
 export const fetchMessages = (channelId, limit = 20, offset = 0) =>
 	api.get(`/messages/${channelId}`, { params: { limit, offset } });
@@ -240,16 +227,14 @@ export const fetchMessages = (channelId, limit = 20, offset = 0) =>
 export const deleteMessage = (messageId) =>
 	api.delete(`/messages/message/${messageId}`);
 
-// --- P2P ROUTES ---
+// ── P2P ───────────────────────────────────────────────────────────────────
 
 export const getOrCreateP2PRoom = async (otherUserId) => {
 	try {
 		const res = await api.post('/p2p/room', { otherUserId });
 		return res.data;
 	} catch (err) {
-		return {
-			error: err.response?.data?.message || 'Failed to create chat room',
-		};
+		return { error: err.response?.data?.message || 'Failed to create chat room' };
 	}
 };
 
@@ -272,9 +257,9 @@ export const editP2PMessage = async (messageId, content) => {
 	try {
 		const res = await api.patch(`/p2p/messages/${messageId}/edit`, { content });
 		return res.data;
-	} catch (error) {
-		console.error('Error editing messages', error);
-		throw error;
+	} catch (err) {
+		console.error('Error editing message:', err);
+		throw err;
 	}
 };
 
@@ -282,12 +267,21 @@ export const deleteP2PMessage = async (messageId) => {
 	try {
 		const res = await api.patch(`/p2p/messages/${messageId}/delete`);
 		return res.data;
-	} catch (error) {
-		console.error('Error deleting messages', error);
-		throw error;
+	} catch (err) {
+		console.error('Error deleting message:', err);
+		throw err;
 	}
 };
 
-export const fetchP2PChatrooms = () => api.get(`/p2p/chatrooms`);
+export const fetchUnreadCounts = () => api.get('/p2p/unread-counts');
+
+export const markRoomAsRead = async (roomId) => {
+	try {
+		const res = await api.post(`/p2p/read/${roomId}`);
+		return res.data;
+	} catch (err) {
+		return err.response?.data || { message: 'Network error' };
+	}
+};
 
 export default api;
