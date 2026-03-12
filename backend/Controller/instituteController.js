@@ -1,5 +1,4 @@
 const db = require('../db/queryInstitute');
-const dbAuth = require('../db/queryAuth');
 async function createInstitute(req, res) {
   const { name } = req.body;
   const adminId = req.user.id; 
