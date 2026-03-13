@@ -33,10 +33,10 @@ function App() {
 		return () => window.removeEventListener('resize', onResize);
 	}, []);
 	useEffect(() => {
-  const handleResize = () => setIsMobile(window.innerWidth < 768);
-  window.addEventListener('resize', handleResize);
-  return () => window.removeEventListener('resize', handleResize);
-}, []);
+		const handleResize = () => setIsMobile(window.innerWidth < 768);
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
 	// Reset active selections and load cached default when institute changes.
 	useEffect(() => {
 		setActiveChannel(null);
@@ -129,10 +129,6 @@ function App() {
 	const effectiveChannel = activeChannel ?? defaultChannel ?? null;
 	const isAdmin = isActiveAdmin();
 
-	// Label shown in the mobile top bar when sidebar is closed.
-	const mobileTitle = activeP2P
-		? activeP2P.otherUsername
-		: effectiveChannel?.name || activeInstitute?.label || 'Mizuka';
 
 	return (
 		<div className='app-layout'>
@@ -153,31 +149,26 @@ function App() {
 			/>
 
 			<div className='main-content'>
-				{/* Top bar shown whenever the sidebar is closed — on mobile
-				    this is always visible when closed, on desktop it appears
-				    only after the user has manually closed the sidebar.
-				    Lives in the flex column so it never overlaps ChatArea. */}
-{!sidebarOpen && (
-  isMobile ? (
-    <div className='mobile-topbar' role='banner'>
-      <button
-        className='mobile-menu-btn'
-        onClick={handleOpenSidebar}
-        aria-label='Open navigation menu'
-      >
-        <Menu size={20} strokeWidth={2} aria-hidden='true' />
-      </button>
-    </div>
-  ) : (
-    <button
-      className='sidebar-toggle'
-      onClick={handleOpenSidebar}
-      aria-label='Open navigation'
-    >
-      <Menu size={20} strokeWidth={2} aria-hidden='true' />
-    </button>
-  )
-)}
+				{!sidebarOpen &&
+					(isMobile ? (
+						<div className='mobile-topbar' role='banner'>
+							<button
+								className='mobile-menu-btn'
+								onClick={handleOpenSidebar}
+								aria-label='Open navigation menu'
+							>
+								<Menu size={20} strokeWidth={2} aria-hidden='true' />
+							</button>
+						</div>
+					) : (
+						<button
+							className='sidebar-toggle'
+							onClick={handleOpenSidebar}
+							aria-label='Open navigation'
+						>
+							<Menu size={20} strokeWidth={2} aria-hidden='true' />
+						</button>
+					))}
 				{activeP2P ? (
 					<ChatArea
 						roomId={activeP2P.roomId}
