@@ -16,9 +16,9 @@
   --teal-800: #115e59;
   --teal-900: #134e4a;
 
-  --accent: #f0a500;
-  --accent-light: #ffd166;
-  --accent-dim: rgba(240, 165, 0, 0.15);
+  --accent: #e09a00;
+  --accent-light: #f5c84a;
+  --accent-dim: rgba(224, 154, 0, 0.1);
 
   --bg-base: #0b1512;
   --bg-surface: #111f1c;
@@ -26,8 +26,8 @@
   --bg-hover: #1c2f2b;
   --bg-input: #0e1a18;
 
-  --border: rgba(45, 212, 191, 0.12);
-  --border-strong: rgba(45, 212, 191, 0.25);
+  --border: rgba(45, 212, 191, 0.09);
+  --border-strong: rgba(45, 212, 191, 0.18);
 
   --text-primary: #e2faf7;
   --text-secondary: #8ecec8;
@@ -42,9 +42,9 @@
   --radius-lg: 16px;
   --radius-xl: 22px;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 24px rgba(20, 184, 166, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(20, 184, 166, 0.07);
 }
 
 html, body, #root {
@@ -69,12 +69,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--teal-800);
+  background: var(--teal-900);
   border-radius: 99px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--teal-700);
+  background: var(--teal-800);
 }
 
 input, textarea, button {
