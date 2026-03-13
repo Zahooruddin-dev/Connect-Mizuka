@@ -605,4 +605,9 @@
 	.sidebar.open {
 		transform: translateX(0);
 	}
+}/* Desktop closed state – hide the sidebar completely */
+@media (min-width: 769px) {
+  .sidebar.closed {
+    display: none;
+  }
 }

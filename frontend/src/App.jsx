@@ -14,15 +14,17 @@ import './styles/app.css';
 const firstChannelCache = new Map();
 
 function App() {
-	const { user, institutes, activeInstitute, logout, isActiveAdmin } = useAuth();
-	const [activeChannel,      setActiveChannel]      = useState(null);
-	const [activeP2P,          setActiveP2P]          = useState(null);
-	const [sidebarOpen,        setSidebarOpen]        = useState(window.innerWidth >= 768);
+	const { user, institutes, activeInstitute, logout, isActiveAdmin } =
+		useAuth();
+	const [activeChannel, setActiveChannel] = useState(null);
+	const [activeP2P, setActiveP2P] = useState(null);
+	const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+	const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 	const [highlightMessageId, setHighlightMessageId] = useState(null);
 	// First channel available to this user in the active institute.
 	// Used as fallback when no channel is explicitly selected.
-	const [defaultChannel,     setDefaultChannel]     = useState(
-		() => firstChannelCache.get(activeInstitute?.id) ?? null
+	const [defaultChannel, setDefaultChannel] = useState(
+		() => firstChannelCache.get(activeInstitute?.id) ?? null,
 	);
 
 	useEffect(() => {
@@ -30,7 +32,11 @@ function App() {
 		window.addEventListener('resize', onResize);
 		return () => window.removeEventListener('resize', onResize);
 	}, []);
-
+	useEffect(() => {
+  const handleResize = () => setIsMobile(window.innerWidth < 768);
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
 	// Reset active selections and load cached default when institute changes.
 	useEffect(() => {
 		setActiveChannel(null);
@@ -41,12 +47,15 @@ function App() {
 
 	// Called by Sidebar once the channel list resolves. Cache the first entry
 	// so the fallback is instant on subsequent visits to this institute.
-	const handleChannelsLoaded = useCallback((channels) => {
-		if (!channels.length || !activeInstitute?.id) return;
-		const first = channels[0];
-		firstChannelCache.set(activeInstitute.id, first);
-		setDefaultChannel(first);
-	}, [activeInstitute?.id]);
+	const handleChannelsLoaded = useCallback(
+		(channels) => {
+			if (!channels.length || !activeInstitute?.id) return;
+			const first = channels[0];
+			firstChannelCache.set(activeInstitute.id, first);
+			setDefaultChannel(first);
+		},
+		[activeInstitute?.id],
+	);
 
 	useEffect(() => {
 		if (!activeInstitute) return;
@@ -59,7 +68,8 @@ function App() {
 	useEffect(() => {
 		if (!activeChannel) return;
 		const handleChannelDeleted = ({ channelId }) => {
-			if (String(activeChannel.id) === String(channelId)) setActiveChannel(null);
+			if (String(activeChannel.id) === String(channelId))
+				setActiveChannel(null);
 		};
 		socket.on('channel_deleted', handleChannelDeleted);
 		return () => socket.off('channel_deleted', handleChannelDeleted);
@@ -72,19 +82,22 @@ function App() {
 		});
 	}, []);
 
-	const handleStartP2P = useCallback(({ roomId, otherUserId, otherUsername }) => {
-		setActiveP2P({ roomId, otherUserId, otherUsername });
-		setActiveChannel(null);
-	}, []);
+	const handleStartP2P = useCallback(
+		({ roomId, otherUserId, otherUsername }) => {
+			setActiveP2P({ roomId, otherUserId, otherUsername });
+			setActiveChannel(null);
+		},
+		[],
+	);
 
 	const handleChannelSelect = useCallback((channel) => {
 		setActiveChannel(channel);
 		setActiveP2P(null);
 	}, []);
 
-	const handleCloseP2P      = useCallback(() => setActiveP2P(null),    []);
-	const handleCloseSidebar  = useCallback(() => setSidebarOpen(false), []);
-	const handleOpenSidebar   = useCallback(() => setSidebarOpen(true),  []);
+	const handleCloseP2P = useCallback(() => setActiveP2P(null), []);
+	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
+	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
 
 	const handleJumpToMessage = useCallback((channelId, messageId) => {
 		setActiveP2P(null);
@@ -95,11 +108,14 @@ function App() {
 		setHighlightMessageId(messageId);
 	}, []);
 
-	const handleJumpToP2PMessage = useCallback((roomId, messageId, otherUserId, otherUsername) => {
-		setActiveChannel(null);
-		setActiveP2P({ roomId, otherUserId, otherUsername });
-		setHighlightMessageId(messageId);
-	}, []);
+	const handleJumpToP2PMessage = useCallback(
+		(roomId, messageId, otherUserId, otherUsername) => {
+			setActiveChannel(null);
+			setActiveP2P({ roomId, otherUserId, otherUsername });
+			setHighlightMessageId(messageId);
+		},
+		[],
+	);
 
 	const handleHighlightConsumed = useCallback(() => {
 		setHighlightMessageId(null);
@@ -116,7 +132,7 @@ function App() {
 	// Label shown in the mobile top bar when sidebar is closed.
 	const mobileTitle = activeP2P
 		? activeP2P.otherUsername
-		: (effectiveChannel?.name || activeInstitute?.label || 'Mizuka');
+		: effectiveChannel?.name || activeInstitute?.label || 'Mizuka';
 
 	return (
 		<div className='app-layout'>
@@ -141,20 +157,27 @@ function App() {
 				    this is always visible when closed, on desktop it appears
 				    only after the user has manually closed the sidebar.
 				    Lives in the flex column so it never overlaps ChatArea. */}
-				{!sidebarOpen && (
-					<div className='mobile-topbar' role='banner'>
-						<button
-							className='mobile-menu-btn'
-							onClick={handleOpenSidebar}
-							aria-label='Open navigation menu'
-							aria-expanded={false}
-							aria-controls='sidebar-nav'
-						>
-							<Menu size={20} strokeWidth={2} aria-hidden='true' />
-						</button>
-					</div>
-				)}
-
+{!sidebarOpen && (
+  isMobile ? (
+    <div className='mobile-topbar' role='banner'>
+      <button
+        className='mobile-menu-btn'
+        onClick={handleOpenSidebar}
+        aria-label='Open navigation menu'
+      >
+        <Menu size={20} strokeWidth={2} aria-hidden='true' />
+      </button>
+    </div>
+  ) : (
+    <button
+      className='sidebar-toggle'
+      onClick={handleOpenSidebar}
+      aria-label='Open navigation'
+    >
+      <Menu size={20} strokeWidth={2} aria-hidden='true' />
+    </button>
+  )
+)}
 				{activeP2P ? (
 					<ChatArea
 						roomId={activeP2P.roomId}
