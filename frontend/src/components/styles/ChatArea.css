@@ -20,23 +20,22 @@
 }
 
 .chat-loading-dots span {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: var(--teal-600);
+  background: var(--teal-800);
   animation: bounce-dot 1.2s ease-in-out infinite;
 }
 
 .chat-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
 .chat-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
-/* Message highlight — triggered by search jump-to */
+
 @keyframes message-flash {
-  0%   { background: rgba(20, 184, 166, 0.18); }
-  60%  { background: rgba(20, 184, 166, 0.10); }
+  0%   { background: rgba(20, 184, 166, 0.1); }
   100% { background: transparent; }
 }
 
 .message-highlight {
-  animation: message-flash 2s ease-out forwards;
+  animation: message-flash 1.6s ease-out forwards;
   border-radius: 6px;
 }

@@ -24,7 +24,6 @@
 .chat-header-name-wrap {
 	display: flex;
 	margin-left: 20px;
-
 	align-items: center;
 	gap: 8px;
 	min-width: 0;
@@ -32,8 +31,8 @@
 }
 
 .chat-header-name {
-	font-size: 15px;
-	font-weight: 600;
+	font-size: 14px;
+	font-weight: 500;
 	color: var(--text-primary);
 	white-space: nowrap;
 	overflow: hidden;
@@ -41,12 +40,12 @@
 }
 
 .chat-header-edit-btn {
-	opacity: 0.6;
+	opacity: 0.4;
 	transition: opacity 0.15s;
 }
 
 .chat-header-name-wrap:hover .chat-header-edit-btn {
-	opacity: 1;
+	opacity: 0.7;
 }
 
 .chat-header-edit {
@@ -61,19 +60,19 @@
 	flex: 1;
 	min-width: 0;
 	padding: 6px 8px;
-	border: 1px solid var(--teal-500);
+	border: 1px solid var(--teal-600);
 	border-radius: 4px;
 	background: var(--bg-input);
 	color: var(--text-primary);
-	font-size: 15px;
-	font-weight: 600;
+	font-size: 14px;
+	font-weight: 500;
 	font-family: inherit;
 }
 
 .chat-header-input:focus {
 	outline: none;
-	border-color: var(--teal-400);
-	box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
+	border-color: var(--teal-600);
+	box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.07);
 }
 
 .chat-header-icon-btn {
@@ -87,7 +86,7 @@
 	color: var(--text-ghost);
 	cursor: pointer;
 	border-radius: 4px;
-	transition: all 0.15s;
+	transition: background 0.15s, color 0.15s;
 	flex-shrink: 0;
 }
 
@@ -102,12 +101,12 @@
 }
 
 .chat-header-save {
-	color: var(--teal-500);
+	color: var(--teal-600);
 }
 
 .chat-header-save:hover:not(:disabled) {
-	color: var(--teal-400);
-	background: rgba(20, 184, 166, 0.1);
+	color: var(--teal-500);
+	background: rgba(20, 184, 166, 0.07);
 }
 
 .chat-header-cancel {
@@ -116,7 +115,7 @@
 
 .chat-header-cancel:hover:not(:disabled) {
 	color: #f87171;
-	background: rgba(248, 113, 113, 0.1);
+	background: rgba(248, 113, 113, 0.08);
 }
 
 .chat-header-actions {
@@ -142,18 +141,18 @@
 	padding: 6px 12px;
 	border: none;
 	background: none;
-	color: #f87171;
+	color: var(--text-muted);
 	cursor: pointer;
 	border-radius: 6px;
 	font-size: 13px;
 	font-weight: 500;
-	transition: all 0.15s;
+	transition: background 0.15s, color 0.15s;
 	font-family: inherit;
 }
 
 .channel-delete-btn:hover {
-	background: rgba(248, 113, 113, 0.1);
-	color: #ef4444;
+	background: rgba(248, 113, 113, 0.08);
+	color: #f87171;
 }
 
 .delete-confirm {
@@ -175,61 +174,59 @@
 	border: none;
 	border-radius: 4px;
 	font-size: 12px;
-	font-weight: 600;
+	font-weight: 500;
 	cursor: pointer;
-	transition: all 0.15s;
+	transition: background 0.15s, color 0.15s;
 	font-family: inherit;
 }
 
 .confirm-yes {
-	background: #f87171;
-	color: white;
+	background: rgba(248, 113, 113, 0.15);
+	color: #f87171;
 }
 
 .confirm-yes:hover:not(:disabled) {
-	background: #ef4444;
+	background: rgba(248, 113, 113, 0.25);
+	color: #ef4444;
 }
 
 .confirm-no {
 	background: var(--bg-hover);
-	color: var(--text-secondary);
+	color: var(--text-muted);
 }
 
 .confirm-no:hover:not(:disabled) {
 	background: var(--border);
+	color: var(--text-secondary);
 }
 
 .confirm-yes:disabled,
 .confirm-no:disabled {
-	opacity: 0.6;
+	opacity: 0.5;
 	cursor: not-allowed;
 }
 
-/* ── P2P header ───────────────────────────────────────────────────── */
-
-/* Back arrow — reuses .chat-header-icon-btn sizing and border-radius */
 .chat-header-back {
 	color: var(--text-ghost);
 }
 
 .chat-header-back:hover {
 	background: var(--bg-hover);
-	color: var(--text-primary);
+	color: var(--text-secondary);
 }
 
-/* Circular avatar matching sidebar/inbox avatar style */
 .chat-header-p2p-avatar {
-	width: 32px;
-	height: 32px;
-	min-width: 32px;
+	width: 30px;
+	height: 30px;
+	min-width: 30px;
 	border-radius: 50%;
-	background: linear-gradient(135deg, var(--teal-700), var(--teal-500));
+	background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 13px;
-	font-weight: 700;
-	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.9);
 	flex-shrink: 0;
 }
 
@@ -240,14 +237,12 @@
 	min-width: 0;
 }
 
-/* "Direct Message" label below the username */
 .chat-header-p2p-sub {
 	font-size: 10px;
 	color: var(--text-ghost);
 	line-height: 1;
 }
 
-/* Close / X button kept from existing styles, used by P2P close action */
 .chat-header-close-btn {
 	width: 32px;
 	height: 32px;
@@ -259,20 +254,14 @@
 	color: var(--text-ghost);
 	cursor: pointer;
 	border-radius: 6px;
-	transition: all 0.15s;
+	transition: background 0.15s, color 0.15s;
 	flex-shrink: 0;
 }
 
 .chat-header-close-btn:hover {
-	background: rgba(248, 113, 113, 0.1);
+	background: rgba(248, 113, 113, 0.08);
 	color: #f87171;
 }
-
-.chat-header-close-btn:active {
-	transform: scale(0.95);
-}
-
-/* ── Responsive ───────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
 	.chat-header {
@@ -281,7 +270,7 @@
 	}
 
 	.chat-header-name {
-		font-size: 14px;
+		font-size: 13px;
 	}
 
 	.channel-delete-btn {
@@ -315,9 +304,9 @@
 	}
 
 	.chat-header-p2p-avatar {
-		width: 28px;
-		height: 28px;
-		min-width: 28px;
+		width: 26px;
+		height: 26px;
+		min-width: 26px;
 		font-size: 11px;
 	}
 }
