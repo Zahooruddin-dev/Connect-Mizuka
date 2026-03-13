@@ -13,7 +13,7 @@ import { useAuth } from '../services/AuthContext';
 import { linkToInstitute, getInstituteMembers } from '../services/api';
 import Toast from './Toast';
 import UserProfilePopover from './Userprofilepopover';
-import './styles/Institutepanel.css';
+import './styles/InstitutePanel.css';
 
 // Module-level cache — members lists don't change often, no need to refetch
 // every time the panel opens. Shape: Map<instituteId, Member[]>
