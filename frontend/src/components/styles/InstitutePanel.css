@@ -1,8 +1,8 @@
 .ipanel-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 12, 10, 0.65);
-  backdrop-filter: blur(3px);
+  background: rgba(5, 12, 10, 0.55);
+  backdrop-filter: blur(2px);
   z-index: 1300;
   display: flex;
   align-items: flex-start;
@@ -18,12 +18,12 @@
   display: flex;
   flex-direction: column;
   animation: ipanel-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 6px 0 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.28);
 }
 
 @keyframes ipanel-slide-in {
   from { transform: translateX(-100%); }
-  to   { transform: translateX(0); }
+  to { transform: translateX(0); }
 }
 
 .ipanel-header {
@@ -41,13 +41,13 @@
   gap: 8px;
 }
 
-.ipanel-header-icon { color: var(--teal-500); }
+.ipanel-header-icon { color: var(--text-muted); }
 
 .ipanel-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 }
 
 .ipanel-close {
@@ -63,8 +63,8 @@
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
-.ipanel-close:hover { color: var(--text-primary); background: var(--bg-hover); }
-.ipanel-close:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 1px; }
+.ipanel-close:hover { color: var(--text-muted); background: var(--bg-hover); }
+.ipanel-close:focus-visible { outline: 2px solid var(--teal-700); outline-offset: 1px; }
 
 .ipanel-body {
   flex: 1;
@@ -75,9 +75,9 @@
   flex-direction: column;
   gap: 4px;
 }
-.ipanel-body::-webkit-scrollbar        { width: 3px; }
-.ipanel-body::-webkit-scrollbar-track  { background: transparent; }
-.ipanel-body::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 2px; }
+.ipanel-body::-webkit-scrollbar { width: 3px; }
+.ipanel-body::-webkit-scrollbar-track { background: transparent; }
+.ipanel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 .ipanel-empty-state {
   display: flex;
@@ -86,7 +86,7 @@
   gap: 10px;
   padding: 40px 16px 24px;
 }
-.ipanel-empty-icon { color: var(--text-ghost); opacity: 0.35; }
+.ipanel-empty-icon { color: var(--text-ghost); opacity: 0.25; }
 .ipanel-empty {
   font-size: 12px;
   color: var(--text-ghost);
@@ -127,26 +127,26 @@
   transition: background 0.15s;
   min-width: 0;
 }
-.ipanel-item-btn:hover         { background: var(--bg-hover); }
-.ipanel-item-btn.active        { background: rgba(20, 184, 166, 0.08); }
-.ipanel-item-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: -2px; }
+.ipanel-item-btn:hover { background: var(--bg-hover); }
+.ipanel-item-btn.active { background: rgba(20, 184, 166, 0.06); }
+.ipanel-item-btn:focus-visible { outline: 2px solid var(--teal-700); outline-offset: -2px; }
 
 .ipanel-item-icon {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--teal-900), var(--teal-700));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
   transition: background 0.2s;
 }
 .ipanel-item-btn.active .ipanel-item-icon {
-  background: linear-gradient(135deg, var(--teal-600), var(--teal-400));
+  background: linear-gradient(135deg, var(--teal-700), var(--teal-500));
 }
 
 .ipanel-item-info {
@@ -178,19 +178,19 @@
   cursor: pointer;
   transition: color 0.15s;
 }
-.ipanel-item-id:hover { color: var(--teal-400); text-decoration: underline; }
+.ipanel-item-id:hover { color: var(--text-muted); text-decoration: underline; }
 
 .ipanel-active-badge {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--teal-400);
-  background: rgba(20, 184, 166, 0.1);
-  border: 1px solid rgba(20, 184, 166, 0.2);
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
   padding: 2px 7px 2px 5px;
   border-radius: 99px;
   white-space: nowrap;
@@ -212,9 +212,9 @@
   flex-shrink: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
-.ipanel-copy-btn:hover    { color: var(--teal-400); background: rgba(20, 184, 166, 0.1); }
-.ipanel-copy-btn.copied   { opacity: 1; color: var(--teal-400); background: rgba(20, 184, 166, 0.1); }
-.ipanel-copy-btn:focus-visible { opacity: 1; outline: 2px solid var(--teal-500); outline-offset: 1px; }
+.ipanel-copy-btn:hover { color: var(--text-muted); background: var(--bg-hover); }
+.ipanel-copy-btn.copied { opacity: 1; color: var(--text-secondary); background: var(--bg-hover); }
+.ipanel-copy-btn:focus-visible { opacity: 1; outline: 2px solid var(--teal-700); outline-offset: 1px; }
 
 .ipanel-leave-btn {
   display: flex;
@@ -231,7 +231,7 @@
   flex-shrink: 0;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
-.ipanel-leave-btn:hover       { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+.ipanel-leave-btn:hover { color: #f87171; background: rgba(248, 113, 113, 0.08); }
 .ipanel-leave-btn:focus-visible { opacity: 1; outline: 2px solid #f87171; outline-offset: 1px; }
 
 .ipanel-add-btn {
@@ -251,8 +251,8 @@
   cursor: pointer;
   margin-top: 2px;
 }
-.ipanel-add-btn:hover        { background: var(--bg-hover); color: var(--teal-400); }
-.ipanel-add-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+.ipanel-add-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.ipanel-add-btn:focus-visible { outline: 2px solid var(--teal-700); outline-offset: 2px; }
 
 .ipanel-add-form {
   margin-top: 10px;
@@ -268,22 +268,22 @@
 
 @keyframes form-fade-in {
   from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .ipanel-add-heading {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 14px;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.1px;
 }
 
 .ipanel-add-error {
   font-size: 12px;
   color: #f87171;
-  background: rgba(248, 113, 113, 0.08);
-  border: 1px solid rgba(248, 113, 113, 0.2);
+  background: rgba(248, 113, 113, 0.06);
+  border: 1px solid rgba(248, 113, 113, 0.15);
   border-radius: 8px;
   padding: 8px 10px;
   margin-bottom: 10px;
@@ -293,10 +293,10 @@
 .ipanel-label {
   display: block;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   margin-bottom: 5px;
   margin-top: 12px;
 }
@@ -324,7 +324,7 @@
   box-sizing: border-box;
 }
 .ipanel-input::placeholder { color: var(--text-ghost); }
-.ipanel-input:focus { border-color: var(--teal-500); box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1); }
+.ipanel-input:focus { border-color: var(--teal-600); box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.07); }
 
 .ipanel-add-actions { display: flex; gap: 8px; margin-top: 14px; }
 
@@ -334,30 +334,29 @@
   background: var(--teal-600);
   color: #fff;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: background 0.15s;
 }
-.ipanel-confirm-btn:hover:not(:disabled) { background: var(--teal-500); }
-.ipanel-confirm-btn:disabled             { opacity: 0.5; cursor: not-allowed; }
-.ipanel-confirm-btn:focus-visible        { outline: 2px solid var(--teal-300); outline-offset: 2px; }
+.ipanel-confirm-btn:hover:not(:disabled) { background: var(--teal-700); }
+.ipanel-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ipanel-confirm-btn:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 2px; }
 
 .ipanel-cancel-btn {
   padding: 9px 14px;
   background: var(--bg-hover);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 13px;
+  font-weight: 400;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: background 0.15s;
 }
-.ipanel-cancel-btn:hover        { background: var(--border); }
-.ipanel-cancel-btn:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
-
-/* ── Members section ─────────────────────────────────────────────────── */
+.ipanel-cancel-btn:hover { background: var(--border); color: var(--text-secondary); }
+.ipanel-cancel-btn:focus-visible { outline: 2px solid var(--teal-700); outline-offset: 2px; }
 
 .ipanel-members-section {
   margin-top: 8px;
@@ -378,25 +377,25 @@
   transition: background 0.15s;
   color: var(--text-muted);
 }
-.ipanel-members-toggle:hover        { background: var(--bg-hover); color: var(--text-secondary); }
-.ipanel-members-toggle:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+.ipanel-members-toggle:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.ipanel-members-toggle:focus-visible { outline: 2px solid var(--teal-700); outline-offset: 2px; }
 
 .ipanel-members-toggle-left {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .ipanel-members-count {
   font-size: 10px;
-  font-weight: 700;
-  color: var(--teal-500);
-  background: rgba(20, 184, 166, 0.1);
-  border: 1px solid rgba(20, 184, 166, 0.15);
+  font-weight: 500;
+  color: var(--text-ghost);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
   padding: 1px 6px;
   border-radius: 99px;
   line-height: 1.6;
@@ -419,7 +418,7 @@
 
 @keyframes members-expand {
   from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .ipanel-members-loading {
@@ -433,7 +432,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--teal-500);
+  background: var(--teal-800);
   animation: member-pulse 1s ease-in-out infinite;
 }
 .ipanel-members-loading span:nth-child(2) { animation-delay: 0.15s; }
@@ -441,7 +440,7 @@
 
 @keyframes member-pulse {
   0%, 100% { opacity: 0.3; transform: scale(0.8); }
-  50%       { opacity: 1;   transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1); }
 }
 
 .ipanel-members-empty {
@@ -454,9 +453,9 @@
 
 .ipanel-members-group-label {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   color: var(--text-ghost);
   padding: 8px 10px 4px;
 }
@@ -478,18 +477,18 @@
 .ipanel-member-row:hover { background: var(--bg-hover); }
 
 .ipanel-member-avatar {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 7px;
   background: var(--bg-hover);
   border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -503,7 +502,7 @@
 
 .ipanel-member-name {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -515,12 +514,12 @@
 
 .ipanel-member-you {
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--teal-500);
-  background: rgba(20, 184, 166, 0.1);
-  border: 1px solid rgba(20, 184, 166, 0.2);
+  color: var(--text-ghost);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
   padding: 1px 5px;
   border-radius: 99px;
 }
@@ -535,7 +534,7 @@
 
 .ipanel-member-role {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-ghost);
@@ -546,17 +545,15 @@
   flex-shrink: 0;
 }
 .ipanel-member-role.admin {
-  color: var(--teal-400);
-  background: rgba(20, 184, 166, 0.08);
-  border-color: rgba(20, 184, 166, 0.2);
+  color: var(--text-muted);
+  background: rgba(20, 184, 166, 0.05);
+  border-color: rgba(20, 184, 166, 0.12);
 }
-
-/* ── Leave confirm modal ─────────────────────────────────────────────── */
 
 .ipanel-leave-modal {
   position: fixed;
   inset: 0;
-  background: rgba(5, 12, 10, 0.7);
+  background: rgba(5, 12, 10, 0.6);
   z-index: 1400;
   display: flex;
   align-items: center;
@@ -567,7 +564,7 @@
 
 @keyframes backdrop-fade {
   from { opacity: 0; }
-  to   { opacity: 1; }
+  to { opacity: 1; }
 }
 
 .ipanel-leave-card {
@@ -577,7 +574,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.38);
   animation: card-pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
@@ -585,15 +582,15 @@
 }
 
 @keyframes card-pop-in {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .ipanel-leave-title {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 }
 
 .ipanel-leave-sub {
@@ -602,39 +599,39 @@
   line-height: 1.6;
   margin-bottom: 4px;
 }
-.ipanel-leave-sub strong { color: var(--text-secondary); font-weight: 600; }
+.ipanel-leave-sub strong { color: var(--text-secondary); font-weight: 500; }
 
 .ipanel-leave-actions { display: flex; gap: 8px; margin-top: 4px; }
 
 .ipanel-leave-confirm {
   flex: 1;
   padding: 10px;
-  background: rgba(248, 113, 113, 0.12);
+  background: rgba(248, 113, 113, 0.1);
   color: #f87171;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   border-radius: 8px;
-  border: 1px solid rgba(248, 113, 113, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.15);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.ipanel-leave-confirm:hover        { background: rgba(248, 113, 113, 0.22); border-color: rgba(248, 113, 113, 0.35); }
+.ipanel-leave-confirm:hover { background: rgba(248, 113, 113, 0.18); border-color: rgba(248, 113, 113, 0.28); }
 .ipanel-leave-confirm:focus-visible { outline: 2px solid #f87171; outline-offset: 2px; }
 
 .ipanel-leave-cancel {
   flex: 1;
   padding: 10px;
   background: var(--bg-hover);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: background 0.15s;
 }
-.ipanel-leave-cancel:hover        { background: var(--border); }
-.ipanel-leave-cancel:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+.ipanel-leave-cancel:hover { background: var(--border); color: var(--text-secondary); }
+.ipanel-leave-cancel:focus-visible { outline: 2px solid var(--teal-700); outline-offset: 2px; }
 
 @media (max-width: 480px) {
   .ipanel { width: 100vw; }

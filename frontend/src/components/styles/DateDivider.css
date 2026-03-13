@@ -13,8 +13,8 @@
 
 .date-divider-label {
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
+  font-weight: 400;
+  color: var(--text-ghost);
   white-space: nowrap;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
