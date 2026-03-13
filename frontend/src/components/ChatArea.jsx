@@ -9,6 +9,8 @@ import {
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
+import ChatSkeleton from './ChatSkeleton';
+
 import './styles/ChatArea.css';
 
 const channelCache = new Map();
