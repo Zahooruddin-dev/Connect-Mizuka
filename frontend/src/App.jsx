@@ -152,9 +152,6 @@ function App() {
 						>
 							<Menu size={20} strokeWidth={2} aria-hidden='true' />
 						</button>
-						<span className='mobile-topbar-title' aria-live='polite'>
-							{mobileTitle}
-						</span>
 					</div>
 				)}
 

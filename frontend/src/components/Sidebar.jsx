@@ -307,7 +307,7 @@ function Sidebar({
 			)}
 
 			<aside
-				className={`sidebar${isOpen ? ' open' : ''}`}
+				className={`sidebar${isOpen ? ' open' : ' closed'}`}
 				aria-label='Navigation'
 			>
 				<div className='sidebar-header'>
