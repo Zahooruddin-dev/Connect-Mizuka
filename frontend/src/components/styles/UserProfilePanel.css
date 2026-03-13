@@ -1,8 +1,8 @@
 .user-panel-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -22,15 +22,15 @@
   border-radius: 16px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.32);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: panel-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: panel-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes panel-slide-up {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
@@ -43,8 +43,8 @@
 }
 
 .user-panel-title {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -64,7 +64,7 @@
 
 .user-panel-close:hover {
   background: var(--bg-hover);
-  color: var(--text-primary);
+  color: var(--text-muted);
 }
 
 .user-panel-tabs {
@@ -93,8 +93,8 @@
 }
 
 .user-panel-tab.active {
-  color: var(--teal-400);
-  background: rgba(20, 184, 166, 0.05);
+  color: var(--text-secondary);
+  background: rgba(20, 184, 166, 0.04);
 }
 
 .user-panel-tab.active::after {
@@ -103,8 +103,8 @@
   bottom: -1px;
   left: 0;
   right: 0;
-  height: 2px;
-  background: var(--teal-400);
+  height: 1px;
+  background: var(--teal-600);
   border-radius: 2px 2px 0 0;
 }
 
@@ -120,33 +120,32 @@
 }
 
 .user-avatar-large {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   margin: 0 auto 12px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--teal-700), var(--teal-500));
+  background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  font-weight: 700;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .user-header-name {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .user-header-role {
-  font-size: 12px;
-  color: var(--teal-500);
+  font-size: 11px;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-weight: 500;
 }
 
 .user-info-group {
@@ -166,16 +165,16 @@
 
 .user-info-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
   color: var(--text-ghost);
 }
 
 .user-info-value {
   font-size: 14px;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 400;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -214,7 +213,7 @@
 
 .user-inline-edit-btn:hover {
   background: var(--bg-hover);
-  color: var(--teal-400);
+  color: var(--text-muted);
 }
 
 .user-edit-row {
@@ -227,13 +226,13 @@
   flex: 1;
   padding: 7px 10px;
   background: var(--bg-input);
-  border: 1px solid var(--teal-500);
+  border: 1px solid var(--teal-600);
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.07);
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -262,12 +261,12 @@
 }
 
 .user-edit-save {
-  color: var(--teal-400);
+  color: var(--teal-600);
 }
 
 .user-edit-save:hover:not(:disabled) {
-  background: rgba(20, 184, 166, 0.12);
-  color: var(--teal-300);
+  background: rgba(20, 184, 166, 0.08);
+  color: var(--teal-500);
 }
 
 .user-edit-cancel {
@@ -275,7 +274,7 @@
 }
 
 .user-edit-cancel:hover:not(:disabled) {
-  background: rgba(248, 113, 113, 0.1);
+  background: rgba(248, 113, 113, 0.08);
   color: #f87171;
 }
 
@@ -286,16 +285,15 @@
 
 .user-edit-success {
   font-size: 12px;
-  color: var(--teal-400);
-  font-weight: 500;
+  color: var(--teal-600);
+  font-weight: 400;
 }
 
 .user-status-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--teal-400);
-  box-shadow: 0 0 6px var(--teal-400);
+  background: var(--teal-600);
   flex-shrink: 0;
 }
 
@@ -324,16 +322,16 @@
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg-hover);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   font-family: var(--font-sans);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .user-change-password-btn:hover {
-  background: rgba(20, 184, 166, 0.08);
-  border-color: var(--teal-600);
-  color: var(--teal-400);
+  background: rgba(20, 184, 166, 0.06);
+  border-color: var(--teal-700);
+  color: var(--text-secondary);
 }
