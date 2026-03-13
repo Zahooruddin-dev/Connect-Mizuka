@@ -5,6 +5,7 @@ import MessageBubble from '../components/MessageBubble'
 import MessageInput from '../components/MessageInput'
 import TypingIndicator from '../components/TypingIndicator'
 import DateDivider from '../components/DateDivider'
+import ChatSkeleton from '../components/ChatSkeleton'
 import { formatDate, isSameDay } from '../utils/dateFormat'
 import './styles/ChatWindow.css'
 
@@ -17,15 +18,8 @@ export default function ChatWindow({ channelId }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, typingUser])
 
-  if (!channelId) {
-    return (
-      <div className="chat-empty">
-        <div className="chat-empty-inner">
-          <span className="chat-empty-icon">#</span>
-          <p>Select a channel to start chatting</p>
-        </div>
-      </div>
-    )
+  if (!channelId || loading) {
+    return <ChatSkeleton isP2P={false} />
   }
 
   return (
@@ -40,14 +34,6 @@ export default function ChatWindow({ channelId }) {
       </div>
 
       <div className="chat-messages">
-        {loading && (
-          <div className="chat-loading">
-            <span className="chat-loading-dot" />
-            <span className="chat-loading-dot" />
-            <span className="chat-loading-dot" />
-          </div>
-        )}
-
         {!loading && messages.length === 0 && (
           <div className="chat-no-messages">
             <p>No messages yet. Say hello!</p>

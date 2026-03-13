@@ -18,17 +18,19 @@ function ChatHeader({
 	onCloseP2P,
 }) {
 	const [showConfirm, setShowConfirm] = useState(false);
-	const [deleting,    setDeleting]    = useState(false);
-	const [error,       setError]       = useState('');
-	const [editing,     setEditing]     = useState(false);
-	const [nameInput,   setNameInput]   = useState(channelLabel || '');
-	const [saving,      setSaving]      = useState(false);
+	const [deleting, setDeleting] = useState(false);
+	const [error, setError] = useState('');
+	const [editing, setEditing] = useState(false);
+	const [nameInput, setNameInput] = useState(channelLabel || '');
+	const [saving, setSaving] = useState(false);
 	const [displayName, setDisplayName] = useState(channelLabel || '');
 
-	const inputRef     = useRef(null);
+	const inputRef = useRef(null);
 	const channelIdRef = useRef(channelId);
 
-	useEffect(() => { channelIdRef.current = channelId; }, [channelId]);
+	useEffect(() => {
+		channelIdRef.current = channelId;
+	}, [channelId]);
 
 	useEffect(() => {
 		setNameInput(channelLabel || '');
@@ -83,8 +85,14 @@ function ChatHeader({
 			.replace(/\s+/g, '-')
 			.replace(/[^a-z0-9-_]/g, '');
 
-		if (!trimmed) { setError('Channel name cannot be empty'); return; }
-		if (trimmed === channelLabel) { setEditing(false); return; }
+		if (!trimmed) {
+			setError('Channel name cannot be empty');
+			return;
+		}
+		if (trimmed === channelLabel) {
+			setEditing(false);
+			return;
+		}
 
 		setSaving(true);
 		setError('');
@@ -101,10 +109,13 @@ function ChatHeader({
 		}
 	}, [nameInput, channelLabel, channelId, instituteId, onChannelRenamed]);
 
-	const handleKeyDown = useCallback((e) => {
-		if (e.key === 'Enter')  handleEditSave();
-		if (e.key === 'Escape') handleEditCancel();
-	}, [handleEditSave, handleEditCancel]);
+	const handleKeyDown = useCallback(
+		(e) => {
+			if (e.key === 'Enter') handleEditSave();
+			if (e.key === 'Escape') handleEditCancel();
+		},
+		[handleEditSave, handleEditCancel],
+	);
 
 	const handleDeleteChannel = useCallback(async () => {
 		setDeleting(true);
@@ -158,7 +169,12 @@ function ChatHeader({
 	return (
 		<header className='chat-header'>
 			<div className='chat-header-left'>
-				<Hash className='chat-header-hash' size={18} strokeWidth={2} aria-hidden='true' />
+				<Hash
+					className='chat-header-hash'
+					size={18}
+					strokeWidth={2}
+					aria-hidden='true'
+				/>
 
 				{editing ? (
 					<div className='chat-header-edit'>
@@ -214,14 +230,22 @@ function ChatHeader({
 				{error && <span className='chat-header-error'>{error}</span>}
 
 				{/* Delete only visible to admins */}
-				{isAdmin && !editing && (
-					showConfirm ? (
+				{isAdmin &&
+					!editing &&
+					(showConfirm ? (
 						<div className='delete-confirm'>
 							<span>Delete channel?</span>
-							<button className='confirm-yes' onClick={handleDeleteChannel} disabled={deleting}>
+							<button
+								className='confirm-yes'
+								onClick={handleDeleteChannel}
+								disabled={deleting}
+							>
 								{deleting ? 'Deleting…' : 'Yes'}
 							</button>
-							<button className='confirm-no' onClick={() => setShowConfirm(false)}>
+							<button
+								className='confirm-no'
+								onClick={() => setShowConfirm(false)}
+							>
 								No
 							</button>
 						</div>
@@ -234,8 +258,7 @@ function ChatHeader({
 							<Trash2 size={14} strokeWidth={2} aria-hidden='true' />
 							Delete channel
 						</button>
-					)
-				)}
+					))}
 			</div>
 		</header>
 	);

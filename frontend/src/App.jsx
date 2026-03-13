@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import InstituteGate from './components/Institutegate';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
+import ChatSkeleton from './components/ChatSkelton';
 import './styles/app.css';
 
 // Module-level cache so the first-channel fallback survives
@@ -194,12 +195,8 @@ function App() {
 					/>
 				) : (
 					// Channels are still loading — shows a neutral placeholder.
-					<div className='chat-area-empty'>
-						<div className='chat-area-empty-inner'>
-							<span className='chat-area-empty-icon'>#</span>
-							<p>Select a channel to start chatting</p>
-						</div>
-					</div>
+									<ChatSkeleton isP2P={false} />
+
 				)}
 			</div>
 		</div>
