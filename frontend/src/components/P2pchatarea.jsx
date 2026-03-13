@@ -4,7 +4,7 @@ import socket from '../services/socket';
 import { fetchP2PMessages } from '../services/p2p-api';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import './styles/P2PChatArea.css';
+import './styles/P2pchatarea.css';
 
 const messageCache = new Map();
 

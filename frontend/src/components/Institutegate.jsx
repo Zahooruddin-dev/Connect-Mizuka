@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../services/AuthContext'
 import { createInstitute, linkToInstitute } from '../services/api'
-import './styles/InstituteGate.css'
+import './styles/Institutegate.css'
 
 export default function InstituteGate() {
   const { user, logout, addInstitute, isActiveAdmin } = useAuth()
