@@ -9,7 +9,6 @@ const socket = io(SOCKET_URL, {
   autoConnect: true,
 });
 if (import.meta.env.DEV) {
-  socket.on('connect', () => console.log('✅ Connected to:', SOCKET_URL));
   socket.on('connect_error', (err) => console.error('❌ Socket Error:', err.message));
 }
 export default socket
