@@ -7,8 +7,19 @@ require('dotenv').config();
 
 const app = express();
 const httpServer = createServer(app);
+
+const allowedOrigins = [
+	process.env.FRONTEND_URL,
+	'http://localhost:5173',
+	'http://localhost:3000',
+].filter(Boolean);
+
 const io = new Server(httpServer, {
-	cors: { origin: '*' },
+	cors: {
+		origin: allowedOrigins,
+		methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+		credentials: true,
+	},
 });
 
 const authRoutes = require('./Routes/authRoutes');
@@ -20,6 +31,21 @@ const socketController = require('./Socket-Controllers/messageController');
 const p2pSocketController = require('./Socket-Controllers/P2psocketcontroller');
 
 const PORT = process.env.PORT || 3000;
+
+app.use(
+	cors({
+		origin: function (origin, callback) {
+			if (!origin) return callback(null, true);
+			if (allowedOrigins.indexOf(origin) === -1) {
+				var msg =
+					'The CORS policy for this site does not allow access from the specified Origin.';
+				return callback(new Error(msg), false);
+			}
+			return callback(null, true);
+		},
+		credentials: true,
+	}),
+);
 
 app.use(cors());
 app.use(express.json());

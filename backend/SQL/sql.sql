@@ -85,3 +85,21 @@ CREATE INDEX IF NOT EXISTS idx_p2p_messages_unread
 
   ALTER TABLE p2p_messages 
 ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;
+
+-- Optimized Chat History Retrieval
+-- Based on your p2p_messages.json, we index chatroom_id and created_at.
+-- This makes loading history for a specific room lightning fast.
+CREATE INDEX IF NOT EXISTS idx_p2p_msgs_chatroom_time 
+ON p2p_messages (chatroom_id, created_at DESC);
+
+-- Fast Unread & Not Deleted Lookup
+-- This targets only the messages you need for notification badges.
+CREATE INDEX IF NOT EXISTS idx_p2p_msgs_unread_active
+ON p2p_messages (sender_id) 
+WHERE is_read = false AND is_deleted = false;
+
+-- Room Participant Lookup
+-- Based on your p2p_chatrooms.json, we use user_one_id and user_two_id.
+-- This prevents the "Relation p2p_rooms does not exist" error.
+CREATE INDEX IF NOT EXISTS idx_p2p_chatrooms_participants 
+ON p2p_chatrooms (user_one_id, user_two_id);
