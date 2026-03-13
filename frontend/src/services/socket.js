@@ -1,13 +1,15 @@
 import { io } from 'socket.io-client'
 
-// connect to backend socket.io server (default backend port 3000)
-const SOCKET_URL ='http://localhost:3000'
-
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 const socket = io(SOCKET_URL, {
-  transports: ['websocket', 'polling'],
+  withCredentials: true, 
+  transports: ['websocket', 'polling'], 
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   autoConnect: true,
-})
-
+});
+if (import.meta.env.DEV) {
+  socket.on('connect', () => console.log('✅ Connected to:', SOCKET_URL));
+  socket.on('connect_error', (err) => console.error('❌ Socket Error:', err.message));
+}
 export default socket
