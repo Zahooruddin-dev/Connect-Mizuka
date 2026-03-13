@@ -19,8 +19,8 @@
 }
 
 .message-input-wrap:focus-within {
-  border-color: var(--teal-600);
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.08);
+  border-color: var(--teal-700);
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.06);
 }
 
 .message-input {
@@ -42,16 +42,16 @@
 }
 
 .message-send-btn {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
   border-radius: var(--radius-md);
   background: var(--bg-surface);
   color: var(--text-ghost);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s, transform 0.15s;
+  transition: background 0.2s, color 0.2s;
   margin: 2px;
 }
 
@@ -61,8 +61,7 @@
 }
 
 .message-send-btn.active:hover {
-  background: var(--teal-500);
-  transform: scale(1.05);
+  background: var(--teal-700);
 }
 
 .message-send-btn:disabled {
@@ -72,6 +71,6 @@
 .message-input-hint {
   font-size: 10px;
   color: var(--text-ghost);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   padding-left: 4px;
 }

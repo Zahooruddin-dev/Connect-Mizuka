@@ -12,12 +12,12 @@
 }
 
 .typing-avatar {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-full);
-  background: var(--teal-200);
-  color: var(--teal-700);
-  font-size: 12px;
+  background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -38,8 +38,8 @@
 
 .typing-name {
   font-size: 11px;
-  color: var(--teal-600);
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 .typing-dots {
@@ -49,9 +49,9 @@
 }
 
 .typing-dots span {
-  width: 5px;
-  height: 5px;
-  background: var(--teal-400);
+  width: 4px;
+  height: 4px;
+  background: var(--teal-800);
   border-radius: var(--radius-full);
   animation: bounce 1.2s infinite ease-in-out;
 }
@@ -60,6 +60,6 @@
 .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
 
 @keyframes bounce {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-5px); }
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 0.8; }
 }
