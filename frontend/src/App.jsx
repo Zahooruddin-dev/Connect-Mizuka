@@ -8,37 +8,85 @@ import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import ChatSkeleton from './components/ChatSkelton';
 import './styles/app.css';
+import './styles/Toast.css';
 
-// Module-level cache so the first-channel fallback survives
-// re-renders and is instant on institute switches.
-// Shape: Map<instituteId, Channel>
 const firstChannelCache = new Map();
 
+// Module-level flag — prevents duplicate pings on re-mount (React strict mode etc.)
+let pingFired = false;
+
+function WakingBanner({ visible }) {
+	return (
+		<div
+			className={`waking-banner${visible ? ' waking-banner--visible' : ''}`}
+			role='status'
+			aria-live='polite'
+		>
+			<div className='waking-spinner' aria-hidden='true' />
+			Mizuka Engine is waking up — this takes about 30 seconds on first load.
+		</div>
+	);
+}
+
 function App() {
-	const { user, institutes, activeInstitute, logout, isActiveAdmin } =
-		useAuth();
-	const [activeChannel, setActiveChannel] = useState(null);
-	const [activeP2P, setActiveP2P] = useState(null);
-	const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
-	const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+	const { user, institutes, activeInstitute, logout, isActiveAdmin } = useAuth();
+	const [activeChannel,      setActiveChannel]      = useState(null);
+	const [activeP2P,          setActiveP2P]          = useState(null);
+	const [sidebarOpen,        setSidebarOpen]        = useState(window.innerWidth >= 768);
+	const [isMobile,           setIsMobile]           = useState(window.innerWidth < 768);
 	const [highlightMessageId, setHighlightMessageId] = useState(null);
-	// First channel available to this user in the active institute.
-	// Used as fallback when no channel is explicitly selected.
-	const [defaultChannel, setDefaultChannel] = useState(
+	const [isWaking,           setIsWaking]           = useState(false);
+	const [defaultChannel,     setDefaultChannel]     = useState(
 		() => firstChannelCache.get(activeInstitute?.id) ?? null,
 	);
 
+	// ── Cold-start ping ────────────────────────────────────────────────────
+	useEffect(() => {
+		if (pingFired) return;
+		pingFired = true;
+
+		let wakingTimer = null;
+		let cancelled   = false;
+
+		const ping = async () => {
+			wakingTimer = setTimeout(() => {
+				if (!cancelled) setIsWaking(true);
+			}, 2000);
+
+			try {
+				await fetch(
+					`${import.meta.env.VITE_API_URL ?? ''}/api/auth/user-info`,
+					{ method: 'GET', credentials: 'include' },
+				);
+			} catch {
+				// keep banner up — it will hide once the real auth calls succeed
+			} finally {
+				clearTimeout(wakingTimer);
+				if (!cancelled) setIsWaking(false);
+			}
+		};
+
+		ping();
+
+		return () => {
+			cancelled = true;
+			clearTimeout(wakingTimer);
+		};
+	}, []);
+
+	// ── Existing resize handlers — unchanged ───────────────────────────────
 	useEffect(() => {
 		const onResize = () => setSidebarOpen(window.innerWidth >= 768);
 		window.addEventListener('resize', onResize);
 		return () => window.removeEventListener('resize', onResize);
 	}, []);
+
 	useEffect(() => {
 		const handleResize = () => setIsMobile(window.innerWidth < 768);
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
-	// Reset active selections and load cached default when institute changes.
+
 	useEffect(() => {
 		setActiveChannel(null);
 		setActiveP2P(null);
@@ -46,8 +94,6 @@ function App() {
 		setDefaultChannel(cached ?? null);
 	}, [activeInstitute?.id]);
 
-	// Called by Sidebar once the channel list resolves. Cache the first entry
-	// so the fallback is instant on subsequent visits to this institute.
 	const handleChannelsLoaded = useCallback(
 		(channels) => {
 			if (!channels.length || !activeInstitute?.id) return;
@@ -69,8 +115,7 @@ function App() {
 	useEffect(() => {
 		if (!activeChannel) return;
 		const handleChannelDeleted = ({ channelId }) => {
-			if (String(activeChannel.id) === String(channelId))
-				setActiveChannel(null);
+			if (String(activeChannel.id) === String(channelId)) setActiveChannel(null);
 		};
 		socket.on('channel_deleted', handleChannelDeleted);
 		return () => socket.off('channel_deleted', handleChannelDeleted);
@@ -83,22 +128,19 @@ function App() {
 		});
 	}, []);
 
-	const handleStartP2P = useCallback(
-		({ roomId, otherUserId, otherUsername }) => {
-			setActiveP2P({ roomId, otherUserId, otherUsername });
-			setActiveChannel(null);
-		},
-		[],
-	);
+	const handleStartP2P = useCallback(({ roomId, otherUserId, otherUsername }) => {
+		setActiveP2P({ roomId, otherUserId, otherUsername });
+		setActiveChannel(null);
+	}, []);
 
 	const handleChannelSelect = useCallback((channel) => {
 		setActiveChannel(channel);
 		setActiveP2P(null);
 	}, []);
 
-	const handleCloseP2P = useCallback(() => setActiveP2P(null), []);
+	const handleCloseP2P     = useCallback(() => setActiveP2P(null),    []);
 	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
-	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
+	const handleOpenSidebar  = useCallback(() => setSidebarOpen(true),  []);
 
 	const handleJumpToMessage = useCallback((channelId, messageId) => {
 		setActiveP2P(null);
@@ -109,97 +151,94 @@ function App() {
 		setHighlightMessageId(messageId);
 	}, []);
 
-	const handleJumpToP2PMessage = useCallback(
-		(roomId, messageId, otherUserId, otherUsername) => {
-			setActiveChannel(null);
-			setActiveP2P({ roomId, otherUserId, otherUsername });
-			setHighlightMessageId(messageId);
-		},
-		[],
-	);
-
-	const handleHighlightConsumed = useCallback(() => {
-		setHighlightMessageId(null);
+	const handleJumpToP2PMessage = useCallback((roomId, messageId, otherUserId, otherUsername) => {
+		setActiveChannel(null);
+		setActiveP2P({ roomId, otherUserId, otherUsername });
+		setHighlightMessageId(messageId);
 	}, []);
 
-	if (!user) return <LoginPage />;
-	if (institutes.length === 0 || !activeInstitute) return <InstituteGate />;
+	const handleHighlightConsumed = useCallback(() => setHighlightMessageId(null), []);
 
-	// Use the explicitly selected channel, then the cached first channel,
-	// then null — ChatArea handles null gracefully with an empty state.
+	// Banner renders above everything including login/gate screens
+	const banner = <WakingBanner visible={isWaking} />;
+
+	if (!user) return <>{banner}<LoginPage /></>;
+	if (institutes.length === 0 || !activeInstitute) return <>{banner}<InstituteGate /></>;
+
 	const effectiveChannel = activeChannel ?? defaultChannel ?? null;
 	const isAdmin = isActiveAdmin();
 
-
 	return (
-		<div className='app-layout'>
-			<Sidebar
-				activeChannel={effectiveChannel?.id ?? null}
-				onChannelSelect={handleChannelSelect}
-				user={user}
-				onLogout={logout}
-				isAdmin={isAdmin}
-				onClose={handleCloseSidebar}
-				isOpen={sidebarOpen}
-				activeInstitute={activeInstitute}
-				onStartP2P={handleStartP2P}
-				activeP2P={activeP2P}
-				onJumpToMessage={handleJumpToMessage}
-				onJumpToP2PMessage={handleJumpToP2PMessage}
-				onChannelsLoaded={handleChannelsLoaded}
-			/>
+		<>
+			{banner}
+			<div className='app-layout'>
+				<Sidebar
+					activeChannel={effectiveChannel?.id ?? null}
+					onChannelSelect={handleChannelSelect}
+					user={user}
+					onLogout={logout}
+					isAdmin={isAdmin}
+					onClose={handleCloseSidebar}
+					isOpen={sidebarOpen}
+					activeInstitute={activeInstitute}
+					onStartP2P={handleStartP2P}
+					activeP2P={activeP2P}
+					onJumpToMessage={handleJumpToMessage}
+					onJumpToP2PMessage={handleJumpToP2PMessage}
+					onChannelsLoaded={handleChannelsLoaded}
+				/>
 
-			<div className='main-content'>
-				{!sidebarOpen &&
-					(isMobile ? (
-						<div className='mobile-topbar' role='banner'>
+				<div className='main-content'>
+					{!sidebarOpen &&
+						(isMobile ? (
+							<div className='mobile-topbar' role='banner'>
+								<button
+									className='mobile-menu-btn'
+									onClick={handleOpenSidebar}
+									aria-label='Open navigation menu'
+								>
+									<Menu size={20} strokeWidth={2} aria-hidden='true' />
+								</button>
+							</div>
+						) : (
 							<button
-								className='mobile-menu-btn'
+								className='sidebar-toggle'
 								onClick={handleOpenSidebar}
-								aria-label='Open navigation menu'
+								aria-label='Open navigation'
 							>
 								<Menu size={20} strokeWidth={2} aria-hidden='true' />
 							</button>
-						</div>
-					) : (
-						<button
-							className='sidebar-toggle'
-							onClick={handleOpenSidebar}
-							aria-label='Open navigation'
-						>
-							<Menu size={20} strokeWidth={2} aria-hidden='true' />
-						</button>
-					))}
-				{activeP2P ? (
-					<ChatArea
-						roomId={activeP2P.roomId}
-						otherUsername={activeP2P.otherUsername}
-						otherUserId={activeP2P.otherUserId}
-						user={user}
-						onCloseP2P={handleCloseP2P}
-						onStartP2P={handleStartP2P}
-						highlightMessageId={highlightMessageId}
-						onHighlightConsumed={handleHighlightConsumed}
-					/>
-				) : effectiveChannel ? (
-					<ChatArea
-						channelId={effectiveChannel.id}
-						channelLabel={effectiveChannel.name}
-						instituteId={activeInstitute.id}
-						user={user}
-						onChannelRenamed={handleChannelRenamed}
-						onStartP2P={handleStartP2P}
-						isAdmin={isAdmin}
-						highlightMessageId={highlightMessageId}
-						onHighlightConsumed={handleHighlightConsumed}
-					/>
-				) : (
-					// Channels are still loading — shows a neutral placeholder.
-									<ChatSkeleton isP2P={false} />
+						))}
 
-				)}
+					{activeP2P ? (
+						<ChatArea
+							roomId={activeP2P.roomId}
+							otherUsername={activeP2P.otherUsername}
+							otherUserId={activeP2P.otherUserId}
+							user={user}
+							onCloseP2P={handleCloseP2P}
+							onStartP2P={handleStartP2P}
+							highlightMessageId={highlightMessageId}
+							onHighlightConsumed={handleHighlightConsumed}
+						/>
+					) : effectiveChannel ? (
+						<ChatArea
+							channelId={effectiveChannel.id}
+							channelLabel={effectiveChannel.name}
+							instituteId={activeInstitute.id}
+							user={user}
+							onChannelRenamed={handleChannelRenamed}
+							onStartP2P={handleStartP2P}
+							isAdmin={isAdmin}
+							highlightMessageId={highlightMessageId}
+							onHighlightConsumed={handleHighlightConsumed}
+						/>
+					) : (
+						<ChatSkeleton isP2P={false} />
+					)}
+				</div>
 			</div>
-		</div>
+		</>
 	);
 }
 
