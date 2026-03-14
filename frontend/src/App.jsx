@@ -12,7 +12,6 @@ import './styles/Toast.css';
 
 const firstChannelCache = new Map();
 
-// Module-level flag — prevents duplicate pings on re-mount (React strict mode etc.)
 let pingFired = false;
 
 function WakingBanner({ visible }) {
@@ -29,14 +28,15 @@ function WakingBanner({ visible }) {
 }
 
 function App() {
-	const { user, institutes, activeInstitute, logout, isActiveAdmin } = useAuth();
-	const [activeChannel,      setActiveChannel]      = useState(null);
-	const [activeP2P,          setActiveP2P]          = useState(null);
-	const [sidebarOpen,        setSidebarOpen]        = useState(window.innerWidth >= 768);
-	const [isMobile,           setIsMobile]           = useState(window.innerWidth < 768);
+	const { user, institutes, activeInstitute, logout, isActiveAdmin } =
+		useAuth();
+	const [activeChannel, setActiveChannel] = useState(null);
+	const [activeP2P, setActiveP2P] = useState(null);
+	const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+	const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 	const [highlightMessageId, setHighlightMessageId] = useState(null);
-	const [isWaking,           setIsWaking]           = useState(false);
-	const [defaultChannel,     setDefaultChannel]     = useState(
+	const [isWaking, setIsWaking] = useState(false);
+	const [defaultChannel, setDefaultChannel] = useState(
 		() => firstChannelCache.get(activeInstitute?.id) ?? null,
 	);
 
@@ -46,7 +46,7 @@ function App() {
 		pingFired = true;
 
 		let wakingTimer = null;
-		let cancelled   = false;
+		let cancelled = false;
 
 		const ping = async () => {
 			wakingTimer = setTimeout(() => {
@@ -59,7 +59,6 @@ function App() {
 					{ method: 'GET', credentials: 'include' },
 				);
 			} catch {
-				// keep banner up — it will hide once the real auth calls succeed
 			} finally {
 				clearTimeout(wakingTimer);
 				if (!cancelled) setIsWaking(false);
@@ -74,7 +73,6 @@ function App() {
 		};
 	}, []);
 
-	// ── Existing resize handlers — unchanged ───────────────────────────────
 	useEffect(() => {
 		const onResize = () => setSidebarOpen(window.innerWidth >= 768);
 		window.addEventListener('resize', onResize);
@@ -115,7 +113,8 @@ function App() {
 	useEffect(() => {
 		if (!activeChannel) return;
 		const handleChannelDeleted = ({ channelId }) => {
-			if (String(activeChannel.id) === String(channelId)) setActiveChannel(null);
+			if (String(activeChannel.id) === String(channelId))
+				setActiveChannel(null);
 		};
 		socket.on('channel_deleted', handleChannelDeleted);
 		return () => socket.off('channel_deleted', handleChannelDeleted);
@@ -128,19 +127,22 @@ function App() {
 		});
 	}, []);
 
-	const handleStartP2P = useCallback(({ roomId, otherUserId, otherUsername }) => {
-		setActiveP2P({ roomId, otherUserId, otherUsername });
-		setActiveChannel(null);
-	}, []);
+	const handleStartP2P = useCallback(
+		({ roomId, otherUserId, otherUsername }) => {
+			setActiveP2P({ roomId, otherUserId, otherUsername });
+			setActiveChannel(null);
+		},
+		[],
+	);
 
 	const handleChannelSelect = useCallback((channel) => {
 		setActiveChannel(channel);
 		setActiveP2P(null);
 	}, []);
 
-	const handleCloseP2P     = useCallback(() => setActiveP2P(null),    []);
+	const handleCloseP2P = useCallback(() => setActiveP2P(null), []);
 	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
-	const handleOpenSidebar  = useCallback(() => setSidebarOpen(true),  []);
+	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
 
 	const handleJumpToMessage = useCallback((channelId, messageId) => {
 		setActiveP2P(null);
@@ -151,19 +153,36 @@ function App() {
 		setHighlightMessageId(messageId);
 	}, []);
 
-	const handleJumpToP2PMessage = useCallback((roomId, messageId, otherUserId, otherUsername) => {
-		setActiveChannel(null);
-		setActiveP2P({ roomId, otherUserId, otherUsername });
-		setHighlightMessageId(messageId);
-	}, []);
+	const handleJumpToP2PMessage = useCallback(
+		(roomId, messageId, otherUserId, otherUsername) => {
+			setActiveChannel(null);
+			setActiveP2P({ roomId, otherUserId, otherUsername });
+			setHighlightMessageId(messageId);
+		},
+		[],
+	);
 
-	const handleHighlightConsumed = useCallback(() => setHighlightMessageId(null), []);
+	const handleHighlightConsumed = useCallback(
+		() => setHighlightMessageId(null),
+		[],
+	);
 
-	// Banner renders above everything including login/gate screens
 	const banner = <WakingBanner visible={isWaking} />;
 
-	if (!user) return <>{banner}<LoginPage /></>;
-	if (institutes.length === 0 || !activeInstitute) return <>{banner}<InstituteGate /></>;
+	if (!user)
+		return (
+			<>
+				{banner}
+				<LoginPage />
+			</>
+		);
+	if (institutes.length === 0 || !activeInstitute)
+		return (
+			<>
+				{banner}
+				<InstituteGate />
+			</>
+		);
 
 	const effectiveChannel = activeChannel ?? defaultChannel ?? null;
 	const isAdmin = isActiveAdmin();
