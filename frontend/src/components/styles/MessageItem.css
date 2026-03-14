@@ -106,11 +106,21 @@
 	border-bottom-right-radius: 4px;
 }
 
+/* Force white text inside own bubble regardless of theme */
+.message-item.mine .message-text {
+	color: #ffffff;
+}
+
 .message-text {
 	font-size: 14px;
 	line-height: 1.55;
 	color: var(--text-primary);
 	word-break: break-word;
+}
+
+/* edited flag inside own bubble also needs to be visible */
+.message-item.mine .edited-flag {
+	color: rgba(255, 255, 255, 0.5);
 }
 
 .message-delete {
