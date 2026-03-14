@@ -40,7 +40,6 @@ function App() {
 		() => firstChannelCache.get(activeInstitute?.id) ?? null,
 	);
 
-	// ── Cold-start ping ────────────────────────────────────────────────────
 	useEffect(() => {
 		if (pingFired) return;
 		pingFired = true;
@@ -54,10 +53,9 @@ function App() {
 			}, 2000);
 
 			try {
-				await fetch(
-					`${import.meta.env.VITE_API_URL ?? ''}/api/auth/user-info`,
-					{ method: 'GET', credentials: 'include' },
-				);
+		await fetch(`${import.meta.env.VITE_API_URL ?? ''}/ping`, {
+    method: 'GET',
+});
 			} catch {
 			} finally {
 				clearTimeout(wakingTimer);
