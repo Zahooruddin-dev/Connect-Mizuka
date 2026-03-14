@@ -54,7 +54,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/institute', instituteRoutes);
 app.use('/api/channel', channelRoutes);
 app.use('/api/p2p', p2pRoutes);
-app.get('api/ping', (req, res) => res.sendStatus(200));
+app.get('/api/ping', (req, res) => res.sendStatus(200));
 const onlineUsers = new Map();
 
 io.on('connection', (socket) => {
