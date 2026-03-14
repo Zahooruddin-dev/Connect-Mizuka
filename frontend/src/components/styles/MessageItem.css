@@ -7,8 +7,14 @@
 }
 
 @keyframes msg-in {
-	from { opacity: 0; transform: translateY(6px); }
-	to { opacity: 1; transform: translateY(0); }
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .message-item.mine {
@@ -128,7 +134,10 @@
 	padding: 5px;
 	border-radius: var(--radius-sm);
 	opacity: 0;
-	transition: opacity 0.15s, color 0.15s, background 0.15s;
+	transition:
+		opacity 0.15s,
+		color 0.15s,
+		background 0.15s;
 	display: flex;
 	align-items: center;
 	background: none;
@@ -178,7 +187,9 @@
 	background: none;
 	border: none;
 	cursor: pointer;
-	transition: color 0.15s, background 0.15s;
+	transition:
+		color 0.15s,
+		background 0.15s;
 }
 
 .message-action-icon:hover {
@@ -237,7 +248,9 @@
 	cursor: pointer;
 	padding: 4px 10px;
 	border-radius: 4px;
-	transition: background 0.15s, color 0.15s;
+	transition:
+		background 0.15s,
+		color 0.15s;
 }
 
 .edit-save-btn {
