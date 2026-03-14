@@ -52,7 +52,7 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 		setCreatingRoom(true);
 
 		try {
-			const res = await getOrCreateP2PRoom(currentUser.id, userId);
+			const res = await getOrCreateP2PRoom( userId);
 
 			if (res.error) {
 				console.error('[P2P] Failed to create room:', res.error);
