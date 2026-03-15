@@ -157,7 +157,11 @@ function ChatHeader({
 						{otherUsername?.[0]?.toUpperCase() || 'U'}
 					</div>
 					<div className='chat-header-p2p-info'>
-						<span className='chat-header-name'>{otherUsername}</span>
+						<span className='chat-header-name'>
+							{otherUsername
+								? otherUsername?.[0]?.toUpperCase() + otherUsername.slice(1)
+								: 'Chat'}
+						</span>
 						<span className='chat-header-p2p-sub'>Direct Message</span>
 					</div>
 				</div>
