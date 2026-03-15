@@ -1,43 +1,26 @@
-function getValidDate(timestamp) {
+function parseTimestamp(timestamp) {
 	if (!timestamp) return null;
+	if (typeof timestamp === 'number') return new Date(timestamp);
 
-	let safeTimestamp = timestamp;
+	let s = String(timestamp);
 
-	if (typeof timestamp === 'string') {
-		if (timestamp.includes('T') && !timestamp.endsWith('Z') && !timestamp.includes('+')) {
-			safeTimestamp = timestamp + 'Z';
-		} else if (!timestamp.includes('T')) {
-			safeTimestamp = timestamp.replace(' ', 'T') + 'Z';
-		}
+	if (!s.includes('T') && s.includes(' ')) {
+		s = s.replace(' ', 'T');
 	}
 
-	const date = new Date(safeTimestamp);
-	return isNaN(date.getTime()) ? null : date;
+	// Trim microseconds down to milliseconds (JS only handles 3 decimal digits)
+	s = s.replace(/(\.\d{3})\d+/, '$1');
+
+	if (!s.endsWith('Z') && !s.includes('+') && !s.includes('-', 10)) {
+		s = s + 'Z';
+	}
+
+	const d = new Date(s);
+	return isNaN(d.getTime()) ? null : d;
 }
 
 export function formatTime(timestamp) {
-	const date = getValidDate(timestamp);
-	if (!date) return '';
-	return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-export function formatDate(timestamp) {
-	const date = getValidDate(timestamp);
-	if (!date) return '';
-
-	const today     = new Date();
-	const yesterday = new Date(today);
-	yesterday.setDate(today.getDate() - 1);
-
-	if (date.toDateString() === today.toDateString())     return 'Today';
-	if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-
-	return date.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
-}
-
-export function isSameDay(a, b) {
-	const da = getValidDate(a);
-	const db = getValidDate(b);
-	if (!da || !db) return false;
-	return da.toDateString() === db.toDateString();
+	const d = parseTimestamp(timestamp);
+	if (!d) return '';
+	return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

@@ -1,20 +1,25 @@
 function getValidDate(timestamp) {
 	if (!timestamp) return null;
+	if (typeof timestamp === 'number') return new Date(timestamp);
 
-	let s = timestamp;
-	if (typeof s === 'string') {
-		if (!s.includes('T') && s.includes(' ')) {
-			s = s.replace(' ', 'T') + 'Z';
-		} else if (s.includes('T') && !s.endsWith('Z') && !s.includes('+')) {
-			s = s + 'Z';
-		}
+	let s = String(timestamp);
+
+	if (!s.includes('T') && s.includes(' ')) {
+		s = s.replace(' ', 'T');
+	}
+
+	// Truncate microseconds to milliseconds — JS Date only handles 3 decimal digits
+	s = s.replace(/(\.\d{3})\d+/, '$1');
+
+	if (!s.endsWith('Z') && !s.includes('+') && !s.includes('-', 10)) {
+		s = s + 'Z';
 	}
 
 	const d = new Date(s);
 	return isNaN(d.getTime()) ? null : d;
 }
 
-function resolveTimestamp(msg) {
+export function resolveTimestamp(msg) {
 	return msg.created_at || msg.createdAt || msg.timestamp || null;
 }
 
@@ -43,5 +48,3 @@ export function isSameDay(a, b) {
 	if (!da || !db) return false;
 	return da.toDateString() === db.toDateString();
 }
-
-export { resolveTimestamp };
