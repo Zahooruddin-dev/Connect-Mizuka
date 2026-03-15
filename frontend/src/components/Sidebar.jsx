@@ -16,7 +16,7 @@ import {
 } from '../services/api';
 import { fetchUnreadCounts } from '../services/p2p-api';
 import socket from '../services/socket';
-import InstitutePanel from './InstitutePanel';
+import InstituteSidebar from './InstituteSidebar';
 import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
 import Inbox from './Inbox';
@@ -578,7 +578,7 @@ function Sidebar({
 			</aside>
 
 			{panelOpen && (
-				<InstitutePanel onClose={handleClosePanel} onStartP2P={onStartP2P} />
+				<InstituteSidebar onClose={handleClosePanel} onStartP2P={onStartP2P} />
 			)}
 			{createModalOpen && (
 				<CreateChannelModal

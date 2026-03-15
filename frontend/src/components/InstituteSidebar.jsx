@@ -13,13 +13,13 @@ import { useAuth } from '../services/AuthContext';
 import { linkToInstitute, getInstituteMembers } from '../services/api';
 import Toast from './Toast';
 import UserProfilePopover from './Userprofilepopover';
-import './styles/InstitutePanel.css';
+import './styles/InstituteSidebar.css';
 
 // Module-level cache — members lists don't change often, no need to refetch
 // every time the panel opens. Shape: Map<instituteId, Member[]>
 const membersCache = new Map();
 
-export default function InstitutePanel({ onClose, onStartP2P }) {
+export default function InstituteSidebar({ onClose, onStartP2P }) {
 	const {
 		user,
 		institutes,
