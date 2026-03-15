@@ -1,40 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle, MessagesSquare } from 'lucide-react';
 import { searchInstituteMembers, searchP2PMessages } from '../services/api';
-import {
-	getOrCreateP2PRoom,
-	fetchUnreadCounts,
-	markRoomAsRead,
-} from '../services/p2p-api';
+import { getOrCreateP2PRoom, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
 import './styles/Inbox.css';
-
-const STORAGE_KEY = 'mizuka_recent_p2p_chats';
-
-function loadStoredChats() {
-	try {
-		const raw = localStorage.getItem(STORAGE_KEY);
-		return raw ? JSON.parse(raw) : [];
-	} catch {
-		return [];
-	}
-}
-
-function saveChats(chats) {
-	localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
-}
-
-function upsertChat(prev, entry) {
-	const idx = prev.findIndex((c) => c.roomId === entry.roomId);
-	const next = idx !== -1
-		? prev.map((c, i) => (i === idx ? { ...c, ...entry } : c))
-		: [entry, ...prev].slice(0, 20);
-	return next.sort((a, b) => {
-		const ta = a.lastMessage?.created_at ?? a.lastChat ?? 0;
-		const tb = b.lastMessage?.created_at ?? b.lastChat ?? 0;
-		return new Date(tb) - new Date(ta);
-	});
-}
 
 function Inbox({
 	activeInstitute,
@@ -44,121 +13,39 @@ function Inbox({
 	activeP2P,
 	onUnreadUpdate,
 	onJumpToP2PMessage,
+	recentChats,
+	setRecentChats,
+	roomUnread,
+	setRoomUnread,
 }) {
-	const [searchTerm,       setSearchTerm]       = useState('');
-	const [results,          setResults]          = useState([]);
-	const [recentChats,      setRecentChats]      = useState(loadStoredChats);
-	const [loading,          setLoading]          = useState(false);
-	const [startingChat,     setStartingChat]     = useState(null);
-	const [roomUnread,       setRoomUnread]       = useState({});
-	const [msgSearchOpen,    setMsgSearchOpen]    = useState(false);
-	const [msgSearchTerm,    setMsgSearchTerm]    = useState('');
+	const [searchTerm, setSearchTerm] = useState('');
+	const [results, setResults] = useState([]);
+	const [loading, setLoading] = useState(false);
+	const [startingChat, setStartingChat] = useState(null);
+	const [msgSearchOpen, setMsgSearchOpen] = useState(false);
+	const [msgSearchTerm, setMsgSearchTerm] = useState('');
 	const [msgSearchResults, setMsgSearchResults] = useState([]);
 	const [msgSearchLoading, setMsgSearchLoading] = useState(false);
 
-	const debounceTimer    = useRef(null);
+	const debounceTimer = useRef(null);
 	const msgDebounceTimer = useRef(null);
 	const msgSearchInputRef = useRef(null);
-	const activeP2PRef      = useRef(activeP2P);
-	const onUnreadUpdateRef = useRef(onUnreadUpdate);
-	const currentUserRef    = useRef(currentUser);
-
-	useEffect(() => { activeP2PRef.current = activeP2P; },       [activeP2P]);
-	useEffect(() => { onUnreadUpdateRef.current = onUnreadUpdate; }, [onUnreadUpdate]);
-	useEffect(() => { currentUserRef.current = currentUser; },    [currentUser]);
 
 	useEffect(() => {
 		if (msgSearchOpen) msgSearchInputRef.current?.focus();
 	}, [msgSearchOpen]);
 
 	useEffect(() => {
-		if (!currentUser?.id) return;
-
-		socket.emit('join_user_room', currentUser.id);
-
-		fetchUnreadCounts(currentUser.id).then((counts) => {
-			const map = {};
-			counts.forEach((r) => {
-				map[r.chatroom_id] = Number(r.unread_count);
-				socket.emit('join_p2p', r.chatroom_id);
-			});
-			setRoomUnread(map);
-		});
-
-		const stored = loadStoredChats();
-		stored.forEach((chat) => socket.emit('join_p2p', chat.roomId));
-	}, [currentUser?.id]);
-
-	useEffect(() => {
 		if (!activeP2P?.roomId || !currentUser?.id) return;
 		markRoomAsRead(activeP2P.roomId, currentUser.id).then(() => {
-			onUnreadUpdateRef.current?.();
+			onUnreadUpdate?.();
 		});
 		setRoomUnread((prev) => {
-			if (!prev[activeP2P.roomId]) return prev;
 			const next = { ...prev };
 			delete next[activeP2P.roomId];
 			return next;
 		});
 	}, [activeP2P?.roomId, currentUser?.id]);
-
-	useEffect(() => {
-		const handleMessage = (msg) => {
-			const me = currentUserRef.current;
-			const fromMe = String(msg.sender_id) === String(me?.id);
-
-			socket.emit('join_p2p', msg.chatroom_id);
-
-			setRecentChats((prev) => {
-				const existing = prev.find((c) => c.roomId === msg.chatroom_id);
-
-				if (!existing && fromMe) return prev;
-
-				const entry = existing
-					? {
-							...existing,
-							lastMessage: {
-								content: msg.content,
-								created_at: msg.created_at,
-								fromMe,
-							},
-					  }
-					: {
-							id: msg.sender_id,
-							username: msg.username,
-							roomId: msg.chatroom_id,
-							lastChat: msg.created_at,
-							lastMessage: {
-								content: msg.content,
-								created_at: msg.created_at,
-								fromMe: false,
-							},
-					  };
-
-				const next = upsertChat(prev, entry);
-				saveChats(next);
-				return next;
-			});
-
-			if (fromMe) return;
-
-			if (activeP2PRef.current?.roomId === msg.chatroom_id) {
-				markRoomAsRead(msg.chatroom_id, me.id).then(() => {
-					onUnreadUpdateRef.current?.();
-				});
-				return;
-			}
-
-			setRoomUnread((prev) => ({
-				...prev,
-				[msg.chatroom_id]: (prev[msg.chatroom_id] || 0) + 1,
-			}));
-			onUnreadUpdateRef.current?.();
-		};
-
-		socket.on('receive_p2p_message', handleMessage);
-		return () => socket.off('receive_p2p_message', handleMessage);
-	}, []);
 
 	useEffect(() => {
 		return () => {
@@ -171,11 +58,18 @@ function Inbox({
 		(val) => {
 			setSearchTerm(val);
 			clearTimeout(debounceTimer.current);
-			if (val.length < 2) { setResults([]); return; }
+			if (val.length < 2) {
+				setResults([]);
+				return;
+			}
 			setLoading(true);
 			debounceTimer.current = setTimeout(async () => {
 				try {
-					const users = await searchInstituteMembers(activeInstitute.id, val, currentUser.id);
+					const users = await searchInstituteMembers(
+						activeInstitute.id,
+						val,
+						currentUser.id,
+					);
 					setResults(users || []);
 				} catch {
 					setResults([]);
@@ -207,12 +101,20 @@ function Inbox({
 				};
 
 				setRecentChats((prev) => {
-					const next = upsertChat(prev, entry);
-					saveChats(next);
+					const idx = prev.findIndex((c) => c.roomId === entry.roomId);
+					const next =
+						idx !== -1
+							? prev.map((c, i) => (i === idx ? { ...c, ...entry } : c))
+							: [entry, ...prev].slice(0, 20);
+					localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(next));
 					return next;
 				});
 
-				onStartP2P?.({ roomId: res.chatroom.id, otherUserId: user.id, otherUsername: user.username });
+				onStartP2P?.({
+					roomId: res.chatroom.id,
+					otherUserId: user.id,
+					otherUsername: user.username,
+				});
 				setSearchTerm('');
 				setResults([]);
 			} catch {
@@ -220,7 +122,7 @@ function Inbox({
 				setStartingChat(null);
 			}
 		},
-		[recentChats, onStartP2P, startingChat],
+		[recentChats, onStartP2P, startingChat, setRecentChats],
 	);
 
 	const handleClearSearch = useCallback(() => {
@@ -232,8 +134,14 @@ function Inbox({
 		(val) => {
 			setMsgSearchTerm(val);
 			clearTimeout(msgDebounceTimer.current);
-			if (!val.trim() || val.length < 2) { setMsgSearchResults([]); return; }
-			if (!recentChats.length) { setMsgSearchResults([]); return; }
+			if (!val.trim() || val.length < 2) {
+				setMsgSearchResults([]);
+				return;
+			}
+			if (!recentChats.length) {
+				setMsgSearchResults([]);
+				return;
+			}
 			setMsgSearchLoading(true);
 			msgDebounceTimer.current = setTimeout(async () => {
 				try {
@@ -249,7 +157,9 @@ function Inbox({
 							otherUsername: recentChats[i].username,
 						}));
 					});
-					merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+					merged.sort(
+						(a, b) => new Date(b.created_at) - new Date(a.created_at),
+					);
 					setMsgSearchResults(merged);
 				} catch {
 					setMsgSearchResults([]);
@@ -263,7 +173,12 @@ function Inbox({
 
 	const handleMsgResultClick = useCallback(
 		(result) => {
-			onJumpToP2PMessage?.(result.roomId, result.id, result.otherUserId, result.otherUsername);
+			onJumpToP2PMessage?.(
+				result.roomId,
+				result.id,
+				result.otherUserId,
+				result.otherUsername,
+			);
 			setMsgSearchOpen(false);
 			setMsgSearchTerm('');
 			setMsgSearchResults([]);
@@ -277,8 +192,14 @@ function Inbox({
 		setMsgSearchResults([]);
 	}, []);
 
-	const isOnline = useCallback((userId) => onlineUsers.has(String(userId)), [onlineUsers]);
-	const getUnread = useCallback((roomId) => roomUnread[roomId] || 0, [roomUnread]);
+	const isOnline = useCallback(
+		(userId) => onlineUsers.has(String(userId)),
+		[onlineUsers],
+	);
+	const getUnread = useCallback(
+		(roomId) => roomUnread[roomId] || 0,
+		[roomUnread],
+	);
 
 	return (
 		<div className='inbox-container'>
@@ -311,15 +232,23 @@ function Inbox({
 							onKeyDown={(e) => e.key === 'Escape' && handleCloseMsgSearch()}
 						/>
 						{msgSearchTerm && (
-							<button className='inbox-msg-search-clear' onClick={handleCloseMsgSearch} aria-label='Clear'>
+							<button
+								className='inbox-msg-search-clear'
+								onClick={handleCloseMsgSearch}
+								aria-label='Clear'
+							>
 								<X size={12} />
 							</button>
 						)}
 					</div>
-					{msgSearchLoading && <div className='inbox-msg-search-status'>Searching…</div>}
-					{!msgSearchLoading && msgSearchTerm.length >= 2 && msgSearchResults.length === 0 && (
-						<div className='inbox-msg-search-status'>No results found</div>
+					{msgSearchLoading && (
+						<div className='inbox-msg-search-status'>Searching…</div>
 					)}
+					{!msgSearchLoading &&
+						msgSearchTerm.length >= 2 &&
+						msgSearchResults.length === 0 && (
+							<div className='inbox-msg-search-status'>No results found</div>
+						)}
 					{msgSearchResults.length > 0 && (
 						<ul className='inbox-msg-search-results'>
 							{msgSearchResults.map((result) => (
@@ -336,11 +265,15 @@ function Inbox({
 											{result.otherUsername}
 										</span>
 										<span className='inbox-msg-result-content'>
-											{result.content?.length > 80 ? result.content.slice(0, 80) + '…' : result.content}
+											{result.content?.length > 80
+												? result.content.slice(0, 80) + '…'
+												: result.content}
 										</span>
 										{result.username && (
 											<span className='inbox-msg-result-meta'>
-												{result.username === currentUser.username ? 'You' : result.username}
+												{result.username === currentUser.username
+													? 'You'
+													: result.username}
 											</span>
 										)}
 									</button>
@@ -361,7 +294,11 @@ function Inbox({
 					className='inbox-search-input'
 				/>
 				{searchTerm && (
-					<button className='inbox-search-clear' onClick={handleClearSearch} aria-label='Clear search'>
+					<button
+						className='inbox-search-clear'
+						onClick={handleClearSearch}
+						aria-label='Clear search'
+					>
 						<X size={14} />
 					</button>
 				)}
@@ -370,7 +307,9 @@ function Inbox({
 			{searchTerm ? (
 				<div className='inbox-results'>
 					{loading ? (
-						<div className='inbox-loading'><span>Searching...</span></div>
+						<div className='inbox-loading'>
+							<span>Searching...</span>
+						</div>
 					) : results.length > 0 ? (
 						<div className='inbox-user-list'>
 							{results.map((user) => (
@@ -396,7 +335,9 @@ function Inbox({
 							))}
 						</div>
 					) : (
-						<div className='inbox-empty'><span>No members found</span></div>
+						<div className='inbox-empty'>
+							<span>No members found</span>
+						</div>
 					)}
 				</div>
 			) : (
@@ -412,7 +353,14 @@ function Inbox({
 										<button
 											key={chat.roomId}
 											className={`inbox-user-item${unread > 0 ? ' has-unread' : ''}`}
-											onClick={() => handleStartChat({ id: chat.id, username: chat.username, email: chat.email, role: chat.role })}
+											onClick={() =>
+												handleStartChat({
+													id: chat.id,
+													username: chat.username,
+													email: chat.email,
+													role: chat.role,
+												})
+											}
 											disabled={startingChat === chat.id}
 											title={`Message ${chat.username}`}
 										>
@@ -420,23 +368,38 @@ function Inbox({
 												<div className='inbox-user-avatar'>
 													{chat.username?.[0]?.toUpperCase() || 'U'}
 												</div>
-												{isOnline(chat.id) && <span className='inbox-online-dot' />}
+												{isOnline(chat.id) && (
+													<span className='inbox-online-dot' />
+												)}
 											</div>
 											<div className='inbox-user-info'>
 												<div className='inbox-user-name'>{chat.username}</div>
 												{lastMsg ? (
-													<div className={`inbox-last-message${unread > 0 ? ' inbox-last-message--unread' : ''}`}>
-														{lastMsg.fromMe && <span className='inbox-last-message-you'>You: </span>}
-														{lastMsg.content?.length > 40 ? lastMsg.content.slice(0, 40) + '…' : lastMsg.content}
+													<div
+														className={`inbox-last-message${unread > 0 ? ' inbox-last-message--unread' : ''}`}
+													>
+														{lastMsg.fromMe && (
+															<span className='inbox-last-message-you'>
+																You:{' '}
+															</span>
+														)}
+														{lastMsg.content?.length > 40
+															? lastMsg.content.slice(0, 40) + '…'
+															: lastMsg.content}
 													</div>
 												) : (
 													<div className='inbox-user-role'>{chat.role}</div>
 												)}
 											</div>
 											{unread > 0 ? (
-												<span className='inbox-unread-badge'>{unread > 99 ? '99+' : unread}</span>
+												<span className='inbox-unread-badge'>
+													{unread > 99 ? '99+' : unread}
+												</span>
 											) : (
-												<MessageCircle size={16} className='inbox-user-action' />
+												<MessageCircle
+													size={16}
+													className='inbox-user-action'
+												/>
 											)}
 										</button>
 									);
@@ -444,7 +407,9 @@ function Inbox({
 							</div>
 						</>
 					) : (
-						<div className='inbox-empty'><span>No recent chats. Search to start one!</span></div>
+						<div className='inbox-empty'>
+							<span>No recent chats. Search to start one!</span>
+						</div>
 					)}
 				</div>
 			)}

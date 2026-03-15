@@ -14,13 +14,22 @@ import {
 	createChannel,
 	searchChannelMessages,
 } from '../services/api';
-import { fetchUnreadCounts } from '../services/p2p-api';
+import { fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
 import InstituteSidebar from './InstituteSidebar';
 import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
 import Inbox from './Inbox';
 import './styles/Sidebar.css';
+
+function loadStoredChats() {
+	try {
+		const raw = localStorage.getItem('mizuka_recent_p2p_chats');
+		return raw ? JSON.parse(raw) : [];
+	} catch {
+		return [];
+	}
+}
 
 function Sidebar({
 	activeChannel,
@@ -44,8 +53,9 @@ function Sidebar({
 	const [activeTab, setActiveTab] = useState('channels');
 	const [unreadCount, setUnreadCount] = useState(0);
 	const [onlineUsers, setOnlineUsers] = useState(new Set());
+	const [recentChats, setRecentChats] = useState(loadStoredChats);
+	const [roomUnread, setRoomUnread] = useState({});
 
-	// Search state
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [searchResults, setSearchResults] = useState([]);
@@ -71,39 +81,70 @@ function Sidebar({
 		activeP2PRef.current = activeP2P;
 	}, [activeP2P]);
 
-	// Focus search input when it opens.
 	useEffect(() => {
 		if (searchOpen) searchInputRef.current?.focus();
 	}, [searchOpen]);
 
-	// Clear search when channel changes or tab switches.
 	useEffect(() => {
 		setSearchOpen(false);
 		setSearchTerm('');
 		setSearchResults([]);
 	}, [activeChannel, activeTab]);
 
-	const updateUnreadCount = useCallback(async () => {
+	// ── Unread count (from API) ────────────────────────────────────────────
+	const refreshUnreadCount = useCallback(() => {
 		if (!user?.id) return;
-		try {
-			const counts = await fetchUnreadCounts(user.id);
-			const total = counts.reduce((sum, r) => sum + Number(r.unread_count), 0);
-			setUnreadCount(total);
-		} catch {
-			setUnreadCount(0);
-		}
+		fetchUnreadCounts(user.id)
+			.then((counts) => {
+				const map = {};
+				counts.forEach((r) => {
+					map[r.chatroom_id] = Number(r.unread_count);
+				});
+				setRoomUnread(map);
+				setUnreadCount(Object.values(map).reduce((s, n) => s + n, 0));
+			})
+			.catch(() => {});
 	}, [user?.id]);
 
+	// ── On mount: join personal room, re-join all known P2P rooms, fetch unread ──
 	useEffect(() => {
 		if (!user?.id) return;
 		socket.emit('user_online', user.id);
 		socket.emit('get_online_users');
+		socket.emit('join_user_room', user.id);
+
+		fetchUnreadCounts(user.id)
+			.then((counts) => {
+				const map = {};
+				counts.forEach((r) => {
+					map[r.chatroom_id] = Number(r.unread_count);
+					socket.emit('join_p2p', r.chatroom_id);
+				});
+				setRoomUnread(map);
+				setUnreadCount(Object.values(map).reduce((s, n) => s + n, 0));
+			})
+			.catch(() => {});
+
+		loadStoredChats().forEach((c) => socket.emit('join_p2p', c.roomId));
 	}, [user?.id]);
 
+	// ── Clear unread badge when a P2P chat is opened ──────────────────────
 	useEffect(() => {
-		updateUnreadCount();
-	}, [updateUnreadCount]);
+		if (!activeP2P?.roomId || !user?.id) return;
+		markRoomAsRead(activeP2P.roomId, user.id)
+			.then(() => refreshUnreadCount())
+			.catch(() => {});
+		setRoomUnread((prev) => {
+			const next = { ...prev };
+			delete next[activeP2P.roomId];
+			return next;
+		});
+		setUnreadCount((prev) =>
+			Math.max(0, prev - (roomUnread[activeP2P.roomId] || 0)),
+		);
+	}, [activeP2P?.roomId, user?.id]);
 
+	// ── Online status ──────────────────────────────────────────────────────
 	useEffect(() => {
 		const handleStatus = ({ userId, status }) => {
 			setOnlineUsers((prev) => {
@@ -123,24 +164,72 @@ function Sidebar({
 		};
 	}, []);
 
+	// ── Incoming P2P messages — always-on listener ─────────────────────────
 	useEffect(() => {
 		const handleP2PMessage = (msg) => {
-			if (String(msg.sender_id) === String(user.id)) return;
-			if (
-				activeTabRef.current !== 'inbox' ||
-				activeP2PRef.current?.roomId !== msg.chatroom_id
-			) {
-				setUnreadCount((prev) => prev + 1);
-			}
+			const fromMe = String(msg.sender_id) === String(user.id);
+
+			socket.emit('join_p2p', msg.chatroom_id);
+
+			setRecentChats((prev) => {
+				const existing = prev.find((c) => c.roomId === msg.chatroom_id);
+				if (!existing && fromMe) return prev;
+
+				const entry = existing
+					? {
+							...existing,
+							lastMessage: {
+								content: msg.content,
+								created_at: msg.created_at,
+								fromMe,
+							},
+						}
+					: {
+							id: msg.sender_id,
+							username: msg.username,
+							roomId: msg.chatroom_id,
+							lastChat: msg.created_at,
+							lastMessage: {
+								content: msg.content,
+								created_at: msg.created_at,
+								fromMe: false,
+							},
+						};
+
+				const idx = prev.findIndex((c) => c.roomId === entry.roomId);
+				const next =
+					idx !== -1
+						? prev.map((c, i) => (i === idx ? entry : c))
+						: [entry, ...prev].slice(0, 20);
+				const sorted = [...next].sort((a, b) => {
+					const ta = a.lastMessage?.created_at ?? a.lastChat ?? 0;
+					const tb = b.lastMessage?.created_at ?? b.lastChat ?? 0;
+					return new Date(tb) - new Date(ta);
+				});
+				localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(sorted));
+				return sorted;
+			});
+
+			if (fromMe) return;
+			if (activeP2PRef.current?.roomId === msg.chatroom_id) return;
+
+			setRoomUnread((prev) => ({
+				...prev,
+				[msg.chatroom_id]: (prev[msg.chatroom_id] || 0) + 1,
+			}));
+			fetchUnreadCounts(user.id)
+				.then((counts) => {
+					const total = counts.reduce((s, r) => s + Number(r.unread_count), 0);
+					setUnreadCount(total);
+				})
+				.catch(() => {});
 		};
+
 		socket.on('receive_p2p_message', handleP2PMessage);
 		return () => socket.off('receive_p2p_message', handleP2PMessage);
 	}, [user.id]);
 
-	useEffect(() => {
-		if (activeTab === 'inbox') updateUnreadCount();
-	}, [activeTab, updateUnreadCount]);
-
+	// ── Channels ───────────────────────────────────────────────────────────
 	useEffect(() => {
 		if (!activeInstitute) {
 			setChannels([]);
@@ -150,8 +239,6 @@ function Sidebar({
 			.then((res) => {
 				const fetched = res.data?.channels || res.channels || [];
 				setChannels(fetched);
-				// Let App know what channels are available so it can set
-				// the default to the first channel instead of 'general'.
 				onChannelsLoaded?.(fetched);
 			})
 			.catch(() => setChannels([]));
@@ -199,34 +286,27 @@ function Sidebar({
 	}, [onChannelSelect]);
 
 	// ── Search ─────────────────────────────────────────────────────────────
-
 	const handleSearchInput = useCallback(
 		(val) => {
 			setSearchTerm(val);
 			clearTimeout(searchDebounce.current);
-
 			if (!val.trim() || val.length < 2) {
 				setSearchResults([]);
 				return;
 			}
-
 			if (!channels.length) {
 				setSearchResults([]);
 				return;
 			}
-
 			setSearchLoading(true);
 			searchDebounce.current = setTimeout(async () => {
 				try {
-					// Search every channel in parallel — no need to have one selected.
-					// Each result already carries channel_id so we know where it lives.
 					const settled = await Promise.allSettled(
 						channels.map((ch) => searchChannelMessages(ch.id, val)),
 					);
 					const merged = settled.flatMap((r) =>
 						r.status === 'fulfilled' ? r.value || [] : [],
 					);
-					// Sort newest first across all channels.
 					merged.sort(
 						(a, b) => new Date(b.created_at) - new Date(a.created_at),
 					);
@@ -243,17 +323,12 @@ function Sidebar({
 
 	const handleSearchResultClick = useCallback(
 		(result) => {
-			// If the result is from a different channel, select it first.
 			const targetChannel = channels.find(
 				(c) => String(c.id) === String(result.channel_id),
 			);
 			if (targetChannel) onChannelSelect(targetChannel);
-
-			// Tell App/ChatArea to jump to and highlight this message.
-			if (typeof onJumpToMessage === 'function') {
+			if (typeof onJumpToMessage === 'function')
 				onJumpToMessage(result.channel_id, result.id);
-			}
-
 			setSearchOpen(false);
 			setSearchTerm('');
 			setSearchResults([]);
@@ -267,7 +342,6 @@ function Sidebar({
 		setSearchResults([]);
 	}, []);
 
-	// Cleanup debounce on unmount.
 	useEffect(() => () => clearTimeout(searchDebounce.current), []);
 
 	const handleCreateChannel = useCallback(
@@ -307,7 +381,7 @@ function Sidebar({
 			)}
 
 			<aside
-				className={`sidebar${isOpen ? ' open' : ' closed'}`}
+				className={`sidebar${isOpen ? ' open' : ''}`}
 				aria-label='Navigation'
 			>
 				<div className='sidebar-header'>
@@ -436,11 +510,9 @@ function Sidebar({
 												</button>
 											)}
 										</div>
-
 										{searchLoading && (
 											<div className='sidebar-search-status'>Searching…</div>
 										)}
-
 										{!searchLoading &&
 											searchTerm.length >= 2 &&
 											searchResults.length === 0 && (
@@ -448,7 +520,6 @@ function Sidebar({
 													No results found
 												</div>
 											)}
-
 										{searchResults.length > 0 && (
 											<ul className='sidebar-search-results'>
 												{searchResults.map((result) => {
@@ -536,8 +607,12 @@ function Sidebar({
 						onStartP2P={onStartP2P}
 						onlineUsers={onlineUsers}
 						activeP2P={activeP2P}
-						onUnreadUpdate={updateUnreadCount}
+						onUnreadUpdate={refreshUnreadCount}
 						onJumpToP2PMessage={onJumpToP2PMessage}
+						recentChats={recentChats}
+						setRecentChats={setRecentChats}
+						roomUnread={roomUnread}
+						setRoomUnread={setRoomUnread}
 					/>
 				)}
 
