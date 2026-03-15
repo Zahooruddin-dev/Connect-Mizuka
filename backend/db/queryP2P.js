@@ -159,6 +159,21 @@ async function getUnreadCountsForUser(userId) {
 	}
 }
 
+async function getChatroomMembers(chatroomId) {
+	try {
+		const { rows } = await pool.query(
+			`SELECT user_one_id AS user_id FROM p2p_chatrooms WHERE id = $1
+			 UNION
+			 SELECT user_two_id AS user_id FROM p2p_chatrooms WHERE id = $1`,
+			[chatroomId],
+		);
+		return rows;
+	} catch (error) {
+		console.error('getChatroomMembers error:', error);
+		throw error;
+	}
+}
+
 module.exports = {
 	getRoomById,
 	findExistingRoomQuery,
@@ -170,4 +185,5 @@ module.exports = {
 	deleteP2PMessagesQuery,
 	editP2PMessagesQuery,
 	searchP2PMessagesQuery,
+	getChatroomMembers,
 };

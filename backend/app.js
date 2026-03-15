@@ -110,6 +110,10 @@ io.on('connection', (socket) => {
 	socket.on('channel_created', ({ channel, instituteId }) => {
 		io.to(instituteId).emit('channel_created', { channel });
 	});
+	socket.on('join_user_room', (userId) => {
+    if (!userId) return;
+    socket.join(`user_${userId}`);
+});
 
 	socket.on('typing', (data) => {
 		socket.to(data.channel_id).emit('Display_typing', {

@@ -25,9 +25,9 @@ function saveChats(chats) {
 }
 
 function upsertChat(prev, entry) {
-	const exists = prev.findIndex((c) => c.roomId === entry.roomId);
-	const next = exists !== -1
-		? prev.map((c, i) => i === exists ? { ...c, ...entry } : c)
+	const idx = prev.findIndex((c) => c.roomId === entry.roomId);
+	const next = idx !== -1
+		? prev.map((c, i) => (i === idx ? { ...c, ...entry } : c))
 		: [entry, ...prev].slice(0, 20);
 	return next.sort((a, b) => {
 		const ta = a.lastMessage?.created_at ?? a.lastChat ?? 0;
@@ -45,28 +45,27 @@ function Inbox({
 	onUnreadUpdate,
 	onJumpToP2PMessage,
 }) {
-	const [searchTerm, setSearchTerm] = useState('');
-	const [results, setResults] = useState([]);
-	const [recentChats, setRecentChats] = useState(loadStoredChats);
-	const [loading, setLoading] = useState(false);
-	const [startingChat, setStartingChat] = useState(null);
-	const [roomUnread, setRoomUnread] = useState({});
-
-	const [msgSearchOpen, setMsgSearchOpen] = useState(false);
-	const [msgSearchTerm, setMsgSearchTerm] = useState('');
+	const [searchTerm,       setSearchTerm]       = useState('');
+	const [results,          setResults]          = useState([]);
+	const [recentChats,      setRecentChats]      = useState(loadStoredChats);
+	const [loading,          setLoading]          = useState(false);
+	const [startingChat,     setStartingChat]     = useState(null);
+	const [roomUnread,       setRoomUnread]       = useState({});
+	const [msgSearchOpen,    setMsgSearchOpen]    = useState(false);
+	const [msgSearchTerm,    setMsgSearchTerm]    = useState('');
 	const [msgSearchResults, setMsgSearchResults] = useState([]);
 	const [msgSearchLoading, setMsgSearchLoading] = useState(false);
 
-	const debounceTimer = useRef(null);
+	const debounceTimer    = useRef(null);
 	const msgDebounceTimer = useRef(null);
 	const msgSearchInputRef = useRef(null);
-	const activeP2PRef = useRef(activeP2P);
+	const activeP2PRef      = useRef(activeP2P);
 	const onUnreadUpdateRef = useRef(onUnreadUpdate);
-	const currentUserRef = useRef(currentUser);
+	const currentUserRef    = useRef(currentUser);
 
-	useEffect(() => { activeP2PRef.current = activeP2P; }, [activeP2P]);
+	useEffect(() => { activeP2PRef.current = activeP2P; },       [activeP2P]);
 	useEffect(() => { onUnreadUpdateRef.current = onUnreadUpdate; }, [onUnreadUpdate]);
-	useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+	useEffect(() => { currentUserRef.current = currentUser; },    [currentUser]);
 
 	useEffect(() => {
 		if (msgSearchOpen) msgSearchInputRef.current?.focus();
@@ -74,11 +73,20 @@ function Inbox({
 
 	useEffect(() => {
 		if (!currentUser?.id) return;
+
+		socket.emit('join_user_room', currentUser.id);
+
 		fetchUnreadCounts(currentUser.id).then((counts) => {
 			const map = {};
-			counts.forEach((r) => { map[r.chatroom_id] = Number(r.unread_count); });
+			counts.forEach((r) => {
+				map[r.chatroom_id] = Number(r.unread_count);
+				socket.emit('join_p2p', r.chatroom_id);
+			});
 			setRoomUnread(map);
 		});
+
+		const stored = loadStoredChats();
+		stored.forEach((chat) => socket.emit('join_p2p', chat.roomId));
 	}, [currentUser?.id]);
 
 	useEffect(() => {
@@ -99,8 +107,12 @@ function Inbox({
 			const me = currentUserRef.current;
 			const fromMe = String(msg.sender_id) === String(me?.id);
 
+			socket.emit('join_p2p', msg.chatroom_id);
+
 			setRecentChats((prev) => {
 				const existing = prev.find((c) => c.roomId === msg.chatroom_id);
+
+				if (!existing && fromMe) return prev;
 
 				const entry = existing
 					? {
@@ -112,18 +124,16 @@ function Inbox({
 							},
 					  }
 					: {
-							id: fromMe ? null : msg.sender_id,
-							username: fromMe ? null : msg.username,
+							id: msg.sender_id,
+							username: msg.username,
 							roomId: msg.chatroom_id,
 							lastChat: msg.created_at,
 							lastMessage: {
 								content: msg.content,
 								created_at: msg.created_at,
-								fromMe,
+								fromMe: false,
 							},
 					  };
-
-				if (!existing && fromMe) return prev;
 
 				const next = upsertChat(prev, entry);
 				saveChats(next);
@@ -184,6 +194,8 @@ function Inbox({
 			try {
 				const res = await getOrCreateP2PRoom(user.id);
 				if (res.error || !res.chatroom) return;
+
+				socket.emit('join_p2p', res.chatroom.id);
 
 				const entry = {
 					id: user.id,
@@ -304,13 +316,10 @@ function Inbox({
 							</button>
 						)}
 					</div>
-
 					{msgSearchLoading && <div className='inbox-msg-search-status'>Searching…</div>}
-
 					{!msgSearchLoading && msgSearchTerm.length >= 2 && msgSearchResults.length === 0 && (
 						<div className='inbox-msg-search-status'>No results found</div>
 					)}
-
 					{msgSearchResults.length > 0 && (
 						<ul className='inbox-msg-search-results'>
 							{msgSearchResults.map((result) => (
