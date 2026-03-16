@@ -4,16 +4,14 @@ const db = require('../db/queryAuth');
 
 async function Login(req, res) {
 	const { email, password } = req.body;
-
 	try {
 		const user = await db.getUserByEmail(email);
-		if (!user) {
+		if (!user)
 			return res.status(401).json({ message: 'Invalid email or password' });
-		}
+
 		const match = await bcrypt.compare(password, user.password_hash);
-		if (!match) {
+		if (!match)
 			return res.status(401).json({ message: 'Invalid email or password' });
-		}
 
 		const memberships = await db.getUserMemberships(user.id);
 
@@ -38,6 +36,7 @@ async function Login(req, res) {
 				username: user.username,
 				createdAt: user.created_at,
 				role: user.role,
+				profile_picture: user.profile_picture || null,
 				memberships,
 			},
 		});
@@ -75,26 +74,27 @@ async function Register(req, res) {
 		return res.status(500).json({ message: error.message });
 	}
 }
-async function updateProfile(req, res) {
-	const { userId } = req.params;
-	const { username, email, currentPassword, newPassword } = req.body;
-	const imagePath = req.file ? req.file.path : null;
 
-	if (!username && !email && !newPassword) {
+async function updateProfile(req, res) {
+	const userId = req.user.id;
+	const { username, email, currentPassword, newPassword } = req.body;
+	const profile_picture = req.file?.path || undefined;
+
+	if (!username && !email && !newPassword && !profile_picture) {
 		return res.status(400).json({ message: 'Nothing to update' });
 	}
 
 	try {
 		const user = await db.getUserById(userId);
-		if (!user) {
-			return res.status(404).json({ message: 'User not found' });
-		}
+		if (!user) return res.status(404).json({ message: 'User not found' });
 
 		if (newPassword) {
 			if (!currentPassword) {
-				return res.status(400).json({
-					message: 'Current password is required to set a new password',
-				});
+				return res
+					.status(400)
+					.json({
+						message: 'Current password is required to set a new password',
+					});
 			}
 			const match = await bcrypt.compare(currentPassword, user.password_hash);
 			if (!match) {
@@ -105,11 +105,12 @@ async function updateProfile(req, res) {
 		}
 
 		const updatedUser = await db.updateProfileQuery(userId, {
-			username: username ?? user.username,
-			email: email ?? user.email,
+			username: username ?? undefined,
+			email: email ?? undefined,
 			password_hash: newPassword
 				? await bcrypt.hash(newPassword, 10)
 				: undefined,
+			profile_picture: profile_picture ?? undefined,
 		});
 
 		return res
@@ -127,13 +128,13 @@ async function deleteUser(req, res) {
 	const { email, password } = req.body;
 	try {
 		const user = await db.getUserByEmail(email);
-		if (!user) {
+		if (!user)
 			return res.status(401).json({ message: 'Invalid Email or Password' });
-		}
+
 		const match = await bcrypt.compare(password, user.password_hash);
-		if (!match) {
+		if (!match)
 			return res.status(401).json({ message: 'Invalid Email or Password' });
-		}
+
 		const deleted = await db.deleteUserQuery(email);
 		res.status(200).json({ message: 'User deleted', deleted });
 	} catch (error) {
@@ -145,10 +146,7 @@ async function linkToInstitute(req, res) {
 	const { userId, institute_id } = req.body;
 	try {
 		const link = await db.linkToInstituteQuery(userId, institute_id, 'member');
-		res.status(200).json({
-			message: 'Linked to institute',
-			membership: link,
-		});
+		res.status(200).json({ message: 'Linked to institute', membership: link });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
@@ -178,17 +176,17 @@ async function getUserProfile(req, res) {
 	const { userId } = req.params;
 	try {
 		const user = await db.getUserProfileForPopover(userId);
-		if (!user) {
-			return res.status(404).json({ message: 'User not found' });
-		}
+		if (!user) return res.status(404).json({ message: 'User not found' });
 		res.status(200).json({ user });
 	} catch (error) {
 		res.status(500).json({ message: error.message });
 	}
 }
+
 async function changePassword(req, res) {
 	const userId = req.user.id;
 	const { oldPassword, newPassword } = req.body;
+
 	if (!oldPassword || !newPassword) {
 		return res
 			.status(400)
@@ -196,23 +194,19 @@ async function changePassword(req, res) {
 	}
 	try {
 		const user = await db.getUserInfoQuery(userId);
-		if (!user) {
-			return res.status(404).json({ message: 'User not found' });
-		}
+		if (!user) return res.status(404).json({ message: 'User not found' });
 
 		const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
-		if (!isMatch) {
+		if (!isMatch)
 			return res.status(401).json({ message: 'Incorrect current password' });
-		}
+
 		const newPassword_hash = await bcrypt.hash(newPassword, 10);
 		const updatedUser = await db.changePasswordQuery(userId, newPassword_hash);
 
-		res.status(200).json({
-			message: 'Password updated successfully',
-			user: updatedUser,
-		});
+		res
+			.status(200)
+			.json({ message: 'Password updated successfully', user: updatedUser });
 	} catch (error) {
-		console.error('Change password error:', error);
 		res.status(500).json({ message: 'Internal server error' });
 	}
 }
