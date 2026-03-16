@@ -83,6 +83,10 @@ function Sidebar({
 	}, [activeP2P]);
 
 	useEffect(() => {
+		if (activeP2P?.roomId) setActiveTab('inbox');
+	}, [activeP2P?.roomId]);
+
+	useEffect(() => {
 		if (searchOpen) searchInputRef.current?.focus();
 	}, [searchOpen]);
 

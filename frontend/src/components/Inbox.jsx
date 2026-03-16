@@ -3,6 +3,7 @@ import { Search, X, MessageCircle, MessagesSquare } from 'lucide-react';
 import { searchInstituteMembers, searchP2PMessages } from '../services/api';
 import { getOrCreateP2PRoom, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
+import Avatar from './Avatar';
 import './styles/Inbox.css';
 
 function Inbox({
@@ -17,6 +18,7 @@ function Inbox({
 	setRecentChats,
 	roomUnread,
 	setRoomUnread,
+	currentUserPicture,
 }) {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [results, setResults] = useState([]);
@@ -96,8 +98,7 @@ function Inbox({
 					username: user.username,
 					email: user.email,
 					role: user.role,
-					// Save profile picture to recent chats so it shows in the list
-					profile_picture: user.profile_picture,
+					profile_picture: user.profile_picture || null,
 					roomId: res.chatroom.id,
 					lastChat: new Date().toISOString(),
 				};
@@ -157,8 +158,6 @@ function Inbox({
 							roomId: recentChats[i].roomId,
 							otherUserId: recentChats[i].id,
 							otherUsername: recentChats[i].username,
-							// Pass profile picture to search results
-							profile_picture: recentChats[i].profile_picture,
 						}));
 					});
 					merged.sort(
@@ -204,6 +203,7 @@ function Inbox({
 		(roomId) => roomUnread[roomId] || 0,
 		[roomUnread],
 	);
+
 	return (
 		<div className='inbox-container'>
 			<div className='inbox-header'>
@@ -228,6 +228,11 @@ function Inbox({
 						<input
 							ref={msgSearchInputRef}
 							type='text'
+							inputMode='text'
+							autoComplete='off'
+							autoCorrect='off'
+							autoCapitalize='off'
+							spellCheck={false}
 							className='inbox-msg-search-input'
 							placeholder='Search conversations…'
 							value={msgSearchTerm}
@@ -263,15 +268,7 @@ function Inbox({
 									>
 										<span className='inbox-msg-result-user'>
 											<span className='inbox-msg-result-avatar'>
-												{result.profile_picture ? (
-													<img
-														src={result.profile_picture}
-														alt={result.otherUsername}
-														className='inbox-msg-result-avatar-img'
-													/>
-												) : (
-													result.otherUsername?.[0]?.toUpperCase() || 'U'
-												)}
+												{result.otherUsername?.[0]?.toUpperCase() || 'U'}
 											</span>
 											{result.otherUsername}
 										</span>
@@ -296,23 +293,30 @@ function Inbox({
 			)}
 
 			<div className='inbox-search'>
-				<Search size={16} className='inbox-search-icon' />
-				<input
-					type='text'
-					placeholder='Search members...'
-					value={searchTerm}
-					onChange={(e) => handleSearch(e.target.value)}
-					className='inbox-search-input'
-				/>
-				{searchTerm && (
-					<button
-						className='inbox-search-clear'
-						onClick={handleClearSearch}
-						aria-label='Clear search'
-					>
-						<X size={14} />
-					</button>
-				)}
+				<div className='inbox-search-inner'>
+					<Search size={15} className='inbox-search-icon' />
+					<input
+						type='text'
+						inputMode='text'
+						autoComplete='off'
+						autoCorrect='off'
+						autoCapitalize='off'
+						spellCheck={false}
+						placeholder='Search members...'
+						value={searchTerm}
+						onChange={(e) => handleSearch(e.target.value)}
+						className='inbox-search-input'
+					/>
+					{searchTerm && (
+						<button
+							className='inbox-search-clear'
+							onClick={handleClearSearch}
+							aria-label='Clear search'
+						>
+							<X size={14} />
+						</button>
+					)}
+				</div>
 			</div>
 
 			{searchTerm ? (
@@ -332,17 +336,11 @@ function Inbox({
 									title={`Message ${user.username}`}
 								>
 									<div className='inbox-user-avatar-wrap'>
-										{user.profile_picture ? (
-											<img
-												src={user.profile_picture}
-												alt={user.username}
-												className='inbox-user-avatar-img'
-											/>
-										) : (
-											<div className='inbox-user-avatar'>
-												{user.username?.[0]?.toUpperCase() || 'U'}
-											</div>
-										)}
+										<Avatar
+											src={user.profile_picture || null}
+											username={user.username}
+											size={34}
+										/>
 										{isOnline(user.id) && <span className='inbox-online-dot' />}
 									</div>
 									<div className='inbox-user-info'>
@@ -378,24 +376,15 @@ function Inbox({
 													username: chat.username,
 													email: chat.email,
 													role: chat.role,
-													profile_picture: chat.profile_picture,
 												})
 											}
 											disabled={startingChat === chat.id}
 											title={`Message ${chat.username}`}
 										>
 											<div className='inbox-user-avatar-wrap'>
-												{chat.profile_picture ? (
-													<img
-														src={chat.profile_picture}
-														alt={chat.username}
-														className='inbox-user-avatar-img'
-													/>
-												) : (
-													<div className='inbox-user-avatar'>
-														{chat.username?.[0]?.toUpperCase() || 'U'}
-													</div>
-												)}
+												<div className='inbox-user-avatar'>
+													{chat.username?.[0]?.toUpperCase() || 'U'}
+												</div>
 												{isOnline(chat.id) && (
 													<span className='inbox-online-dot' />
 												)}
