@@ -6,6 +6,7 @@ const {
 	registerSchema,
 	loginSchema,
 	resetPassordSchema,
+	requestPasswordResetSchema,
 } = require('../validations/authValidation');
 const authController = require('../Controller/AuthController');
 const resetController = require('../Controller/ResetController');
@@ -13,7 +14,11 @@ const resetController = require('../Controller/ResetController');
 // Public
 router.post('/login', validate(loginSchema), authController.Login);
 router.post('/register', validate(registerSchema), authController.Register);
-router.post('/request-reset', resetController.requestPasswordReset);
+router.post(
+	'/request-reset',
+	validate(requestPasswordResetSchema),
+	resetController.requestPasswordReset,
+);
 router.post(
 	'/reset-password',
 	validate(resetPassordSchema),
