@@ -5,6 +5,7 @@ const validate = require('../middleware/validateRequest');
 const {
 	registerSchema,
 	loginSchema,
+	resetPassordSchema,
 } = require('../validations/authValidation');
 const authController = require('../Controller/AuthController');
 const resetController = require('../Controller/ResetController');
@@ -13,7 +14,11 @@ const resetController = require('../Controller/ResetController');
 router.post('/login', validate(loginSchema), authController.Login);
 router.post('/register', validate(registerSchema), authController.Register);
 router.post('/request-reset', resetController.requestPasswordReset);
-router.post('/reset-password', resetController.resetPassword);
+router.post(
+	'/reset-password',
+	validate(resetPassordSchema),
+	resetController.resetPassword,
+);
 
 // Protected routes
 router.get('/my-memberships', verifyToken, authController.myMemberships);
