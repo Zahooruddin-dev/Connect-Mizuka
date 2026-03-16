@@ -13,6 +13,7 @@ import {
 	fetchChannelsByInstitute,
 	createChannel,
 	searchChannelMessages,
+	getInstituteMembers,
 } from '../services/api';
 import { fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
@@ -21,7 +22,6 @@ import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
 import Inbox from './Inbox';
 import './styles/Sidebar.css';
-import { useAuth } from '../services/AuthContext';
 
 function loadStoredChats() {
 	try {
@@ -56,7 +56,6 @@ function Sidebar({
 	const [onlineUsers, setOnlineUsers] = useState(new Set());
 	const [recentChats, setRecentChats] = useState(loadStoredChats);
 	const [roomUnread, setRoomUnread] = useState({});
-
 
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');
@@ -130,6 +129,34 @@ function Sidebar({
 		loadStoredChats().forEach((c) => socket.emit('join_p2p', c.roomId));
 	}, [user?.id]);
 
+	// Enrich stored chats with profile_picture if missing (handles old sessions)
+	useEffect(() => {
+		if (!activeInstitute?.id) return;
+		const stored = loadStoredChats();
+		if (!stored.length) return;
+		if (stored.every((c) => c.profile_picture !== undefined)) return;
+		getInstituteMembers(activeInstitute.id)
+			.then((members) => {
+				if (!members?.length) return;
+				const byId = Object.fromEntries(members.map((m) => [String(m.id), m]));
+				setRecentChats((prev) => {
+					const enriched = prev.map((c) => {
+						if (c.profile_picture !== undefined) return c;
+						const member = byId[String(c.id)];
+						return member
+							? { ...c, profile_picture: member.profile_picture || null }
+							: { ...c, profile_picture: null };
+					});
+					localStorage.setItem(
+						'mizuka_recent_p2p_chats',
+						JSON.stringify(enriched),
+					);
+					return enriched;
+				});
+			})
+			.catch(() => {});
+	}, [activeInstitute?.id]);
+
 	// ── Clear unread badge when a P2P chat is opened ──────────────────────
 	useEffect(() => {
 		if (!activeP2P?.roomId || !user?.id) return;
@@ -189,6 +216,7 @@ function Sidebar({
 					: {
 							id: msg.sender_id,
 							username: msg.username,
+							profile_picture: msg.profile_picture || null,
 							roomId: msg.chatroom_id,
 							lastChat: msg.created_at,
 							lastMessage: {

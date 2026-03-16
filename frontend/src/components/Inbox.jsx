@@ -96,8 +96,8 @@ function Inbox({
 					username: user.username,
 					email: user.email,
 					role: user.role,
-                    // Save profile picture to recent chats so it shows in the list
-					profile_picture: user.profile_picture, 
+					// Save profile picture to recent chats so it shows in the list
+					profile_picture: user.profile_picture,
 					roomId: res.chatroom.id,
 					lastChat: new Date().toISOString(),
 				};
@@ -157,8 +157,8 @@ function Inbox({
 							roomId: recentChats[i].roomId,
 							otherUserId: recentChats[i].id,
 							otherUsername: recentChats[i].username,
-                            // Pass profile picture to search results
-							profile_picture: recentChats[i].profile_picture, 
+							// Pass profile picture to search results
+							profile_picture: recentChats[i].profile_picture,
 						}));
 					});
 					merged.sort(
@@ -204,7 +204,6 @@ function Inbox({
 		(roomId) => roomUnread[roomId] || 0,
 		[roomUnread],
 	);
-
 	return (
 		<div className='inbox-container'>
 			<div className='inbox-header'>
@@ -264,15 +263,15 @@ function Inbox({
 									>
 										<span className='inbox-msg-result-user'>
 											<span className='inbox-msg-result-avatar'>
-                                                {result.profile_picture ? (
-                                                    <img
-                                                        src={result.profile_picture}
-                                                        alt={result.otherUsername}
-                                                        className='inbox-msg-result-avatar-img'
-                                                    />
-                                                ) : (
-                                                    result.otherUsername?.[0]?.toUpperCase() || 'U'
-                                                )}
+												{result.profile_picture ? (
+													<img
+														src={result.profile_picture}
+														alt={result.otherUsername}
+														className='inbox-msg-result-avatar-img'
+													/>
+												) : (
+													result.otherUsername?.[0]?.toUpperCase() || 'U'
+												)}
 											</span>
 											{result.otherUsername}
 										</span>
@@ -333,17 +332,17 @@ function Inbox({
 									title={`Message ${user.username}`}
 								>
 									<div className='inbox-user-avatar-wrap'>
-                                        {user.profile_picture ? (
-                                            <img
-                                                src={user.profile_picture}
-                                                alt={user.username}
-                                                className='inbox-user-avatar-img'
-                                            />
-                                        ) : (
-                                            <div className='inbox-user-avatar'>
-                                                {user.username?.[0]?.toUpperCase() || 'U'}
-                                            </div>
-                                        )}
+										{user.profile_picture ? (
+											<img
+												src={user.profile_picture}
+												alt={user.username}
+												className='inbox-user-avatar-img'
+											/>
+										) : (
+											<div className='inbox-user-avatar'>
+												{user.username?.[0]?.toUpperCase() || 'U'}
+											</div>
+										)}
 										{isOnline(user.id) && <span className='inbox-online-dot' />}
 									</div>
 									<div className='inbox-user-info'>
@@ -386,17 +385,17 @@ function Inbox({
 											title={`Message ${chat.username}`}
 										>
 											<div className='inbox-user-avatar-wrap'>
-                                                {chat.profile_picture ? (
-                                                    <img
-                                                        src={chat.profile_picture}
-                                                        alt={chat.username}
-                                                        className='inbox-user-avatar-img'
-                                                    />
-                                                ) : (
-                                                    <div className='inbox-user-avatar'>
-                                                        {chat.username?.[0]?.toUpperCase() || 'U'}
-                                                    </div>
-                                                )}
+												{chat.profile_picture ? (
+													<img
+														src={chat.profile_picture}
+														alt={chat.username}
+														className='inbox-user-avatar-img'
+													/>
+												) : (
+													<div className='inbox-user-avatar'>
+														{chat.username?.[0]?.toUpperCase() || 'U'}
+													</div>
+												)}
 												{isOnline(chat.id) && (
 													<span className='inbox-online-dot' />
 												)}
