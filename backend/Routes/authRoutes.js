@@ -7,6 +7,7 @@ const {
 	loginSchema,
 	resetPassordSchema,
 	requestPasswordResetSchema,
+  deleteSchema
 } = require('../validations/authValidation');
 const authController = require('../Controller/AuthController');
 const resetController = require('../Controller/ResetController');
@@ -37,6 +38,6 @@ router.post('/link-to-institute', verifyToken, authController.linkToInstitute);
 router.get('/user-profile/:userId', verifyToken, authController.getUserProfile);
 
 // Delete requires and email/pass
-router.post('/delete', verifyToken, authController.deleteUser);
+router.post('/delete', verifyToken,validate(deleteSchema), authController.deleteUser);
 
 module.exports = router;

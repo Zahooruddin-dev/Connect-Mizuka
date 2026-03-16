@@ -49,7 +49,7 @@ Content-Type: application/json
 
 {
   "username": "mizuka",
-  "email": "test@mizuka.com",
+  "email": "test1@mizuka.com",
   "password": "123456",
   "role": "member"
 }
@@ -58,8 +58,8 @@ POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "not-an-email",
-  "password": "123"
+  "email": "test1@mizuka.com",
+  "password": "123456"
 }
 ### Reset password
 POST http://localhost:3000/api/auth/reset-password
@@ -76,4 +76,13 @@ Content-Type: application/json
 
 {
   "email": "mzkhan886@gmail.com"
+}
+### Request reset password
+POST http://localhost:3000/api/auth/delete
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhmZjgxYTk1LWVmMTctNDhiNC04MTg0LWRmYzFkNWM2OWJlYSIsImVtYWlsIjoidGVzdDFAbWl6dWthLmNvbSIsInJvbGUiOiJtZW1iZXIiLCJ1c2VybmFtZSI6Im1penVrYSIsImNyZWF0ZWRBdCI6IjIwMjYtMDMtMTZUMDI6NDA6MDguNDk5WiIsImlhdCI6MTc3MzY0NjgxNiwiZXhwIjoxNzczNzMzMjE2fQ.MT0UTay1r6SAuBkug4fAc7v4WfbZRfemprE9IRDDQsE
+Content-Type: application/json
+
+{
+  "email": "test1@mizuka.com",
+  "password": "123456"
 }
