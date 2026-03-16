@@ -11,6 +11,10 @@ const loginSchema = z.object({
 	email: z.string().email('Invalid email format'),
 	password: z.string().min(1, 'Password is required'),
 });
+const deleteSchema = z.object({
+	email: z.string().email('Invalid email format'),
+	password: z.string().min(1, 'Password is required'),
+});
 const resetPassordSchema = z.object({
 	newPassword: z.string().min(6, 'Password must be at least 6 characters long'),
 	code: z.string().min(6, 'Code must be at least 6 characters long'),
@@ -18,4 +22,4 @@ const resetPassordSchema = z.object({
 const requestPasswordResetSchema = z.object({
 	email: z.string().email('Invalid email format'),
 });
-module.exports = { registerSchema, loginSchema, resetPassordSchema,requestPasswordResetSchema };
+module.exports = { registerSchema, loginSchema, resetPassordSchema,requestPasswordResetSchema,deleteSchema };
