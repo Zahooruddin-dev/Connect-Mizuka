@@ -346,7 +346,7 @@ function Sidebar({
 
 	const handleCreateChannel = useCallback(
 		async (name) => {
-			const res = await createChannel(user.id, activeInstitute.id, name);
+			const res = await createChannel(activeInstitute.id, name);
 			if (res.channel) {
 				socket.emit('channel_created', {
 					channel: res.channel,
