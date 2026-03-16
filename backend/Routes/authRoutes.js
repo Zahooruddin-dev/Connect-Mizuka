@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const validate = require('../middleware/validateRequest');
-const upload = require('../middleware/upload');
+const upload = require('../middleware/uploadMiddleware');
 const {
 	registerSchema,
 	loginSchema,

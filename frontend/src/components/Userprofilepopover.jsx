@@ -6,18 +6,16 @@ import './styles/Userprofilepopover.css';
 
 function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	const [user, setUser] = useState(null);
-	const { user: currentUser } = useAuth();
 	const [loading, setLoading] = useState(true);
 	const [creatingRoom, setCreatingRoom] = useState(false);
+	const { user: currentUser } = useAuth();
 
 	useEffect(() => {
 		let isMounted = true;
 		const load = async () => {
 			try {
 				const data = await getUserProfile(userId);
-				if (isMounted && data.user) {
-					setUser(data.user);
-				}
+				if (isMounted && data.user) setUser(data.user);
 			} catch {
 				if (isMounted) setUser(null);
 			} finally {
@@ -38,29 +36,25 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 			})
 		: null;
 
-	const handleOverlayClick = (e) => {
+	function handleOverlayClick(e) {
 		if (e.target === e.currentTarget) onClose();
-	};
+	}
 
-	const handleStartDirectMessage = async () => {
+	async function handleStartDirectMessage() {
 		if (!user || !currentUser || creatingRoom) return;
-
 		if (currentUser.id === userId) {
 			alert('You cannot message yourself');
 			return;
 		}
+
 		setCreatingRoom(true);
-
 		try {
-			const res = await getOrCreateP2PRoom( userId);
-
+			const res = await getOrCreateP2PRoom(userId);
 			if (res.error) {
-				console.error('[P2P] Failed to create room:', res.error);
 				alert('Failed to open chat: ' + res.error);
 				setCreatingRoom(false);
 				return;
 			}
-
 			if (res.chatroom && typeof onStartP2P === 'function') {
 				onStartP2P({
 					roomId: res.chatroom.id,
@@ -69,15 +63,13 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 				});
 				onClose();
 			} else {
-				console.error('[P2P] Invalid response format:', res);
 				setCreatingRoom(false);
 			}
 		} catch (error) {
-			console.error('[P2P] Exception:', error);
 			alert('Error: ' + error.message);
 			setCreatingRoom(false);
 		}
-	};
+	}
 
 	const isOwnProfile = currentUser?.id === userId;
 
@@ -107,9 +99,17 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 
 						<div className='popover-body'>
 							<div className='popover-header-center'>
-								<div className='popover-avatar'>
-									{user.username?.[0]?.toUpperCase() || 'U'}
-								</div>
+								{user.profile_picture ? (
+									<img
+										src={user.profile_picture}
+										alt={user.username}
+										className='popover-avatar popover-avatar-img'
+									/>
+								) : (
+									<div className='popover-avatar'>
+										{user.username?.[0]?.toUpperCase() || 'U'}
+									</div>
+								)}
 								<div className='popover-name'>{user.username}</div>
 								<div className='popover-role'>{user.role || 'Member'}</div>
 							</div>
