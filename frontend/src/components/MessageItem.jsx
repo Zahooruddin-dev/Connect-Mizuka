@@ -6,12 +6,12 @@ import './styles/MessageItem.css';
 function MessageItem({
 	message,
 	currentUserId,
+	currentUserPicture,
 	onDeleted,
 	onEdit,
 	onUserClick,
 }) {
 	const [deleting, setDeleting] = useState(false);
-
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState(message.content || '');
 
@@ -35,7 +35,6 @@ function MessageItem({
 			setIsEditing(false);
 			return;
 		}
-
 		try {
 			await onEdit(msgId, editContent);
 			setIsEditing(false);
@@ -45,10 +44,14 @@ function MessageItem({
 	};
 
 	const handleUserClick = () => {
-		if (typeof onUserClick === 'function') {
-			onUserClick(senderId);
-		}
+		if (typeof onUserClick === 'function') onUserClick(senderId);
 	};
+console.log(currentUserPicture);
+
+	const theirPicture = message.profile_picture || null;
+	const minePicture = currentUserPicture || null;
+	const theirInitial = message.username?.[0]?.toUpperCase() || '?';
+	const mineInitial = message.username?.[0]?.toUpperCase() || '?';
 
 	return (
 		<div className={`message-item ${isMine ? 'mine' : 'theirs'}`}>
@@ -58,9 +61,15 @@ function MessageItem({
 					onClick={handleUserClick}
 					title={`View ${message.username}'s profile`}
 				>
-					<div className='message-avatar'>
-						{message.username?.[0]?.toUpperCase() || '?'}
-					</div>
+					{theirPicture ? (
+						<img
+							src={theirPicture}
+							alt={message.username}
+							className='message-avatar message-avatar--img'
+						/>
+					) : (
+						<div className='message-avatar'>{theirInitial}</div>
+					)}
 				</button>
 			)}
 
@@ -114,7 +123,7 @@ function MessageItem({
 							<button
 								className='message-action-icon'
 								onClick={() => {
-									setEditContent(message.content); //Reset text added
+									setEditContent(message.content);
 									setIsEditing(true);
 								}}
 								title='Edit message'
@@ -133,7 +142,6 @@ function MessageItem({
 									<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'></path>
 								</svg>
 							</button>
-
 							<button
 								className={`message-action-icon message-delete ${deleting ? 'deleting' : ''}`}
 								onClick={handleDelete}
@@ -158,6 +166,7 @@ function MessageItem({
 						</div>
 					)}
 				</div>
+
 				<span className='message-time'>
 					{formatTime(
 						message.created_at ||
@@ -174,9 +183,15 @@ function MessageItem({
 					onClick={handleUserClick}
 					title={`View ${message.username}'s profile`}
 				>
-					<div className='message-avatar mine-avatar'>
-						{message.username?.[0]?.toUpperCase() || '?'}
-					</div>
+					{minePicture ? (
+						<img
+							src={minePicture}
+							alt={message.username}
+							className='message-avatar mine-avatar message-avatar--img'
+						/>
+					) : (
+						<div className='message-avatar mine-avatar'>{mineInitial}</div>
+					)}
 				</button>
 			)}
 		</div>

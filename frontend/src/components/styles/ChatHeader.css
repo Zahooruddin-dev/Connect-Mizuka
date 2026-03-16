@@ -310,3 +310,9 @@
 		font-size: 11px;
 	}
 }
+
+.chat-header-p2p-avatar--img {
+	object-fit: cover;
+	background: none;
+	display: block;
+}

@@ -7,6 +7,7 @@ function MessageList({
 	messages,
 	typingUsers,
 	currentUserId,
+	currentUserPicture,
 	onMessageDeleted,
 	onMessageEdited,
 	onStartP2P,
@@ -18,14 +19,6 @@ function MessageList({
 		bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
 	}, [messages, typingUsers]);
 
-	const handleUserClick = (userId) => {
-		setSelectedUser(userId);
-	};
-
-	const handleClosePopover = () => {
-		setSelectedUser(null);
-	};
-
 	return (
 		<div className='message-list'>
 			<div className='message-list-inner'>
@@ -34,14 +27,15 @@ function MessageList({
 						<span>No messages yet. Start the conversation.</span>
 					</div>
 				)}
-				{messages.map((msg) => (
+				{messages.filter(Boolean).map((msg) => (
 					<MessageItem
 						key={msg._id || msg.id || msg.tempId}
 						message={msg}
 						currentUserId={currentUserId}
+						currentUserPicture={currentUserPicture}
 						onDeleted={onMessageDeleted}
 						onEdit={onMessageEdited}
-						onUserClick={handleUserClick}
+						onUserClick={(userId) => setSelectedUser(userId)}
 					/>
 				))}
 				{typingUsers.length > 0 && (
@@ -63,7 +57,7 @@ function MessageList({
 			{selectedUser && (
 				<UserProfilePopover
 					userId={selectedUser}
-					onClose={handleClosePopover}
+					onClose={() => setSelectedUser(null)}
 					onStartP2P={onStartP2P}
 				/>
 			)}

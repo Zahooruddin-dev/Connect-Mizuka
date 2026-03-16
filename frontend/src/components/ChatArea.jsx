@@ -9,6 +9,7 @@ import {
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
+import ChatSkeleton from './ChatSkelton';
 import './styles/ChatArea.css';
 
 const channelCache = new Map();
@@ -24,6 +25,7 @@ function ChatArea({
 	instituteId,
 	roomId,
 	otherUsername,
+	otherUserId,
 	user,
 	isAdmin,
 	onChannelRenamed,
@@ -67,7 +69,6 @@ function ChatArea({
 
 	useEffect(() => {
 		if (!highlightMessageId || loading) return;
-
 		const attempt = (tries = 0) => {
 			const el = document.querySelector(
 				`[data-message-id="${highlightMessageId}"]`,
@@ -81,7 +82,6 @@ function ChatArea({
 				setTimeout(() => attempt(tries + 1), 120);
 			}
 		};
-
 		attempt();
 	}, [highlightMessageId, loading]);
 
@@ -345,12 +345,9 @@ function ChatArea({
 	);
 
 	const handleMessageDeleted = useCallback(
-		(id) => {
-			setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== id));
-		},
+		(id) => setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== id)),
 		[setAndCache],
 	);
-
 	const handleChannelDeletedCb = useCallback(() => setMessages([]), []);
 	const handleChannelRenamedCb = useCallback(
 		(updatedChannel) => {
@@ -360,8 +357,11 @@ function ChatArea({
 		},
 		[onChannelRenamed],
 	);
-
 	const handleRetry = useCallback(() => setRetryCount((c) => c + 1), []);
+
+	// ── Render ──────────────────────────────────────────────────────────────
+
+	if (loading) return <ChatSkeleton isP2P={isP2P} />;
 
 	return (
 		<div className='chat-area'>
@@ -373,28 +373,20 @@ function ChatArea({
 				onChannelRenamed={handleChannelRenamedCb}
 				isP2P={isP2P}
 				otherUsername={otherUsername}
+				otherUserId={otherUserId || null}
 				onCloseP2P={onCloseP2P}
 				isAdmin={isAdmin}
 			/>
-			{loading ? (
-				<div className='chat-loading'>
-					<div className='chat-loading-dots'>
-						<span />
-						<span />
-						<span />
-					</div>
-				</div>
-			) : (
-				<MessageList
-					messages={messages}
-					typingUsers={typingUsers.filter((u) => u !== user.username)}
-					currentUserId={user.id}
-					onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
-					onMessageEdited={handleP2PEdit}
-					onStartP2P={onStartP2P}
-					onRetry={handleRetry}
-				/>
-			)}
+			<MessageList
+				messages={messages}
+				typingUsers={typingUsers.filter((u) => u !== user.username)}
+				currentUserId={user.id}
+				currentUserPicture={user.profile_picture || null}
+				onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
+				onMessageEdited={handleP2PEdit}
+				onStartP2P={onStartP2P}
+				onRetry={handleRetry}
+			/>
 			<MessageInput
 				onSend={handleSend}
 				onTyping={handleTyping}
