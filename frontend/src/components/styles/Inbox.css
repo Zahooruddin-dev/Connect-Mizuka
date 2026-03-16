@@ -59,10 +59,17 @@
 	outline: none;
 	color: var(--text-primary);
 	font-family: var(--font-sans);
-	font-size: 16px; /* prevents iOS auto-zoom */
+	font-size: 13px;
 	line-height: 1;
-	padding: 10px 0;
+	padding: 8px 0;
 	min-width: 0;
+}
+
+@media (max-width: 768px) {
+	.inbox-search-input {
+		font-size: 16px; /* prevents iOS auto-zoom */
+		padding: 10px 0;
+	}
 }
 
 .inbox-search-input::placeholder {
@@ -334,10 +341,17 @@
 	border: none;
 	outline: none;
 	color: var(--text-primary);
-	font-size: 16px; /* prevents iOS auto-zoom */
+	font-size: 12px;
 	font-family: var(--font-sans);
-	padding: 9px 0;
+	padding: 7px 0;
 	min-width: 0;
+}
+
+@media (max-width: 768px) {
+	.inbox-msg-search-input {
+		font-size: 16px; /* prevents iOS auto-zoom */
+		padding: 9px 0;
+	}
 }
 .inbox-msg-search-input::placeholder { color: var(--text-ghost); }
 
