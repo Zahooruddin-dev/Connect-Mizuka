@@ -21,6 +21,7 @@ import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
 import Inbox from './Inbox';
 import './styles/Sidebar.css';
+import { useAuth } from '../services/AuthContext';
 
 function loadStoredChats() {
 	try {
@@ -55,6 +56,7 @@ function Sidebar({
 	const [onlineUsers, setOnlineUsers] = useState(new Set());
 	const [recentChats, setRecentChats] = useState(loadStoredChats);
 	const [roomUnread, setRoomUnread] = useState({});
+
 
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');

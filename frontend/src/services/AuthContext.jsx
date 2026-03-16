@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -22,13 +22,34 @@ export function AuthProvider({ children }) {
 		return stored ? JSON.parse(stored) : null;
 	});
 
+	// On mount, if we have a token re-fetch user info to hydrate any
+	// fields that weren't in localStorage from older sessions (e.g. profile_picture).
+	useEffect(() => {
+		const storedToken = localStorage.getItem('mizuka_token');
+		if (!storedToken) return;
+
+		fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/user-info`, {
+			headers: { Authorization: `Bearer ${storedToken}` },
+		})
+			.then((r) => r.ok ? r.json() : null)
+			.then((data) => {
+				if (!data?.user) return;
+				setUser((prev) => {
+					if (!prev) return prev;
+					const merged = { ...prev, ...data.user };
+					localStorage.setItem('mizuka_user', JSON.stringify(merged));
+					return merged;
+				});
+			})
+			.catch(() => {});
+	}, []);
+
 	function login(userData, tokenValue) {
 		setUser(userData);
 		setToken(tokenValue);
 		localStorage.setItem('mizuka_user', JSON.stringify(userData));
 		localStorage.setItem('mizuka_token', tokenValue);
 
-		// handle memberships array if provided by backend
 		if (Array.isArray(userData.memberships)) {
 			const items = userData.memberships.map((m) => ({
 				id: m.id,
@@ -39,12 +60,17 @@ export function AuthProvider({ children }) {
 			localStorage.setItem('mizuka_institutes', JSON.stringify(items));
 			if (items.length > 0) {
 				setActiveInstituteState(items[0]);
-				localStorage.setItem(
-					'mizuka_active_institute',
-					JSON.stringify(items[0]),
-				);
+				localStorage.setItem('mizuka_active_institute', JSON.stringify(items[0]));
 			}
 		}
+	}
+
+	function updateUser(fields) {
+		setUser((prev) => {
+			const updated = { ...prev, ...fields };
+			localStorage.setItem('mizuka_user', JSON.stringify(updated));
+			return updated;
+		});
 	}
 
 	function logout() {
@@ -68,10 +94,7 @@ export function AuthProvider({ children }) {
 		});
 		if (!activeInstitute) {
 			setActiveInstituteState(institute);
-			localStorage.setItem(
-				'mizuka_active_institute',
-				JSON.stringify(institute),
-			);
+			localStorage.setItem('mizuka_active_institute', JSON.stringify(institute));
 		}
 	}
 
@@ -109,6 +132,7 @@ export function AuthProvider({ children }) {
 				activeInstitute,
 				login,
 				logout,
+				updateUser,
 				addInstitute,
 				removeInstitute,
 				setActiveInstitute,
