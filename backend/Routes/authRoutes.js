@@ -1,12 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
+const validate = require('../middleware/validateRequest');
+const {
+	registerSchema,
+	loginSchema,
+} = require('../validations/authValidation');
 const authController = require('../Controller/AuthController');
 const resetController = require('../Controller/ResetController');
 
 // Public
-router.post('/login', authController.Login);
-router.post('/register', authController.Register);
+router.post('/login', validate(loginSchema), authController.Login);
+router.post('/register', validate(registerSchema), authController.Register);
 router.post('/request-reset', resetController.requestPasswordReset);
 router.post('/reset-password', resetController.resetPassword);
 
