@@ -335,3 +335,86 @@
   border-color: var(--teal-700);
   color: var(--text-secondary);
 }
+
+.user-avatar-large-wrap {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 10px;
+}
+
+.user-avatar-img {
+	object-fit: cover;
+	border-radius: 50%;
+}
+
+.user-avatar-edit-btn {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	background: var(--bg-panel);
+	border: 2px solid var(--bg-surface);
+	color: var(--text-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+}
+.user-avatar-edit-btn:hover {
+	background: var(--bg-hover);
+	color: var(--text-secondary);
+}
+
+.user-avatar-file-input {
+	display: none;
+}
+
+.user-avatar-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.user-avatar-save-btn {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 12px;
+	border-radius: 6px;
+	background: var(--teal-600);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 500;
+	border: none;
+	cursor: pointer;
+	transition: background 0.15s;
+	font-family: var(--font-sans);
+}
+.user-avatar-save-btn:hover:not(:disabled) {
+	background: var(--teal-700);
+}
+.user-avatar-save-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.user-avatar-cancel-btn {
+	padding: 5px 12px;
+	border-radius: 6px;
+	background: none;
+	border: 1px solid var(--border);
+	color: var(--text-muted);
+	font-size: 12px;
+	font-family: var(--font-sans);
+	cursor: pointer;
+	transition: background 0.15s;
+}
+.user-avatar-cancel-btn:hover:not(:disabled) {
+	background: var(--bg-hover);
+}

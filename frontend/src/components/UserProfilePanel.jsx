@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Pencil, Check, Loader } from 'lucide-react';
+import { X, Pencil, Check, Loader, Camera } from 'lucide-react';
 import { fetchUserInfo, updateProfile } from '../services/api';
 import ChangePasswordModal from './ChangePasswordModal';
 import './styles/UserProfilePanel.css';
@@ -14,7 +14,13 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 	const [saveError, setSaveError] = useState('');
 	const [saveSuccess, setSaveSuccess] = useState(false);
 	const [showChangePassword, setShowChangePassword] = useState(false);
+	const [avatarPreview, setAvatarPreview] = useState(null);
+	const [avatarFile, setAvatarFile] = useState(null);
+	const [avatarUploading, setAvatarUploading] = useState(false);
+	const [avatarError, setAvatarError] = useState('');
+
 	const inputRef = useRef(null);
+	const fileInputRef = useRef(null);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -23,13 +29,14 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 				const data = await fetchUserInfo(userId);
 				if (isMounted) setUserInfo(data.user);
 			} catch {
-				// silent
 			} finally {
 				if (isMounted) setLoading(false);
 			}
 		};
 		load();
-		return () => { isMounted = false; };
+		return () => {
+			isMounted = false;
+		};
 	}, [userId]);
 
 	useEffect(() => {
@@ -66,18 +73,19 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 			setEditingUsername(false);
 			return;
 		}
+
 		setSaveLoading(true);
 		setSaveError('');
-		const res = await updateProfile(userId, { username: trimmed });
+		const res = await updateProfile({ username: trimmed });
 		setSaveLoading(false);
+
 		if (res?.user) {
 			setUserInfo((prev) => ({ ...prev, username: res.user.username }));
 			setEditingUsername(false);
 			setSaveSuccess(true);
 			setTimeout(() => setSaveSuccess(false), 3000);
-			if (typeof onUsernameChanged === 'function') {
+			if (typeof onUsernameChanged === 'function')
 				onUsernameChanged(res.user.username);
-			}
 		} else {
 			setSaveError(res?.message || 'Failed to update username');
 		}
@@ -88,21 +96,69 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 		if (e.key === 'Escape') cancelEditUsername();
 	}
 
+	function handleAvatarFileChange(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		setAvatarFile(file);
+		setAvatarPreview(URL.createObjectURL(file));
+		setAvatarError('');
+	}
+
+	async function uploadAvatar() {
+		if (!avatarFile) return;
+		setAvatarUploading(true);
+		setAvatarError('');
+
+		const res = await updateProfile({ profilePicture: avatarFile });
+		setAvatarUploading(false);
+
+		if (res?.user) {
+			setUserInfo((prev) => ({
+				...prev,
+				profile_picture: res.user.profile_picture,
+			}));
+			setAvatarFile(null);
+			setAvatarPreview(null);
+		} else {
+			setAvatarError(res?.message || 'Failed to upload picture');
+		}
+	}
+
+	function cancelAvatarPreview() {
+		setAvatarFile(null);
+		setAvatarPreview(null);
+		setAvatarError('');
+		if (fileInputRef.current) fileInputRef.current.value = '';
+	}
+
+	const displayAvatar = avatarPreview || userInfo?.profile_picture || null;
+
 	const formattedDate = userInfo?.created_at
 		? new Date(userInfo.created_at).toLocaleDateString(undefined, {
 				year: 'numeric',
 				month: 'long',
 				day: 'numeric',
-		  })
+			})
 		: null;
 
 	return (
 		<>
 			<div className='user-panel-overlay' onClick={handleOverlayClick}>
-				<div className='user-panel' role='dialog' aria-modal='true' aria-labelledby='user-panel-title'>
+				<div
+					className='user-panel'
+					role='dialog'
+					aria-modal='true'
+					aria-labelledby='user-panel-title'
+				>
 					<div className='user-panel-header'>
-						<span className='user-panel-title' id='user-panel-title'>User Profile</span>
-						<button className='user-panel-close' onClick={onClose} aria-label='Close panel'>
+						<span className='user-panel-title' id='user-panel-title'>
+							User Profile
+						</span>
+						<button
+							className='user-panel-close'
+							onClick={onClose}
+							aria-label='Close panel'
+						>
 							<X size={18} strokeWidth={2} />
 						</button>
 					</div>
@@ -133,11 +189,71 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 								{activeTab === 'profile' && (
 									<>
 										<div className='user-header-center'>
-											<div className='user-avatar-large'>
-												{userInfo.username ? userInfo.username[0].toUpperCase() : 'U'}
+											<div className='user-avatar-large-wrap'>
+												{displayAvatar ? (
+													<img
+														src={displayAvatar}
+														alt={userInfo.username}
+														className='user-avatar-large user-avatar-img'
+													/>
+												) : (
+													<div className='user-avatar-large'>
+														{userInfo.username
+															? userInfo.username[0].toUpperCase()
+															: 'U'}
+													</div>
+												)}
+												<button
+													className='user-avatar-edit-btn'
+													onClick={() => fileInputRef.current?.click()}
+													aria-label='Change profile picture'
+													title='Change profile picture'
+												>
+													<Camera size={13} strokeWidth={2} />
+												</button>
+												<input
+													ref={fileInputRef}
+													type='file'
+													accept='image/jpeg,image/png,image/webp,image/avif'
+													className='user-avatar-file-input'
+													onChange={handleAvatarFileChange}
+													aria-label='Upload profile picture'
+												/>
 											</div>
-											<div className='user-header-name'>{userInfo.username}</div>
-											<div className='user-header-role'>{userInfo.role || 'Member'}</div>
+
+											{avatarFile && (
+												<div className='user-avatar-actions'>
+													<button
+														className='user-avatar-save-btn'
+														onClick={uploadAvatar}
+														disabled={avatarUploading}
+													>
+														{avatarUploading ? (
+															<Loader size={12} className='user-edit-spinner' />
+														) : (
+															<Check size={12} strokeWidth={2.5} />
+														)}
+														{avatarUploading ? 'Uploading…' : 'Save photo'}
+													</button>
+													<button
+														className='user-avatar-cancel-btn'
+														onClick={cancelAvatarPreview}
+														disabled={avatarUploading}
+													>
+														Cancel
+													</button>
+												</div>
+											)}
+											{avatarError && (
+												<span className='user-edit-error'>{avatarError}</span>
+											)}
+
+											<div className='user-header-name'>
+												{userInfo.username}
+											</div>
+											<div className='user-header-role'>
+												{userInfo.role || 'Member'}
+											</div>
 										</div>
 
 										<div className='user-info-group'>
@@ -148,7 +264,10 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 														ref={inputRef}
 														className='user-edit-input'
 														value={usernameInput}
-														onChange={(e) => { setUsernameInput(e.target.value); setSaveError(''); }}
+														onChange={(e) => {
+															setUsernameInput(e.target.value);
+															setSaveError('');
+														}}
 														onKeyDown={handleKeyDown}
 														maxLength={32}
 														disabled={saveLoading}
@@ -162,10 +281,11 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 														aria-label='Save username'
 														title='Save'
 													>
-														{saveLoading
-															? <Loader size={13} className='user-edit-spinner' />
-															: <Check size={13} strokeWidth={2.5} />
-														}
+														{saveLoading ? (
+															<Loader size={13} className='user-edit-spinner' />
+														) : (
+															<Check size={13} strokeWidth={2.5} />
+														)}
 													</button>
 													<button
 														className='user-edit-btn user-edit-cancel'
@@ -179,7 +299,9 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 												</div>
 											) : (
 												<div className='user-info-value-row'>
-													<span className='user-info-value'>{userInfo.username}</span>
+													<span className='user-info-value'>
+														{userInfo.username}
+													</span>
 													<button
 														className='user-inline-edit-btn'
 														onClick={startEditUsername}
@@ -190,18 +312,28 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 													</button>
 												</div>
 											)}
-											{saveError && <span className='user-edit-error'>{saveError}</span>}
-											{saveSuccess && <span className='user-edit-success'>Username updated</span>}
+											{saveError && (
+												<span className='user-edit-error'>{saveError}</span>
+											)}
+											{saveSuccess && (
+												<span className='user-edit-success'>
+													Username updated
+												</span>
+											)}
 										</div>
 
 										<div className='user-info-group'>
 											<span className='user-info-label'>Email</span>
-											<span className='user-info-value'>{userInfo.email || 'Not provided'}</span>
+											<span className='user-info-value'>
+												{userInfo.email || 'Not provided'}
+											</span>
 										</div>
 
 										<div className='user-info-group'>
 											<span className='user-info-label'>User ID</span>
-											<span className='user-info-value user-info-mono'>{userInfo.id}</span>
+											<span className='user-info-value user-info-mono'>
+												{userInfo.id}
+											</span>
 										</div>
 
 										<div className='user-info-group'>
@@ -222,7 +354,9 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 										</div>
 										<div className='user-info-group'>
 											<span className='user-info-label'>Role</span>
-											<span className='user-info-value'>{userInfo.role || 'Member'}</span>
+											<span className='user-info-value'>
+												{userInfo.role || 'Member'}
+											</span>
 										</div>
 										<div className='user-info-group'>
 											<span className='user-info-label'>Permissions</span>
