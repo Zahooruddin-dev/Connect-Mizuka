@@ -22,7 +22,10 @@ async function updateUserPassword(email, hashedPassword) {
 	]);
 }
 
-async function updateProfileQuery(userId, { username, email, password_hash }) {
+async function updateProfileQuery(
+	userId,
+	{ username, email, password_hash, profile_picture },
+) {
 	const fields = [];
 	const values = [];
 	let idx = 1;
@@ -39,11 +42,15 @@ async function updateProfileQuery(userId, { username, email, password_hash }) {
 		fields.push(`password_hash = $${idx++}`);
 		values.push(password_hash);
 	}
+	if (profile_picture !== undefined) {
+		fields.push(`profile_picture = $${idx++}`);
+		values.push(profile_picture);
+	}
 
 	values.push(userId);
 
 	const { rows } = await pool.query(
-		`UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, username, email, role, created_at`,
+		`UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, username, email, role, created_at, profile_picture`,
 		values,
 	);
 	return rows[0] || null;
@@ -60,15 +67,14 @@ async function linkToInstituteQuery(userId, institute_id, role = 'member') {
 
 async function registerQuery(username, email, password_hash, role = 'member') {
 	const { rows } = await pool.query(
-		`
-		INSERT INTO users (username,email,password_hash,role) VALUES ($1,$2,$3,$4) RETURNING id, username, email, role`,
+		`INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role`,
 		[username, email, password_hash, role],
 	);
 	return rows[0];
 }
 
 async function getUserById(userId) {
-	const { rows } = await pool.query('SELECT role FROM users WHERE id =$1', [
+	const { rows } = await pool.query('SELECT * FROM users WHERE id = $1', [
 		userId,
 	]);
 	return rows[0] || null;
@@ -86,29 +92,29 @@ async function getUserMemberships(userId) {
 }
 
 async function getUserInfoQuery(userId) {
-	const { rows } = await pool.query(`SELECT * FROM users WHERE id=$1`, [
-		userId,
-	]);
+	const { rows } = await pool.query(
+		`SELECT id, username, email, role, created_at, profile_picture FROM users WHERE id = $1`,
+		[userId],
+	);
 	return rows[0] || null;
 }
 
 async function getUserProfileForPopover(userId) {
 	const { rows } = await pool.query(
-		`SELECT id, username, email, role, created_at FROM users WHERE id=$1`,
+		`SELECT id, username, email, role, created_at, profile_picture FROM users WHERE id = $1`,
 		[userId],
 	);
 	return rows[0] || null;
 }
+
 async function changePasswordQuery(userId, newPasswordHash) {
-  const { rows } = await pool.query(
-    `UPDATE users 
-     SET password_hash = $1 
-     WHERE id = $2 
-     RETURNING id, username, email`,
-    [newPasswordHash, userId]
-  );
-  return rows[0] || null;
+	const { rows } = await pool.query(
+		`UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id, username, email`,
+		[newPasswordHash, userId],
+	);
+	return rows[0] || null;
 }
+
 module.exports = {
 	registerQuery,
 	getUserByEmail,
@@ -120,5 +126,5 @@ module.exports = {
 	getUserInfoQuery,
 	updateProfileQuery,
 	getUserProfileForPopover,
-	changePasswordQuery
+	changePasswordQuery,
 };

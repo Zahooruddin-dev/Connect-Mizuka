@@ -78,6 +78,7 @@ async function Register(req, res) {
 async function updateProfile(req, res) {
 	const { userId } = req.params;
 	const { username, email, currentPassword, newPassword } = req.body;
+	const imagePath = req.file ? req.file.path : null;
 
 	if (!username && !email && !newPassword) {
 		return res.status(400).json({ message: 'Nothing to update' });
