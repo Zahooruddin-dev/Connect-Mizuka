@@ -50,7 +50,7 @@ Content-Type: application/json
 {
   "username": "mizuka",
   "email": "test@mizuka.com",
-  "password": "123",
+  "password": "123456",
   "role": "member"
 }
 ### Login user
