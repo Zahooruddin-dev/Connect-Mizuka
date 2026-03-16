@@ -57,6 +57,7 @@ async function Register(req, res) {
 			password_hash,
 			role,
 		);
+
 		if (instId) {
 			await db.linkToInstituteQuery(
 				newUser.id,
@@ -64,15 +65,16 @@ async function Register(req, res) {
 				role === 'admin' ? 'admin' : 'member',
 			);
 		}
-		res.status(201).json({ message: 'New user registered', user: newUser });
+		return res
+			.status(201)
+			.json({ message: 'New user registered', user: newUser });
 	} catch (error) {
 		if (error.code === '23505') {
-			res.status(400).json('Email Already Registered');
+			return res.status(400).json({ message: 'Email Already Registered' });
 		}
-		res.status(500).json({ message: error.message });
+		return res.status(500).json({ message: error.message });
 	}
 }
-
 async function updateProfile(req, res) {
 	const { userId } = req.params;
 	const { username, email, currentPassword, newPassword } = req.body;
@@ -109,12 +111,14 @@ async function updateProfile(req, res) {
 				: undefined,
 		});
 
-		res.status(200).json({ message: 'Profile updated', user: updatedUser });
+		return res
+			.status(200)
+			.json({ message: 'Profile updated', user: updatedUser });
 	} catch (error) {
 		if (error.code === '23505') {
 			return res.status(400).json({ message: 'Email already in use' });
 		}
-		res.status(500).json({ message: error.message });
+		return res.status(500).json({ message: error.message });
 	}
 }
 
