@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const validate = require('../middleware/validateRequest');
+const upload = require('../middleware/upload');
 const {
 	registerSchema,
 	loginSchema,
 	resetPassordSchema,
 	requestPasswordResetSchema,
-  deleteSchema
+	deleteSchema,
 } = require('../validations/authValidation');
 const authController = require('../Controller/AuthController');
 const resetController = require('../Controller/ResetController');
@@ -29,7 +30,12 @@ router.post(
 // Protected routes
 router.get('/my-memberships', verifyToken, authController.myMemberships);
 router.get('/user-info', verifyToken, authController.getUserInfo);
-router.put('/update-profile', verifyToken, authController.updateProfile);
+router.put(
+	'/update-profile',
+	verifyToken,
+	upload.single('profile_picture'),
+	authController.updateProfile,
+);
 router.patch('/change-password', verifyToken, authController.changePassword);
 router.post('/link-to-institute', verifyToken, authController.linkToInstitute);
 
@@ -38,6 +44,11 @@ router.post('/link-to-institute', verifyToken, authController.linkToInstitute);
 router.get('/user-profile/:userId', verifyToken, authController.getUserProfile);
 
 // Delete requires and email/pass
-router.post('/delete', verifyToken,validate(deleteSchema), authController.deleteUser);
+router.post(
+	'/delete',
+	verifyToken,
+	validate(deleteSchema),
+	authController.deleteUser,
+);
 
 module.exports = router;
