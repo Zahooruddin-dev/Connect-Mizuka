@@ -1,0 +1,17 @@
+.avatar {
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.avatar--img {
+	object-fit: cover;
+}
+
+.avatar--initials {
+	background: linear-gradient(135deg, var(--teal-800), var(--teal-600));
+}
