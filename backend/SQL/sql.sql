@@ -103,3 +103,4 @@ WHERE is_read = false AND is_deleted = false;
 -- This prevents the "Relation p2p_rooms does not exist" error.
 CREATE INDEX IF NOT EXISTS idx_p2p_chatrooms_participants 
 ON p2p_chatrooms (user_one_id, user_two_id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT DEFAULT NULL;

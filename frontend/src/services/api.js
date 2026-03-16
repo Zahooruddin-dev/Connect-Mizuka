@@ -49,8 +49,24 @@ export const getUserProfile = async (userId) => {
 	}
 };
 
-export const updateProfile = async ({ username, email, currentPassword, newPassword } = {}) => {
+export const updateProfile = async ({ username, email, currentPassword, newPassword, profilePicture } = {}) => {
 	try {
+		const isFileUpload = profilePicture instanceof File;
+
+		if (isFileUpload) {
+			const form = new FormData();
+			if (username        !== undefined) form.append('username',         username);
+			if (email           !== undefined) form.append('email',            email);
+			if (currentPassword !== undefined) form.append('currentPassword',  currentPassword);
+			if (newPassword     !== undefined) form.append('newPassword',      newPassword);
+			form.append('profile_picture', profilePicture);
+
+			const res = await api.put('/auth/update-profile', form, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+			});
+			return res.data;
+		}
+
 		const res = await api.put('/auth/update-profile', {
 			...(username        !== undefined && { username }),
 			...(email           !== undefined && { email }),
