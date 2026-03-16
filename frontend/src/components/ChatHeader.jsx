@@ -5,14 +5,12 @@ import socket from '../services/socket';
 import './styles/ChatHeader.css';
 
 function ChatHeader({
-	// Channel mode props
 	channelId,
 	channelLabel,
 	instituteId,
 	onChannelDeleted,
 	onChannelRenamed,
 	isAdmin,
-	// P2P mode props
 	isP2P,
 	otherUsername,
 	onCloseP2P,
@@ -44,10 +42,8 @@ function ChatHeader({
 		}
 	}, [editing]);
 
-	// Listen for real-time renames/deletes even if another admin triggers them.
 	useEffect(() => {
 		if (isP2P) return;
-
 		const handleSocketRenamed = ({ channel }) => {
 			if (channel.id === channelIdRef.current) {
 				setDisplayName(channel.name);
@@ -57,7 +53,6 @@ function ChatHeader({
 		const handleSocketDeleted = ({ channelId: deletedId }) => {
 			if (deletedId === channelIdRef.current) onChannelDeleted?.(deletedId);
 		};
-
 		socket.on('channel_renamed', handleSocketRenamed);
 		socket.on('channel_deleted', handleSocketDeleted);
 		return () => {
@@ -96,7 +91,9 @@ function ChatHeader({
 
 		setSaving(true);
 		setError('');
-		const res = await updateChannel(channelId, undefined, { name: trimmed });
+
+		const res = await updateChannel(channelId, { name: trimmed });
+
 		setSaving(false);
 
 		if (res?.channel) {
@@ -121,7 +118,7 @@ function ChatHeader({
 		setDeleting(true);
 		setError('');
 		try {
-			const res = await deleteChannel(channelId, undefined);
+			const res = await deleteChannel(channelId);
 			if (res?.error) {
 				setError(res.error);
 				setDeleting(false);
@@ -138,7 +135,6 @@ function ChatHeader({
 		}
 	}, [channelId, instituteId, onChannelDeleted]);
 
-	// ── P2P header ──────────────────────────────────────────────────────────
 	if (isP2P) {
 		return (
 			<header className='chat-header chat-header--p2p'>
@@ -159,7 +155,7 @@ function ChatHeader({
 					<div className='chat-header-p2p-info'>
 						<span className='chat-header-name'>
 							{otherUsername
-								? otherUsername?.[0]?.toUpperCase() + otherUsername.slice(1)
+								? otherUsername[0].toUpperCase() + otherUsername.slice(1)
 								: 'Chat'}
 						</span>
 						<span className='chat-header-p2p-sub'>Direct Message</span>
@@ -169,7 +165,6 @@ function ChatHeader({
 		);
 	}
 
-	// ── Channel header ──────────────────────────────────────────────────────
 	return (
 		<header className='chat-header'>
 			<div className='chat-header-left'>
@@ -215,7 +210,6 @@ function ChatHeader({
 				) : (
 					<div className='chat-header-name-wrap'>
 						<span className='chat-header-name'>{displayName || channelId}</span>
-						{/* Rename only visible to admins */}
 						{isAdmin && (
 							<button
 								className='chat-header-icon-btn chat-header-edit-btn'
@@ -233,7 +227,6 @@ function ChatHeader({
 			<div className='chat-header-actions'>
 				{error && <span className='chat-header-error'>{error}</span>}
 
-				{/* Delete only visible to admins */}
 				{isAdmin &&
 					!editing &&
 					(showConfirm ? (
