@@ -633,9 +633,17 @@ function Sidebar({
 						tabIndex={0}
 						onKeyDown={handleProfileKeyDown}
 					>
-						<div className='sidebar-avatar' aria-hidden='true'>
-							{user.username[0].toUpperCase()}
-						</div>
+						{user.profile_picture ? (
+							<img
+								src={user.profile_picture}
+								alt={user.username}
+								className='sidebar-avatar sidebar-avatar--img'
+							/>
+						) : (
+							<div className='sidebar-avatar' aria-hidden='true'>
+								{user.username[0].toUpperCase()}
+							</div>
+						)}
 						<div className='sidebar-user-info'>
 							<span className='sidebar-username'>{user.username}</span>
 							<span className='sidebar-user-role'>{user.role || 'member'}</span>
