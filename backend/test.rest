@@ -42,3 +42,22 @@ Content-Type: application/json
     "user1": "YOUR_USER_UUID",
     "user2": "TARGET_USER_UUID"
 }
+
+### Register user
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "mizuka",
+  "email": "test@mizuka.com",
+  "password": "123",
+  "role": "member"
+}
+### Login user
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "123"
+}
