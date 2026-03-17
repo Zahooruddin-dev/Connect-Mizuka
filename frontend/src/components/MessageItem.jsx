@@ -97,6 +97,8 @@ function MessageItem({
 	const minePicture = currentUserPicture || null;
 	const theirInitial = message.username?.[0]?.toUpperCase() || '?';
 	const mineInitial = message.username?.[0]?.toUpperCase() || '?';
+console.log(theirPicture);
+console.log(theirInitial);
 
 	return (
 		<>
