@@ -22,7 +22,6 @@ import InstituteSidebar from './InstituteSidebar';
 import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
 import Inbox from './Inbox';
-import './styles/Sidebar.css';
 
 function loadStoredChats() {
 	try {
@@ -32,6 +31,9 @@ function loadStoredChats() {
 		return [];
 	}
 }
+
+const iconBtnCls =
+	'flex items-center justify-center w-7 h-7 rounded-lg text-[var(--text-ghost)] transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
 
 function Sidebar({
 	activeChannel,
@@ -57,7 +59,6 @@ function Sidebar({
 	const [onlineUsers, setOnlineUsers] = useState(new Set());
 	const [recentChats, setRecentChats] = useState(loadStoredChats);
 	const [roomUnread, setRoomUnread] = useState({});
-
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [searchResults, setSearchResults] = useState([]);
@@ -82,22 +83,18 @@ function Sidebar({
 	useEffect(() => {
 		activeP2PRef.current = activeP2P;
 	}, [activeP2P]);
-
 	useEffect(() => {
 		if (activeP2P?.roomId) setActiveTab('inbox');
 	}, [activeP2P?.roomId]);
-
 	useEffect(() => {
 		if (searchOpen) searchInputRef.current?.focus();
 	}, [searchOpen]);
-
 	useEffect(() => {
 		setSearchOpen(false);
 		setSearchTerm('');
 		setSearchResults([]);
 	}, [activeChannel, activeTab]);
 
-	// ── Unread count (from API) ────────────────────────────────────────────
 	const refreshUnreadCount = useCallback(() => {
 		if (!user?.id) return;
 		fetchUnreadCounts(user.id)
@@ -112,13 +109,11 @@ function Sidebar({
 			.catch(() => {});
 	}, [user?.id]);
 
-	// ── On mount: join personal room, re-join all known P2P rooms, fetch unread ──
 	useEffect(() => {
 		if (!user?.id) return;
 		socket.emit('user_online', user.id);
 		socket.emit('get_online_users');
 		socket.emit('join_user_room', user.id);
-
 		fetchUnreadCounts(user.id)
 			.then((counts) => {
 				const map = {};
@@ -130,11 +125,9 @@ function Sidebar({
 				setUnreadCount(Object.values(map).reduce((s, n) => s + n, 0));
 			})
 			.catch(() => {});
-
 		loadStoredChats().forEach((c) => socket.emit('join_p2p', c.roomId));
 	}, [user?.id]);
 
-	// Seed recent chats from backend on mount so they always show regardless of localStorage
 	useEffect(() => {
 		if (!user?.id) return;
 		fetchUserChatrooms()
@@ -162,7 +155,6 @@ function Sidebar({
 						};
 						return { ...(existing || {}), ...entry };
 					});
-					// Include any local-only entries not yet on the backend
 					const backendRoomIds = new Set(rooms.map((r) => r.room_id));
 					const localOnly = prev.filter((c) => !backendRoomIds.has(c.roomId));
 					const combined = [...merged, ...localOnly].sort((a, b) => {
@@ -180,12 +172,11 @@ function Sidebar({
 			.catch(() => {});
 	}, [user?.id]);
 
-	// Enrich stored chats with profile_picture if missing (handles old sessions)
 	useEffect(() => {
 		if (!activeInstitute?.id) return;
 		const stored = loadStoredChats();
-		if (!stored.length) return;
-		if (stored.every((c) => c.profile_picture !== undefined)) return;
+		if (!stored.length || stored.every((c) => c.profile_picture !== undefined))
+			return;
 		getInstituteMembers(activeInstitute.id)
 			.then((members) => {
 				if (!members?.length) return;
@@ -208,7 +199,6 @@ function Sidebar({
 			.catch(() => {});
 	}, [activeInstitute?.id]);
 
-	// ── Clear unread badge when a P2P chat is opened ──────────────────────
 	useEffect(() => {
 		if (!activeP2P?.roomId || !user?.id) return;
 		markRoomAsRead(activeP2P.roomId, user.id)
@@ -224,7 +214,6 @@ function Sidebar({
 		);
 	}, [activeP2P?.roomId, user?.id]);
 
-	// ── Online status ──────────────────────────────────────────────────────
 	useEffect(() => {
 		const handleStatus = ({ userId, status }) => {
 			setOnlineUsers((prev) => {
@@ -244,17 +233,13 @@ function Sidebar({
 		};
 	}, []);
 
-	// ── Incoming P2P messages — always-on listener ─────────────────────────
 	useEffect(() => {
 		const handleP2PMessage = (msg) => {
 			const fromMe = String(msg.sender_id) === String(user.id);
-
 			socket.emit('join_p2p', msg.chatroom_id);
-
 			setRecentChats((prev) => {
 				const existing = prev.find((c) => c.roomId === msg.chatroom_id);
 				if (!existing && fromMe) return prev;
-
 				const entry = existing
 					? {
 							...existing,
@@ -276,7 +261,6 @@ function Sidebar({
 								fromMe: false,
 							},
 						};
-
 				const idx = prev.findIndex((c) => c.roomId === entry.roomId);
 				const next =
 					idx !== -1
@@ -290,27 +274,23 @@ function Sidebar({
 				localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(sorted));
 				return sorted;
 			});
-
-			if (fromMe) return;
-			if (activeP2PRef.current?.roomId === msg.chatroom_id) return;
-
+			if (fromMe || activeP2PRef.current?.roomId === msg.chatroom_id) return;
 			setRoomUnread((prev) => ({
 				...prev,
 				[msg.chatroom_id]: (prev[msg.chatroom_id] || 0) + 1,
 			}));
 			fetchUnreadCounts(user.id)
 				.then((counts) => {
-					const total = counts.reduce((s, r) => s + Number(r.unread_count), 0);
-					setUnreadCount(total);
+					setUnreadCount(
+						counts.reduce((s, r) => s + Number(r.unread_count), 0),
+					);
 				})
 				.catch(() => {});
 		};
-
 		socket.on('receive_p2p_message', handleP2PMessage);
 		return () => socket.off('receive_p2p_message', handleP2PMessage);
 	}, [user.id]);
 
-	// ── Channels ───────────────────────────────────────────────────────────
 	useEffect(() => {
 		if (!activeInstitute) {
 			setChannels([]);
@@ -348,8 +328,10 @@ function Sidebar({
 				onChannelSelect(channel);
 		};
 		const handleChannelCreated = ({ channel }) => {
-			if (!channel?.id) return;
-			if (String(channel.institute_id) !== String(activeInstituteRef.current))
+			if (
+				!channel?.id ||
+				String(channel.institute_id) !== String(activeInstituteRef.current)
+			)
 				return;
 			setChannels((prev) => {
 				if (prev.some((c) => String(c.id) === String(channel.id))) return prev;
@@ -366,16 +348,11 @@ function Sidebar({
 		};
 	}, [onChannelSelect]);
 
-	// ── Search ─────────────────────────────────────────────────────────────
 	const handleSearchInput = useCallback(
 		(val) => {
 			setSearchTerm(val);
 			clearTimeout(searchDebounce.current);
-			if (!val.trim() || val.length < 2) {
-				setSearchResults([]);
-				return;
-			}
-			if (!channels.length) {
+			if (!val.trim() || val.length < 2 || !channels.length) {
 				setSearchResults([]);
 				return;
 			}
@@ -422,7 +399,6 @@ function Sidebar({
 		setSearchTerm('');
 		setSearchResults([]);
 	}, []);
-
 	useEffect(() => () => clearTimeout(searchDebounce.current), []);
 
 	const handleCreateChannel = useCallback(
@@ -451,293 +427,361 @@ function Sidebar({
 		if (e.key === 'Enter' || e.key === ' ') setIsProfileOpen(true);
 	}, []);
 
+	const tabs = [
+		{ key: 'channels', Icon: Hash, label: 'Channels' },
+		{ key: 'inbox', Icon: InboxIcon, label: 'Inbox' },
+	];
+
 	return (
 		<>
-			{isOpen && (
-				<div
-					className='sidebar-backdrop'
-					onClick={onClose}
-					aria-hidden='true'
-				/>
-			)}
+			<div
+				className={`fixed inset-0 bg-black/40 z-40 touch-none md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+				onClick={onClose}
+				aria-hidden='true'
+			/>
 
 			<aside
-				className={`sidebar${isOpen ? ' open' : ''}`}
+				className={`fixed inset-y-0 left-0 z-50 w-[240px] flex flex-col shrink-0 bg-[var(--bg-surface)] border-r border-[var(--border)] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:static md:z-auto md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
 				aria-label='Navigation'
 			>
-				<div className='sidebar-header'>
-					<div className='sidebar-brand-wrap'>
-						<span className='sidebar-brand' aria-label='Mizuka'>
-							<span className='sidebar-brand-m' aria-hidden='true'>
+				<div className='flex items-center justify-between px-3 pt-4 pb-3 shrink-0'>
+					<div className='flex items-center gap-2'>
+						<span className='flex items-baseline gap-0.5' aria-label='Mizuka'>
+							<span
+								className='text-[22px] font-semibold text-teal-400 leading-none tracking-[-1.5px]'
+								aria-hidden='true'
+							>
 								M
 							</span>
-							izuka
+							<span
+								className='text-[18px] font-light text-[var(--text-primary)] tracking-[-0.5px]'
+								aria-hidden='true'
+							>
+								izuka
+							</span>
 						</span>
-						<span className='sidebar-status' aria-hidden='true' />
+						<span
+							className='w-1.5 h-1.5 rounded-full bg-teal-500 opacity-70 mb-0.5'
+							aria-hidden='true'
+						/>
 					</div>
 					{onClose && (
 						<button
-							className='sidebar-icon-btn sidebar-close-btn'
+							className={`${iconBtnCls} md:hidden`}
 							onClick={onClose}
 							aria-label='Close navigation'
 						>
-							<X size={18} strokeWidth={2} />
+							<X size={16} strokeWidth={2} />
 						</button>
 					)}
 				</div>
 
-				<button
-					className='sidebar-institute-btn'
-					onClick={handleOpenPanel}
-					aria-label='Manage institutes'
-					aria-haspopup='dialog'
-				>
-					<span className='sidebar-institute-icon' aria-hidden='true'>
-						{activeInstitute ? (
-							activeInstitute.label[0].toUpperCase()
-						) : (
-							<Building2 size={14} />
-						)}
-					</span>
-					<span className='sidebar-institute-info'>
-						<span className='sidebar-institute-label'>
-							{activeInstitute ? activeInstitute.label : 'No institute'}
+				<div className='px-2 mb-2 shrink-0'>
+					<button
+						className='w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-[var(--bg-hover)] border border-[var(--border)] text-left transition-[background] duration-150 hover:bg-[var(--border)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+						onClick={handleOpenPanel}
+						aria-label='Manage institutes'
+						aria-haspopup='dialog'
+					>
+						<span
+							className='w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-semibold shrink-0'
+							style={
+								activeInstitute
+									? {
+											background:
+												'linear-gradient(135deg, var(--teal-800), var(--teal-600))',
+											color: 'rgba(255,255,255,0.9)',
+										}
+									: { color: 'var(--text-ghost)' }
+							}
+							aria-hidden='true'
+						>
+							{activeInstitute ? (
+								activeInstitute.label[0].toUpperCase()
+							) : (
+								<Building2 size={14} />
+							)}
 						</span>
-						<span className='sidebar-institute-hint'>click to manage</span>
-					</span>
-					<ChevronDown
-						className='sidebar-institute-chevron'
-						size={14}
-						strokeWidth={2}
-						aria-hidden='true'
-					/>
-				</button>
-
-				<div className='sidebar-tabs'>
-					<button
-						className={`sidebar-tab ${activeTab === 'channels' ? 'active' : ''}`}
-						onClick={() => setActiveTab('channels')}
-					>
-						<Hash size={14} />
-						Channels
-					</button>
-					<button
-						className={`sidebar-tab ${activeTab === 'inbox' ? 'active' : ''}`}
-						onClick={() => setActiveTab('inbox')}
-					>
-						<InboxIcon size={14} />
-						Inbox
-						{unreadCount > 0 && (
-							<span className='sidebar-tab-badge'>
-								{unreadCount > 99 ? '99+' : unreadCount}
-							</span>
-						)}
+						<div className='min-w-0 flex-1'>
+							<div className='text-[12px] font-medium text-[var(--text-primary)] truncate'>
+								{activeInstitute ? activeInstitute.label : 'No institute'}
+							</div>
+							<div className='text-[10px] text-[var(--text-ghost)]'>
+								click to manage
+							</div>
+						</div>
+						<ChevronDown
+							size={12}
+							strokeWidth={2}
+							className='text-[var(--text-ghost)] shrink-0'
+							aria-hidden='true'
+						/>
 					</button>
 				</div>
 
-				{activeTab === 'channels' && (
-					<div className='sidebar-section'>
-						{channels.length > 0 ? (
-							<>
-								<div className='sidebar-section-header'>
-									<span className='sidebar-section-label' id='channels-label'>
-										Channels
-									</span>
-									<div className='sidebar-section-actions'>
-										<button
-											className='sidebar-add-channel-btn'
-											title='Search messages'
-											aria-label='Search messages'
-											onClick={() => setSearchOpen((v) => !v)}
-											aria-expanded={searchOpen}
-										>
-											<Search size={13} strokeWidth={2.5} />
-										</button>
-										{isAdmin && (
-											<button
-												className='sidebar-add-channel-btn'
-												title='Create channel'
-												aria-label='Create channel'
-												onClick={handleOpenCreate}
-											>
-												<Plus size={13} strokeWidth={2.5} />
-											</button>
-										)}
-									</div>
-								</div>
+				<div className='flex px-2 border-b border-[var(--border)] shrink-0'>
+					{tabs.map(({ key, Icon, label }) => (
+						<button
+							key={key}
+							className={`relative flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium transition-[color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] ${activeTab === key ? 'text-[var(--text-secondary)]' : 'text-[var(--text-ghost)] hover:text-[var(--text-muted)]'}`}
+							onClick={() => setActiveTab(key)}
+						>
+							<Icon size={12} strokeWidth={2} aria-hidden='true' />
+							{label}
+							{key === 'inbox' && unreadCount > 0 && (
+								<span className='flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-[var(--teal-600)] text-white text-[9px] font-semibold'>
+									{unreadCount > 99 ? '99+' : unreadCount}
+								</span>
+							)}
+							{activeTab === key && (
+								<span
+									className='absolute bottom-[-1px] left-0 right-0 h-px bg-[var(--teal-600)]'
+									aria-hidden='true'
+								/>
+							)}
+						</button>
+					))}
+				</div>
 
-								{searchOpen && (
-									<div className='sidebar-search-wrap'>
-										<div className='sidebar-search-input-row'>
-											<Search size={13} className='sidebar-search-icon' />
-											<input
-												ref={searchInputRef}
-												type='text'
-												className='sidebar-search-input'
-												placeholder='Search messages…'
-												value={searchTerm}
-												onChange={(e) => handleSearchInput(e.target.value)}
-												onKeyDown={(e) =>
-													e.key === 'Escape' && handleCloseSearch()
-												}
-											/>
-											{searchTerm && (
+				<div className='flex-1 overflow-hidden flex flex-col pt-3'>
+					{activeTab === 'channels' && (
+						<div className='flex flex-col flex-1 overflow-hidden'>
+							{channels.length > 0 ? (
+								<>
+									<div className='flex items-center justify-between px-3 mb-1.5 shrink-0'>
+										<span
+											className='text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-ghost)]'
+											id='channels-label'
+										>
+											Channels
+										</span>
+										<div className='flex items-center gap-0.5'>
+											<button
+												className={iconBtnCls}
+												onClick={() => setSearchOpen((v) => !v)}
+												aria-label='Search messages'
+												aria-expanded={searchOpen}
+												title='Search messages'
+											>
+												<Search size={12} strokeWidth={2.5} />
+											</button>
+											{isAdmin && (
 												<button
-													className='sidebar-search-clear'
-													onClick={handleCloseSearch}
-													aria-label='Clear search'
+													className={iconBtnCls}
+													onClick={handleOpenCreate}
+													aria-label='Create channel'
+													title='Create channel'
 												>
-													<X size={12} />
+													<Plus size={12} strokeWidth={2.5} />
 												</button>
 											)}
 										</div>
-										{searchLoading && (
-											<div className='sidebar-search-status'>Searching…</div>
-										)}
-										{!searchLoading &&
-											searchTerm.length >= 2 &&
-											searchResults.length === 0 && (
-												<div className='sidebar-search-status'>
-													No results found
-												</div>
-											)}
-										{searchResults.length > 0 && (
-											<ul className='sidebar-search-results'>
-												{searchResults.map((result) => {
-													const ch = channels.find(
-														(c) => String(c.id) === String(result.channel_id),
-													);
-													return (
-														<li key={result.id}>
-															<button
-																className='sidebar-search-result'
-																onClick={() => handleSearchResultClick(result)}
-																title={result.content}
-															>
-																{ch && (
-																	<span className='sidebar-search-result-channel'>
-																		<Hash size={10} strokeWidth={2.5} />
-																		{ch.name}
-																	</span>
-																)}
-																<span className='sidebar-search-result-content'>
-																	{result.content?.length > 80
-																		? result.content.slice(0, 80) + '…'
-																		: result.content}
-																</span>
-																{result.username && (
-																	<span className='sidebar-search-result-meta'>
-																		{result.username}
-																	</span>
-																)}
-															</button>
-														</li>
-													);
-												})}
-											</ul>
-										)}
 									</div>
-								)}
 
-								<ul
-									className='sidebar-channels'
-									aria-labelledby='channels-label'
-									role='list'
-								>
-									{channels.map((ch) => (
-										<li key={ch.id} role='listitem'>
-											<button
-												className={`sidebar-channel-btn${activeChannel === ch.id ? ' active' : ''}`}
-												onClick={() => onChannelSelect(ch)}
-												aria-current={
-													activeChannel === ch.id ? 'page' : undefined
-												}
-											>
-												<Hash
-													className='sidebar-hash'
-													size={14}
-													strokeWidth={2}
-													aria-hidden='true'
+									{searchOpen && (
+										<div className='mx-2 mb-2 shrink-0'>
+											<div className='flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 transition-[border-color] duration-150 focus-within:border-[var(--teal-700)]'>
+												<Search
+													size={12}
+													className='text-[var(--text-ghost)] shrink-0'
 												/>
-												<span>{ch.name}</span>
-											</button>
-										</li>
-									))}
-								</ul>
-							</>
-						) : (
-							<div className='sidebar-empty'>
-								<Building2
-									size={30}
-									strokeWidth={1}
-									className='sidebar-empty-icon'
-									aria-hidden='true'
-								/>
-								<p className='sidebar-no-channels'>
-									Select or join an institute to see channels.
-								</p>
-							</div>
-						)}
-					</div>
-				)}
+												<input
+													ref={searchInputRef}
+													type='text'
+													className='flex-1 bg-transparent outline-none text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]'
+													style={{ fontSize: '16px' }}
+													placeholder='Search messages…'
+													value={searchTerm}
+													onChange={(e) => handleSearchInput(e.target.value)}
+													onKeyDown={(e) =>
+														e.key === 'Escape' && handleCloseSearch()
+													}
+												/>
+												{searchTerm && (
+													<button
+														className={iconBtnCls}
+														onClick={handleCloseSearch}
+														aria-label='Clear search'
+													>
+														<X size={11} />
+													</button>
+												)}
+											</div>
+											{searchLoading && (
+												<p className='text-[12px] text-[var(--text-ghost)] px-1 py-1.5'>
+													Searching…
+												</p>
+											)}
+											{!searchLoading &&
+												searchTerm.length >= 2 &&
+												searchResults.length === 0 && (
+													<p className='text-[12px] text-[var(--text-ghost)] px-1 py-1.5'>
+														No results found
+													</p>
+												)}
+											{searchResults.length > 0 && (
+												<ul className='mt-1 flex flex-col gap-0.5'>
+													{searchResults.map((result) => {
+														const ch = channels.find(
+															(c) => String(c.id) === String(result.channel_id),
+														);
+														return (
+															<li key={result.id}>
+																<button
+																	className='w-full flex flex-col gap-0.5 px-2.5 py-2 rounded-lg text-left hover:bg-[var(--bg-hover)] transition-[background] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+																	onClick={() =>
+																		handleSearchResultClick(result)
+																	}
+																	title={result.content}
+																>
+																	{ch && (
+																		<span className='flex items-center gap-1 text-[10px] text-[var(--text-ghost)]'>
+																			<Hash
+																				size={9}
+																				strokeWidth={2.5}
+																				aria-hidden='true'
+																			/>
+																			{ch.name}
+																		</span>
+																	)}
+																	<span className='text-[12px] text-[var(--text-muted)] leading-snug line-clamp-2'>
+																		{result.content?.length > 80
+																			? result.content.slice(0, 80) + '…'
+																			: result.content}
+																	</span>
+																	{result.username && (
+																		<span className='text-[10px] text-[var(--text-ghost)]'>
+																			{result.username}
+																		</span>
+																	)}
+																</button>
+															</li>
+														);
+													})}
+												</ul>
+											)}
+										</div>
+									)}
 
-				{activeTab === 'inbox' && activeInstitute && (
-					<Inbox
-						activeInstitute={activeInstitute}
-						currentUser={user}
-						onStartP2P={onStartP2P}
-						onlineUsers={onlineUsers}
-						activeP2P={activeP2P}
-						onUnreadUpdate={refreshUnreadCount}
-						onJumpToP2PMessage={onJumpToP2PMessage}
-						recentChats={recentChats}
-						setRecentChats={setRecentChats}
-						roomUnread={roomUnread}
-						setRoomUnread={setRoomUnread}
-					/>
-				)}
-
-				{activeTab === 'inbox' && !activeInstitute && (
-					<div className='sidebar-empty'>
-						<Building2 size={30} strokeWidth={1} aria-hidden='true' />
-						<p className='sidebar-no-channels'>
-							Select an institute to search members
-						</p>
-					</div>
-				)}
-
-				<div className='sidebar-footer'>
-					<div
-						className='sidebar-user'
-						onClick={handleOpenProfile}
-						role='button'
-						tabIndex={0}
-						onKeyDown={handleProfileKeyDown}
-					>
-						{user.profile_picture ? (
-							<img
-								src={user.profile_picture}
-								alt={user.username}
-								className='sidebar-avatar sidebar-avatar--img'
-							/>
-						) : (
-							<div className='sidebar-avatar' aria-hidden='true'>
-								{user.username[0].toUpperCase()}
-							</div>
-						)}
-						<div className='sidebar-user-info'>
-							<span className='sidebar-username'>{user.username}</span>
-							<span className='sidebar-user-role'>{user.role || 'member'}</span>
+									<ul
+										className='flex-1 overflow-y-auto px-1 flex flex-col gap-0.5'
+										aria-labelledby='channels-label'
+										role='list'
+									>
+										{channels.map((ch) => (
+											<li key={ch.id} role='listitem'>
+												<button
+													className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] text-left transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] ${activeChannel === ch.id ? 'bg-[var(--bg-hover)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)]'}`}
+													onClick={() => onChannelSelect(ch)}
+													aria-current={
+														activeChannel === ch.id ? 'page' : undefined
+													}
+												>
+													<Hash
+														size={13}
+														strokeWidth={2}
+														className='shrink-0'
+														aria-hidden='true'
+													/>
+													<span className='truncate'>{ch.name}</span>
+												</button>
+											</li>
+										))}
+									</ul>
+								</>
+							) : (
+								<div className='flex flex-col items-center justify-center gap-3 flex-1 px-4 text-center'>
+									<Building2
+										size={28}
+										strokeWidth={1}
+										className='text-[var(--text-ghost)]'
+										aria-hidden='true'
+									/>
+									<p className='text-[12px] text-[var(--text-ghost)] leading-relaxed'>
+										Select or join an institute to see channels.
+									</p>
+								</div>
+							)}
 						</div>
+					)}
+
+					{activeTab === 'inbox' && activeInstitute && (
+						<Inbox
+							activeInstitute={activeInstitute}
+							currentUser={user}
+							onStartP2P={onStartP2P}
+							onlineUsers={onlineUsers}
+							activeP2P={activeP2P}
+							onUnreadUpdate={refreshUnreadCount}
+							onJumpToP2PMessage={onJumpToP2PMessage}
+							recentChats={recentChats}
+							setRecentChats={setRecentChats}
+							roomUnread={roomUnread}
+							setRoomUnread={setRoomUnread}
+						/>
+					)}
+
+					{activeTab === 'inbox' && !activeInstitute && (
+						<div className='flex flex-col items-center justify-center gap-3 flex-1 px-4 text-center'>
+							<Building2
+								size={28}
+								strokeWidth={1}
+								className='text-[var(--text-ghost)]'
+								aria-hidden='true'
+							/>
+							<p className='text-[12px] text-[var(--text-ghost)] leading-relaxed'>
+								Select an institute to search members
+							</p>
+						</div>
+					)}
+				</div>
+
+				<div className='border-t border-[var(--border)] px-2 py-2 shrink-0'>
+					<div className='flex items-center gap-1'>
+						<div
+							className='flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-[background] duration-150 hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+							onClick={handleOpenProfile}
+							role='button'
+							tabIndex={0}
+							onKeyDown={handleProfileKeyDown}
+							aria-label='Open your profile'
+						>
+							{user.profile_picture ? (
+								<img
+									src={user.profile_picture}
+									alt={user.username}
+									className='w-7 h-7 rounded-full object-cover shrink-0'
+								/>
+							) : (
+								<div
+									className='w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white/90 shrink-0'
+									style={{
+										background:
+											'linear-gradient(135deg, var(--teal-800), var(--teal-600))',
+									}}
+									aria-hidden='true'
+								>
+									{user.username[0].toUpperCase()}
+								</div>
+							)}
+							<div className='min-w-0'>
+								<div className='text-[12px] font-medium text-[var(--text-primary)] truncate'>
+									{user.username}
+								</div>
+								<div className='text-[10px] text-[var(--text-ghost)] capitalize'>
+									{user.role || 'member'}
+								</div>
+							</div>
+						</div>
+						<button
+							className={iconBtnCls}
+							onClick={onLogout}
+							aria-label='Sign out'
+							title='Sign out'
+						>
+							<LogOut size={14} strokeWidth={2} aria-hidden='true' />
+						</button>
 					</div>
-					<button
-						className='sidebar-icon-btn sidebar-logout'
-						onClick={onLogout}
-						aria-label='Sign out'
-						title='Sign out'
-					>
-						<LogOut size={16} strokeWidth={2} aria-hidden='true' />
-					</button>
 				</div>
 			</aside>
 
