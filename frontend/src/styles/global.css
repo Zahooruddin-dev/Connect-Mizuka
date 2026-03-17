@@ -1,140 +1,176 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* ── Your existing design tokens stay here ── */
 :root {
-  --teal-50:  #f0fdfa;
-  --teal-100: #ccfbf1;
-  --teal-200: #99f6e4;
-  --teal-300: #5eead4;
-  --teal-400: #2dd4bf;
-  --teal-500: #14b8a6;
-  --teal-600: #0d9488;
-  --teal-700: #0f766e;
-  --teal-800: #115e59;
-  --teal-900: #134e4a;
+	--teal-50: #f0fdfa;
+	--teal-100: #ccfbf1;
+	--teal-200: #99f6e4;
+	--teal-300: #5eead4;
+	--teal-400: #2dd4bf;
+	--teal-500: #14b8a6;
+	--teal-600: #0d9488;
+	--teal-700: #0f766e;
+	--teal-800: #115e59;
+	--teal-900: #134e4a;
 
-  --accent:       #0d9488;
-  --accent-light: #99f6e4;
-  --accent-dim:   rgba(13, 148, 136, 0.10);
+	--accent: #0d9488;
+	--accent-light: #99f6e4;
+	--accent-dim: rgba(13, 148, 136, 0.1);
 
-  --bg-base:    #dedad4;
-  --bg-surface: #e4e0da;
-  --bg-panel:   #ede9e3;
-  --bg-hover:   #d4cfc8;
-  --bg-input:   #d8d3cc;
+	--bg-base: #dedad4;
+	--bg-surface: #e4e0da;
+	--bg-panel: #ede9e3;
+	--bg-hover: #d4cfc8;
+	--bg-input: #d8d3cc;
 
-  --border:        rgba(0, 0, 0, 0.10);
-  --border-strong: rgba(0, 0, 0, 0.18);
+	--border: rgba(0, 0, 0, 0.1);
+	--border-strong: rgba(0, 0, 0, 0.18);
 
-  --text-primary:   #1a1a1a;
-  --text-secondary: #363636;
-  --text-muted:     #5e5e5e;
-  --text-ghost:     #8f8f8f;
+	--text-primary: #1a1a1a;
+	--text-secondary: #363636;
+	--text-muted: #5e5e5e;
+	--text-ghost: #8f8f8f;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 16px;
+	--radius-xl: 22px;
 }
 
 /* ── Tell Tailwind to generate utility classes from your tokens ── */
 @theme inline {
-  --font-sans: 'Sora', sans-serif;
-  --font-mono: 'DM Mono', monospace;
+	--font-sans: 'Sora', sans-serif;
+	--font-mono: 'DM Mono', monospace;
 
-  /* Teal scale → bg-teal-500, text-teal-600, border-teal-300, etc. */
-  --color-teal-50:  var(--teal-50);
-  --color-teal-100: var(--teal-100);
-  --color-teal-200: var(--teal-200);
-  --color-teal-300: var(--teal-300);
-  --color-teal-400: var(--teal-400);
-  --color-teal-500: var(--teal-500);
-  --color-teal-600: var(--teal-600);
-  --color-teal-700: var(--teal-700);
-  --color-teal-800: var(--teal-800);
-  --color-teal-900: var(--teal-900);
+	/* Teal scale → bg-teal-500, text-teal-600, border-teal-300, etc. */
+	--color-teal-50: var(--teal-50);
+	--color-teal-100: var(--teal-100);
+	--color-teal-200: var(--teal-200);
+	--color-teal-300: var(--teal-300);
+	--color-teal-400: var(--teal-400);
+	--color-teal-500: var(--teal-500);
+	--color-teal-600: var(--teal-600);
+	--color-teal-700: var(--teal-700);
+	--color-teal-800: var(--teal-800);
+	--color-teal-900: var(--teal-900);
 
-  /* Semantic surface colors → bg-base, bg-surface, etc. */
-  --color-base:    var(--bg-base);
-  --color-surface: var(--bg-surface);
-  --color-panel:   var(--bg-panel);
-  --color-hover:   var(--bg-hover);
-  --color-input:   var(--bg-input);
+	/* Semantic surface colors → bg-base, bg-surface, etc. */
+	--color-base: var(--bg-base);
+	--color-surface: var(--bg-surface);
+	--color-panel: var(--bg-panel);
+	--color-hover: var(--bg-hover);
+	--color-input: var(--bg-input);
 
-  /* Text colors → text-primary, text-muted, etc. */
-  --color-text-primary:   var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted:     var(--text-muted);
-  --color-text-ghost:     var(--text-ghost);
+	/* Text colors → text-primary, text-muted, etc. */
+	--color-text-primary: var(--text-primary);
+	--color-text-secondary: var(--text-secondary);
+	--color-text-muted: var(--text-muted);
+	--color-text-ghost: var(--text-ghost);
 
-  /* Border → border-base, border-strong */
-  --color-border-base:   var(--border);
-  --color-border-strong: var(--border-strong);
+	/* Border → border-base, border-strong */
+	--color-border-base: var(--border);
+	--color-border-strong: var(--border-strong);
 
-  /* Border radius tokens */
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
+	/* Border radius tokens */
+	--radius-sm: var(--radius-sm);
+	--radius-md: var(--radius-md);
+	--radius-lg: var(--radius-lg);
+	--radius-xl: var(--radius-xl);
 }
 
 /* ── Global base styles ── */
 @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
 
-  html, body, #root {
-    height: 100%;
-    width: 100%;
-  }
+	html,
+	body,
+	#root {
+		height: 100%;
+		width: 100%;
+	}
 
-  body {
-    font-family: var(--font-sans);
-    background-color: var(--bg-base);
-    color: var(--text-primary);
-    -webkit-font-smoothing: antialiased;
-    overflow: hidden;
-  }
+	body {
+		font-family: var(--font-sans);
+		background-color: var(--bg-base);
+		color: var(--text-primary);
+		-webkit-font-smoothing: antialiased;
+		overflow: hidden;
+	}
 
-  input, textarea, button {
-    font-family: inherit;
-  }
+	input,
+	textarea,
+	button {
+		font-family: inherit;
+	}
 
-  button {
-    cursor: pointer;
-    border: none;
-    background: none;
-  }
+	button {
+		cursor: pointer;
+		border: none;
+		background: none;
+	}
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: var(--teal-300);
-    border-radius: 99px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--teal-400);
-  }
+	/* Scrollbar */
+	::-webkit-scrollbar {
+		width: 4px;
+	}
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	::-webkit-scrollbar-thumb {
+		background: var(--teal-300);
+		border-radius: 99px;
+	}
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--teal-400);
+	}
 }
 @layer utilities {
-  @keyframes card-enter {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes msg-in {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes context-pop {
-    from { opacity: 0; transform: scale(0.92) translateY(4px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  @keyframes bounce-dot {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
-    40%           { transform: translateY(-4px); opacity: 0.8; }
-  }
+	@keyframes card-enter {
+		from {
+			opacity: 0;
+			transform: translateY(12px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes msg-in {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes context-pop {
+		from {
+			opacity: 0;
+			transform: scale(0.92) translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+	@keyframes bounce-dot {
+		0%,
+		80%,
+		100% {
+			transform: translateY(0);
+			opacity: 0.3;
+		}
+		40% {
+			transform: translateY(-4px);
+			opacity: 0.8;
+		}
+	}
 }
