@@ -6,6 +6,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 router.use(verifyToken);
 
 router.post('/room', p2pController.getOrCreateChatroom);
+router.get('/rooms', p2pController.getUserChatrooms);
 router.get('/messages/:roomId', p2pController.getMessages);
 router.get('/messages/:roomId/search', p2pController.searchP2PMessages);
 router.patch('/messages/:messageId/delete', p2pController.deleteMsg);

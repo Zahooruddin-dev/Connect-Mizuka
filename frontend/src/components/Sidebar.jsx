@@ -14,6 +14,7 @@ import {
 	createChannel,
 	searchChannelMessages,
 	getInstituteMembers,
+	fetchUserChatrooms,
 } from '../services/api';
 import { fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
@@ -131,6 +132,52 @@ function Sidebar({
 			.catch(() => {});
 
 		loadStoredChats().forEach((c) => socket.emit('join_p2p', c.roomId));
+	}, [user?.id]);
+
+	// Seed recent chats from backend on mount so they always show regardless of localStorage
+	useEffect(() => {
+		if (!user?.id) return;
+		fetchUserChatrooms()
+			.then((rooms) => {
+				if (!rooms.length) return;
+				setRecentChats((prev) => {
+					const byRoomId = Object.fromEntries(prev.map((c) => [c.roomId, c]));
+					const merged = rooms.map((r) => {
+						const existing = byRoomId[r.room_id];
+						const entry = {
+							id: r.other_user_id,
+							username: r.other_username,
+							email: r.other_email,
+							role: r.other_role,
+							profile_picture: r.other_profile_picture || null,
+							roomId: r.room_id,
+							lastChat: r.last_created_at || r.created_at,
+							lastMessage: r.last_content
+								? {
+										content: r.last_content,
+										created_at: r.last_created_at,
+										fromMe: String(r.last_sender_id) === String(user.id),
+									}
+								: existing?.lastMessage || null,
+						};
+						return { ...(existing || {}), ...entry };
+					});
+					// Include any local-only entries not yet on the backend
+					const backendRoomIds = new Set(rooms.map((r) => r.room_id));
+					const localOnly = prev.filter((c) => !backendRoomIds.has(c.roomId));
+					const combined = [...merged, ...localOnly].sort((a, b) => {
+						const ta = a.lastMessage?.created_at ?? a.lastChat ?? 0;
+						const tb = b.lastMessage?.created_at ?? b.lastChat ?? 0;
+						return new Date(tb) - new Date(ta);
+					});
+					localStorage.setItem(
+						'mizuka_recent_p2p_chats',
+						JSON.stringify(combined),
+					);
+					return combined;
+				});
+			})
+			.catch(() => {});
 	}, [user?.id]);
 
 	// Enrich stored chats with profile_picture if missing (handles old sessions)
