@@ -279,3 +279,241 @@
 	margin-left: 6px;
 	user-select: none;
 }
+
+
+/* ── Mobile three-dot menu ────────────────────────────────────── */
+
+.message-menu-wrap {
+	position: relative;
+	display: none; /* hidden on desktop */
+	align-items: center;
+}
+
+.message-menu-btn {
+	width: 26px;
+	height: 26px;
+	border-radius: 6px;
+	background: none;
+	border: none;
+	color: var(--text-ghost);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s, background 0.15s;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.message-item:hover .message-menu-btn,
+.message-item:active .message-menu-btn {
+	opacity: 1;
+}
+
+.message-menu {
+	position: absolute;
+	bottom: calc(100% + 6px);
+	z-index: 50;
+	background: var(--bg-panel);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-md);
+	min-width: 130px;
+	overflow: hidden;
+	animation: menu-pop 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.message-menu--mine  { right: 0; }
+.message-menu--theirs { left: 0; }
+
+@keyframes menu-pop {
+	from { opacity: 0; transform: scale(0.92) translateY(4px); }
+	to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.message-menu-item {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	background: none;
+	border: none;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-secondary);
+	font-family: var(--font-sans);
+	cursor: pointer;
+	text-align: left;
+	transition: background 0.12s;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.message-menu-item:hover,
+.message-menu-item:active {
+	background: var(--bg-hover);
+}
+
+.message-menu-item:disabled {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.message-menu-item--danger {
+	color: #ef4444;
+}
+
+.message-menu-item--danger:hover,
+.message-menu-item--danger:active {
+	background: rgba(239, 68, 68, 0.06);
+}
+
+/* ── Desktop: show hover buttons, hide mobile menu ── */
+@media (min-width: 769px) {
+	.message-menu-wrap {
+		display: none !important;
+	}
+	.message-action-buttons--desktop {
+		display: flex;
+	}
+}
+
+/* ── Mobile: hide hover buttons, show three-dot menu ── */
+@media (max-width: 768px) {
+	.message-action-buttons--desktop {
+		display: none !important;
+	}
+	.message-menu-wrap {
+		display: flex;
+	}
+	.message-menu-btn {
+		opacity: 1; /* always visible on mobile, no hover state */
+	}
+	.message-item:hover .message-action-buttons {
+		opacity: 0; /* disable desktop hover reveal on mobile */
+	}
+}
+
+
+/* ── Copy / mobile menu additions ──────────────────────────── */
+
+/* theirs copy button — appears on hover like mine actions */
+.message-action-buttons--theirs {
+	flex-direction: row;
+}
+
+/* Hide desktop actions on mobile, show dots instead */
+@media (max-width: 768px) {
+	.message-action-buttons--desktop {
+		display: none !important;
+	}
+	.message-mobile-menu {
+		display: flex;
+		align-items: center;
+	}
+}
+
+/* Hide dots on desktop */
+@media (min-width: 769px) {
+	.message-mobile-menu {
+		display: none;
+	}
+}
+
+.message-dots-btn {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--radius-sm);
+	background: none;
+	border: none;
+	color: var(--text-ghost);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s, background 0.15s, color 0.15s;
+	-webkit-tap-highlight-color: transparent;
+	flex-shrink: 0;
+}
+
+.message-item:hover .message-dots-btn,
+.message-mobile-menu:focus-within .message-dots-btn {
+	opacity: 1;
+}
+
+@media (max-width: 768px) {
+	.message-dots-btn {
+		opacity: 1;
+	}
+}
+
+.message-dots-btn:hover {
+	background: var(--bg-hover);
+	color: var(--text-muted);
+}
+
+.message-mobile-menu {
+	position: relative;
+}
+
+.message-context-menu {
+	position: absolute;
+	bottom: calc(100% + 6px);
+	z-index: 200;
+	background: var(--bg-panel);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-md);
+	min-width: 130px;
+	overflow: hidden;
+	animation: context-pop 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes context-pop {
+	from { opacity: 0; transform: scale(0.92) translateY(4px); }
+	to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.message-context-menu--mine {
+	right: 0;
+}
+
+.message-context-menu--theirs {
+	left: 0;
+}
+
+.message-context-item {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	background: none;
+	border: none;
+	font-size: 13px;
+	font-family: var(--font-sans);
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: background 0.12s;
+	text-align: left;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.message-context-item:hover,
+.message-context-item:active {
+	background: var(--bg-hover);
+}
+
+.message-context-item:disabled {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.message-context-item--danger {
+	color: #dc2626;
+}
+
+.message-context-item--danger:hover {
+	background: rgba(220, 38, 38, 0.06);
+}
