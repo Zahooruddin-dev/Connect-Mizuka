@@ -1,13 +1,13 @@
 const pool = require('./Pool');
-async function getChatHistoryQuery(channel_id,limit,offset) {
-	const query = `SELECT m.id, m.content, m.created_at, u.username, m.sender_id
+async function getChatHistoryQuery(channel_id, limit, offset) {
+	const query = `SELECT m.id, m.content, m.created_at, u.username, m.sender_id ,   u.profile_picture 
     FROM messages m
     JOIN users u ON m.sender_id = u.id
     WHERE m.channel_id = $1
     ORDER BY m.created_at DESC
     LIMIT $2 OFFSET $3
   `;
-	const { rows } = await pool.query(query, [channel_id,limit,offset]);
+	const { rows } = await pool.query(query, [channel_id, limit, offset]);
 	return rows || null;
 }
 

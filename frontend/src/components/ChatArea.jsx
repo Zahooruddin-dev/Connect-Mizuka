@@ -148,6 +148,8 @@ function ChatArea({
 							content: msg.content,
 							sender_id: msg.sender_id,
 							username: msg.username,
+							profile_picture:
+								msg.profile_picture || user.profile_picture || null,
 							created_at: msg.created_at,
 						};
 						return next;
@@ -158,15 +160,15 @@ function ChatArea({
 				if (msg.channel_id && msg.channel_id !== activeId) return;
 				if (msg.from === user.id || msg.sender_id === user.id) return;
 			}
-
 			const normalised = {
 				id: msg.id,
 				content: msg.text ?? msg.content,
 				sender_id: msg.from ?? msg.sender_id,
 				username: msg.username,
+				profile_picture:
+					msg.profile_picture || msg.sender_picture || msg.avatar || null,
 				created_at: msg.timestamp ?? msg.created_at,
 			};
-
 			setAndCache((prev) => {
 				if (prev.some((m) => m.id === normalised.id)) return prev;
 				return [...prev, normalised];
