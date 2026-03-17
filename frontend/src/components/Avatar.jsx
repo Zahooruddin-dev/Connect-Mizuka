@@ -1,14 +1,12 @@
 export default function Avatar({ src, username, size = 30, className = '' }) {
 	const initial = username?.[0]?.toUpperCase() || '?';
 
-	const base = 'rounded-full shrink-0 flex items-center justify-content font-semibold text-white/90';
-
 	if (src) {
 		return (
 			<img
 				src={src}
 				alt={username ? `${username}'s avatar` : 'User avatar'}
-				className={`${base} object-cover ${className}`}
+				className={`rounded-full shrink-0 object-cover ${className}`}
 				style={{ width: size, height: size }}
 			/>
 		);
@@ -16,7 +14,7 @@ export default function Avatar({ src, username, size = 30, className = '' }) {
 
 	return (
 		<div
-			className={`${base} ${className}`}
+			className={`rounded-full shrink-0 flex items-center justify-center font-semibold text-white/90 ${className}`}
 			style={{
 				width: size,
 				height: size,
