@@ -101,12 +101,12 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 										{user.username?.[0]?.toUpperCase() || 'U'}
 									</div>
 								)}
-								<div className="text-base font-medium text-[var(--text-primary)] mb-1 break-words" id="popover-title">
-									{user.username}
-								</div>
-								<div className="text-[11px] text-[var(--text-muted)] uppercase tracking-[0.06em] font-medium">
-									{user.role || 'Member'}
-								</div>
+<div className="text-base font-medium text-zinc-900 mb-1 break-words" id="popover-title">
+    {user.username}
+</div>
+<div className="text-[11px] text-zinc-500 uppercase tracking-[0.06em] font-medium">
+    {user.role || 'Member'}
+</div>
 							</div>
 
 							<div className={infoGroupCls}>
