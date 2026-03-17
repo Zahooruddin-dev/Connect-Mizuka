@@ -291,6 +291,15 @@ export const deleteP2PMessage = async (messageId) => {
 
 export const fetchUnreadCounts = () => api.get('/p2p/unread-counts');
 
+export const fetchUserChatrooms = async () => {
+	try {
+		const res = await api.get('/p2p/rooms');
+		return res.data.rooms || [];
+	} catch (err) {
+		return [];
+	}
+};
+
 export const markRoomAsRead = async (roomId) => {
 	try {
 		const res = await api.post(`/p2p/read/${roomId}`);
