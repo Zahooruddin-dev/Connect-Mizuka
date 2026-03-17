@@ -124,6 +124,16 @@ async function getUnreadCounts(req, res) {
 	}
 }
 
+async function getUserChatrooms(req, res) {
+	const userId = req.user.id;
+	try {
+		const rooms = await db.getUserChatrooms(userId);
+		res.status(200).json({ rooms });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to fetch chatrooms' });
+	}
+}
+ 
 module.exports = {
 	getOrCreateChatroom,
 	getMessages,
@@ -132,4 +142,5 @@ module.exports = {
 	markRoomAsRead,
 	deleteMsg,
 	editMsg,
+	getUserChatrooms
 };
