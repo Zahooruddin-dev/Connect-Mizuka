@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getUserProfile, getOrCreateP2PRoom } from '../services/api';
 import { useAuth } from '../services/AuthContext';
-import './styles/Userprofilepopover.css';
+
+const infoGroupCls = 'flex flex-col gap-1.5 mb-4 pb-4 border-b border-[var(--border)] last:border-b-0 last:mb-0 last:pb-0';
+const infoLabelCls = 'text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-ghost)]';
+const infoValueCls = 'text-sm text-[var(--text-secondary)] break-all';
 
 function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	const [user, setUser] = useState(null);
@@ -23,17 +26,11 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 			}
 		};
 		load();
-		return () => {
-			isMounted = false;
-		};
+		return () => { isMounted = false; };
 	}, [userId]);
 
 	const formattedDate = user?.created_at
-		? new Date(user.created_at).toLocaleDateString(undefined, {
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric',
-			})
+		? new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
 		: null;
 
 	function handleOverlayClick(e) {
@@ -42,25 +39,13 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 
 	async function handleStartDirectMessage() {
 		if (!user || !currentUser || creatingRoom) return;
-		if (currentUser.id === userId) {
-			alert('You cannot message yourself');
-			return;
-		}
-
+		if (currentUser.id === userId) { alert('You cannot message yourself'); return; }
 		setCreatingRoom(true);
 		try {
 			const res = await getOrCreateP2PRoom(userId);
-			if (res.error) {
-				alert('Failed to open chat: ' + res.error);
-				setCreatingRoom(false);
-				return;
-			}
+			if (res.error) { alert('Failed to open chat: ' + res.error); setCreatingRoom(false); return; }
 			if (res.chatroom && typeof onStartP2P === 'function') {
-				onStartP2P({
-					roomId: res.chatroom.id,
-					otherUserId: userId,
-					otherUsername: user.username,
-				});
+				onStartP2P({ roomId: res.chatroom.id, otherUserId: userId, otherUsername: user.username });
 				onClose();
 			} else {
 				setCreatingRoom(false);
@@ -74,71 +59,81 @@ function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	const isOwnProfile = currentUser?.id === userId;
 
 	return (
-		<div className='popover-overlay' onClick={handleOverlayClick}>
+		<div
+			className="fixed inset-0 bg-black/50 backdrop-blur-[3px] z-[2000] flex items-center justify-center p-5 animate-[overlay-fade-in_0.2s_ease-out]"
+			onClick={handleOverlayClick}
+		>
 			<div
-				className='user-popover'
-				role='dialog'
-				aria-modal='true'
-				aria-labelledby='popover-title'
+				className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl w-full max-w-[420px] shadow-[0_8px_28px_rgba(0,0,0,0.32)] flex flex-col overflow-hidden animate-[panel-slide-up_0.25s_cubic-bezier(0.16,1,0.3,1)]"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="popover-title"
 			>
 				{loading ? (
-					<div className='popover-loading'>
+					<div className="flex flex-col items-center justify-center gap-3 py-10 text-[var(--text-muted)] text-sm">
 						<span>Loading...</span>
 					</div>
 				) : user ? (
 					<>
-						<div className='popover-header'>
+						<div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-end">
 							<button
-								className='popover-close'
+								className="w-[30px] h-[30px] flex items-center justify-center rounded-[7px] text-[var(--text-ghost)] transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
 								onClick={onClose}
-								aria-label='Close popover'
+								aria-label="Close popover"
 							>
 								<X size={18} strokeWidth={2} />
 							</button>
 						</div>
 
-						<div className='popover-body'>
-							<div className='popover-header-center'>
+						<div className="px-5 py-6 flex flex-col overflow-y-auto max-h-[70vh]">
+							<div className="text-center mb-6">
 								{user.profile_picture ? (
 									<img
 										src={user.profile_picture}
 										alt={user.username}
-										className='popover-avatar popover-avatar-img'
+										className="w-14 h-14 mx-auto mb-3 rounded-full object-cover"
 									/>
 								) : (
-									<div className='popover-avatar'>
+									<div
+										className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center text-xl font-semibold text-white/90"
+										style={{ background: 'linear-gradient(135deg, var(--teal-800), var(--teal-600))' }}
+									>
 										{user.username?.[0]?.toUpperCase() || 'U'}
 									</div>
 								)}
-								<div className='popover-name'>{user.username}</div>
-								<div className='popover-role'>{user.role || 'Member'}</div>
+								<div className="text-base font-medium text-[var(--text-primary)] mb-1 break-words" id="popover-title">
+									{user.username}
+								</div>
+								<div className="text-[11px] text-[var(--text-muted)] uppercase tracking-[0.06em] font-medium">
+									{user.role || 'Member'}
+								</div>
 							</div>
 
-							<div className='popover-info-group'>
-								<span className='popover-info-label'>Email</span>
-								<span className='popover-info-value'>{user.email}</span>
+							<div className={infoGroupCls}>
+								<span className={infoLabelCls}>Email</span>
+								<span className={infoValueCls}>{user.email}</span>
 							</div>
 
-							<div className='popover-info-group'>
-								<span className='popover-info-label'>Member Since</span>
-								<span className='popover-info-value'>{formattedDate}</span>
+							<div className={infoGroupCls}>
+								<span className={infoLabelCls}>Member Since</span>
+								<span className={infoValueCls}>{formattedDate}</span>
 							</div>
 
-							<div className='popover-actions'>
-								{!isOwnProfile && (
+							{!isOwnProfile && (
+								<div className="flex flex-col gap-2 mt-4 pt-4 border-t border-[var(--border)]">
 									<button
-										className='popover-action-btn'
+										className="px-3 py-2 border border-[var(--border)] text-[var(--text-secondary)] rounded-[7px] text-[13px] font-medium flex items-center justify-center gap-1.5 transition-[background,border-color,color] duration-150 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-hover)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
 										onClick={handleStartDirectMessage}
 										disabled={creatingRoom}
 									>
 										{creatingRoom ? 'Opening...' : 'Direct Message'}
 									</button>
-								)}
-							</div>
+								</div>
+							)}
 						</div>
 					</>
 				) : (
-					<div className='popover-loading'>
+					<div className="flex flex-col items-center justify-center gap-3 py-10 text-[var(--text-muted)] text-sm">
 						<span>User not found</span>
 					</div>
 				)}
