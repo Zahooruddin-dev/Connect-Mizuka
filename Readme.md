@@ -1,459 +1,174 @@
-# 💬 Mizuka — Real-Time Multi-Institute Chat Engine
+# Mizuka Connect
 
-> A modern, scalable chat platform designed for educational institutions and organizations. Built with React, Express, PostgreSQL, and Socket.io for seamless real-time communication across multiple institutes.
+A real-time chat platform for institutes and teams. Create organisations, manage channels, and message people directly — all in one place.
 
-<!-- [![GitHub](https://img.shields.io/badge/GitHub-zahooruddin--dev-181717?logo=github&logoColor=white)](https://github.com/zahooruddin-dev)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-mizuka.vercel.app-00D9FF?logo=vercel&logoColor=white)](https://mizuka.vercel.app) -->
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+![Stack](https://img.shields.io/badge/React-18-61dafb?style=flat&logo=react) ![Stack](https://img.shields.io/badge/Node.js-Express-green?style=flat&logo=node.js) ![Stack](https://img.shields.io/badge/Socket.io-v4-black?style=flat&logo=socket.io) ![Stack](https://img.shields.io/badge/PostgreSQL-blue?style=flat&logo=postgresql)
 
----
+## Overview
 
-## 🌟 Features
+Mizuka Connect is a full-stack chat application where users can:
 
-### Core Chat Functionality
-- ✅ **Real-Time Messaging** — Instant message delivery powered by Socket.io
-- ✅ **Channel-Based Communication** — Organize conversations by institute and topic
-- ✅ **Direct Messages (P2P)** — One-on-one private conversations with unread tracking
-- ✅ **Typing Indicators** — See who's typing in real-time
-- ✅ **Message Search** — Full-text search across channels and conversations
-- ✅ **Message Management** — Delete and edit your own messages
+- Join or create **institutes** (organisations, teams, schools)
+- Communicate in real-time via **channels** within an institute
+- Send **direct messages** to any institute member
+- Upload and display **profile pictures** across the entire UI
+- Manage their **profile** (username, password, photo) in-app
 
-### Multi-Tenant Architecture
-- ✅ **Multiple Institutes** — Users can belong to and switch between multiple organizations
-- ✅ **Role-Based Access** — Admin and member roles with permission enforcement
-- ✅ **Member Discovery** — Search and connect with other institute members
-- ✅ **Presence Tracking** — See who's online across your institutes
+## Architecture
 
-### User Experience
-- ✅ **Dark Theme UI** — Beautiful teal-themed interface optimized for clarity
-- ✅ **Mobile Responsive** — Works seamlessly on desktop and mobile devices
-- ✅ **Secure Authentication** — JWT-based auth with password reset flow
-- ✅ **Session Persistence** — Stay logged in across page refreshes
-
----
-
-## 🏗️ Tech Stack
-
-### Frontend
-| Technology | Purpose |
-|---|---|
-| **React 18** | UI framework |
-| **Vite 5** | Build tool & dev server |
-| **Socket.io Client 4** | Real-time WebSocket client |
-| **Axios** | HTTP client |
-| **Vanilla CSS** | Styling (no frameworks) |
-| **Lucide React** | Icon library |
-
-### Backend
-| Technology | Purpose |
-|---|---|
-| **Node.js + Express** | REST API & HTTP server |
-| **Socket.io** | Real-time bidirectional communication |
-| **PostgreSQL** | Relational database |
-| **JWT** | Stateless authentication |
-| **Nodemailer** | Email service (password reset) |
-| **Bcrypt** | Password hashing |
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- **Node.js** 18+ (LTS recommended)
-- **PostgreSQL** (local, Neon, or managed service)
-- **npm** or **yarn**
-- **Gmail account** (for password reset emails)
-
-### 1️⃣ Clone the Repository
-
-```bash
-git clone https://github.com/zahooruddin-dev/Mizuka.git
-cd Mizuka
+```
+Mizuka Connect
+├── frontend/          React + Vite SPA
+└── backend/           Node.js + Express + Socket.io API
 ```
 
-### 2️⃣ Setup Backend
+The frontend communicates with the backend over:
+- **REST** (Axios) for data fetching, auth, and management operations
+- **WebSocket** (Socket.io) for real-time messages, typing indicators, and presence
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js v18+
+- PostgreSQL database
+- Cloudinary account (for profile pictures)
+
+### Backend
 
 ```bash
 cd backend
 npm install
 ```
 
-Create a `.env` file in the `backend/` directory:
+Create `backend/.env`:
 
 ```env
-# Server
 PORT=3000
-NODE_ENV=development
-
-# Database
-DATABASE_URL=postgres://user:password@localhost:5432/mizuka
-
-# Authentication
-JWT_SECRET=your_super_secret_key_here_make_it_long
-
-# Email (Gmail App Password)
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_gmail_app_password
-
-# Frontend URL (for CORS)
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+JWT_SECRET=your_jwt_secret
 FRONTEND_URL=http://localhost:5173
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
 ```
 
-Start the backend:
+Run the database migration:
+
+```sql
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT DEFAULT NULL;
+```
 
 ```bash
-npm run server    # development (with nodemon)
-npm start         # production
+npm run server   # development with nodemon
+npm start        # production
 ```
 
-Backend runs on `http://localhost:3000`
-
-### 3️⃣ Setup Frontend
+### Frontend
 
 ```bash
 cd frontend
 npm install
 ```
 
-Create a `.env` file in the `frontend/` directory (if needed):
+Create `frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
 ```
 
-Start the frontend:
-
 ```bash
-npm run dev
+npm run dev      # development
+npm run build    # production build
 ```
 
-Frontend runs on `http://localhost:5173`
+## Features
 
-### 4️⃣ Access the App
+### Institutes & Channels
+- Admins create institutes with a default General Hallway channel
+- Members join via invite key
+- Admins can create, rename, and delete channels
+- All channel changes broadcast in real time to every connected member
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+### Real-time Messaging
+- Messages delivered instantly via Socket.io
+- Typing indicators per channel and per DM
+- Message history loaded from the database on open, cached for the session
+- Optimistic rendering — messages appear immediately before server confirms
 
-**Test Account:**
-- Email: `test@example.com`
-- Password: `TestPassword123!`
+### Direct Messages
+- One-to-one conversations between institute members
+- Recent conversations always visible on login — seeded from the backend, not just local storage
+- Unread badge counts updated in real time
+- Inbox auto-switches when a DM is opened from anywhere in the app
 
----
+### Profile Pictures
+- Upload from the profile panel — processed and stored via Cloudinary
+- Appears in the sidebar footer, inbox chat list, message avatars, DM header, and profile popover
+- Updates everywhere live without re-logging in
 
-## 📁 Project Structure
+### Message Actions
+- Copy, edit, and delete your own messages
+- Copy any message
+- Desktop: actions appear on hover
+- Mobile: three-dot menu with a context menu
+
+### Mobile
+- Fully responsive — sidebar slides in as a drawer on small screens
+- iOS keyboard zoom prevention on all inputs
+- Touch-friendly tap targets throughout
+
+## Repository Structure
 
 ```
-Mizuka/
-├── 📖 README.md                    ← You are here
-├── 📋 LICENSE
-│
-├── backend/                        ← Express + Socket.io API
-│   ├── 📘 BACKEND.md              ← Detailed backend documentation
-│   ├── app.js                     ← Server entry point
-│   ├── package.json
-│   ├── .env.example               ← Environment template
-│   │
-│   ├── Controller/                ← Business logic
-│   │   ├── AuthController.js
-│   │   ├── channelController.js
-│   │   ├── messageController.js
-│   │   ├── p2pController.js
-│   │   └── ...
-│   │
-│   ├── Routes/                    ← API routes
-│   │   ├── authRoutes.js
-│   │   ├── channelRoutes.js
-│   │   └── ...
-│   │
-│   ├── db/                        ← Database & queries
-│   │   ├── Pool.js
-│   │   ├── queryAuth.js
-│   │   ├── queryChannel.js
-│   │   └── ...
-│   │
-│   ├── Socket-Controllers/        ← Real-time handlers
-│   │   ├── messageController.js
-│   │   └── P2psocketcontroller.js
-│   │
-│   ├── middleware/                ← Authentication guards
-│   │   └── authMiddleware.js
-│   │
-│   └── utility/                   ← Helpers
-│       └── emailSender.js
-│
-├── frontend/                      ← React + Vite SPA
-│   ├── 📘 FRONTEND.md             ← Detailed frontend documentation
-│   ├── index.html
-│   ├── vite.config.js
-│   ├── package.json
-│   │
-│   ├── src/
-│   │   ├── main.jsx               ← React entry point
-│   │   ├── App.jsx                ← Root app shell
-│   │   │
-│   │   ├── pages/                 ← Full-page components
-│   │   │   └── LoginPage.jsx
-│   │   │
-│   │   ├── components/            ← Reusable UI components
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── ChatArea.jsx
-│   │   │   ├── MessageList.jsx
-│   │   │   ├── InstitutePanel.jsx
-│   │   │   └── ...
-│   │   │
-│   │   ├── services/              ← API & state management
-│   │   │   ├── AuthContext.jsx
-│   │   │   ├── api.js
-│   │   │   ├── p2p-api.js
-│   │   │   └── socket.js
-│   │   │
-│   │   ├── utils/                 ← Helper functions
-│   │   │   └── time.js
-│   │   │
-│   │   └── styles/                ← Global CSS
-│   │       ├── global.css
-│   │       └── app.css
-│   │
-│   └── public/                    ← Static assets
-│
-└── docs/                          ← (Optional) Additional documentation
-    ├── API.md
-    ├── ARCHITECTURE.md
-    └── DEPLOYMENT.md
+mizuka-connect/
+├── README.md                   # This file
+├── backend/
+│   ├── README.md               # Backend documentation
+│   ├── app.js
+│   ├── Routes/
+│   ├── Controller/
+│   ├── Socket-Controllers/
+│   ├── db/
+│   ├── middleware/
+│   └── validation/
+└── frontend/
+    ├── README.md               # Frontend documentation
+    ├── src/
+    │   ├── App.jsx
+    │   ├── components/
+    │   ├── pages/
+    │   ├── services/
+    │   ├── utils/
+    │   └── styles/
+    └── public/
 ```
 
----
+## Tech Stack
 
-## 🔐 Authentication & Security
+| Area | Technology |
+|---|---|
+| Frontend | React 18, Vite, Socket.io client, Axios, Lucide React |
+| Backend | Node.js, Express v5, Socket.io v4 |
+| Database | PostgreSQL |
+| Auth | JWT, bcrypt |
+| File storage | Cloudinary |
+| Validation | Zod |
+| Fonts | Sora, DM Mono |
+| Hosting | Koyeb (backend), Vercel / Netlify (frontend) |
 
-### Login & Registration
+## Deployment
 
-1. **Register** → Provide username, email, password, and role (member/admin)
-2. **Login** → Receive JWT token valid for 24 hours
-3. **Join Institute** → Use an institute UUID to become a member or link existing account
-4. **Switch Institutes** → Toggle between multiple institutes seamlessly
+The backend is deployed on **Koyeb free tier**. On first request after a period of inactivity the server takes approximately 30 seconds to wake. The frontend displays a waking banner during this period automatically.
 
-### Admin Features
+For production, set `VITE_API_URL` in the frontend to your deployed backend URL and `FRONTEND_URL` in the backend to your deployed frontend URL.
 
-Only users with `role = 'admin'` can:
-- Create and manage channels
-- Delete channels and messages
-- Rename channels
-- View institute member list and dashboard
+## Detailed Documentation
 
----
-
-## 📡 Real-Time Features
-
-### WebSocket Events
-
-The app uses **Socket.io** for real-time communication:
-
-**Channels:**
-- Send and receive messages instantly
-- See typing indicators in real-time
-- Get notifications when channels are created/renamed/deleted
-
-**Direct Messages (P2P):**
-- One-on-one conversations with unread tracking
-- Real-time message delivery
-- Online status indicators
-
-See `FRONTEND.md` and `BACKEND.md` for complete Socket.io contracts.
-
----
-
-## 🗄️ Database Setup
-
-### Quick Start (PostgreSQL)
-
-1. **Create database:**
-   ```bash
-   createdb mizuka
-   ```
-
-2. **Run schema setup** (provided in `backend/db/`):
-   ```sql
-   -- See BACKEND.md for full schema
-   ```
-
-3. **Connection string:**
-   ```
-   DATABASE_URL=postgres://user:password@localhost:5432/mizuka
-   ```
-
-### Using Neon (Recommended for Development)
-
-1. Sign up at [neon.tech](https://neon.tech)
-2. Create a PostgreSQL project
-3. Copy the connection string to `.env`
-4. Tables are auto-created on first run (with proper migrations)
-
----
-
-## 🧪 Testing the API
-
-### Using REST Client
-
-Install a REST client extension:
-- **VS Code:** REST Client by Huachao Mao
-- **Postman** or **Insomnia** (standalone apps)
-
-Example request:
-
-```http
-POST http://localhost:3000/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-See `BACKEND.md` for the complete API reference.
-
----
-
-## 📚 Detailed Documentation
-
-Each folder contains comprehensive documentation:
-
-| Folder | Documentation | Topics Covered |
-|--------|---------------|---|
-| **frontend/** | [`FRONTEND.md`](./frontend/FRONTEND.md) | React components, Socket.io setup, state management, design system |
-| **backend/** | [`BACKEND.md`](./backend/BACKEND.md) | REST endpoints, database schema, authentication, Socket.io events |
-
-**Start here:**
-- **New to frontend?** → Read [`frontend/FRONTEND.md`](./frontend/FRONTEND.md)
-- **New to backend?** → Read [`backend/BACKEND.md`](./backend/BACKEND.md)
-- **Deploying?** → Check deployment guides in respective folders
-
----
-
-## 🌐 Live Demo
-
-Check out the live version: **[mizuka.vercel.app](https://mizuka.vercel.app)**
-
-Test credentials are available after registration.
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Port already in use?**
-```bash
-# Change port in .env
-PORT=4000
-```
-
-**Database connection error?**
-```bash
-# Verify DATABASE_URL in .env
-# Test connection: psql $DATABASE_URL
-```
-
-**Socket.io not connecting?**
-- Check that backend is running on `http://localhost:3000`
-- Verify Vite proxy is configured correctly (see `frontend/vite.config.js`)
-- Browser console should show no CORS errors
-
-**Email not sending?**
-- Use Gmail App Password (not regular password)
-- Enable "Less secure app access" if using older Gmail account
-- Check `EMAIL_USER` and `EMAIL_PASS` in `.env`
-
-See `FRONTEND.md` and `BACKEND.md` for more detailed troubleshooting.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how to help:
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Guidelines
-- Follow existing code style and naming conventions
-- Add tests for new features
-- Update documentation when changing API or features
-- Test on both desktop and mobile before submitting PR
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see [LICENSE](LICENSE) file for details.
-
----
-
-## 👤 About the Developer
-
-**Zahooruddin (MZ)**
-- 📧 Email: [mzkhan886@gmail.com](mailto:mzkhan886@gmail.com)
-- 🐙 GitHub: [@zahooruddin-dev](https://github.com/zahooruddin-dev)
-- 🌐 Portfolio: [mizuka.vercel.app](https://mizuka.vercel.app)
-
----
-
-## 📬 Support & Questions
-
-Have questions or found a bug?
-
-- **GitHub Issues:** [Create an issue](https://github.com/zahooruddin-dev/Mizuka/issues)
-- **Email:** [mzkhan886@gmail.com](mailto:mzkhan886@gmail.com)
-- **Check docs first:** Review `FRONTEND.md` or `BACKEND.md` for detailed answers
-
----
-
-## 🎯 Roadmap
-
-### Planned Features
-- [ ] File sharing & attachment uploads
-- [ ] Voice & video calling
-- [ ] Message reactions & threading
-- [ ] Channel pinned messages
-- [ ] Admin analytics dashboard
-- [ ] Mobile app (React Native)
-- [ ] Dark/Light theme toggle
-- [ ] Message encryption
-
-### In Progress
-- Unread message badge optimization
-- P2P message search improvements
-- Institute member invitations via email
-
----
-
-## 🙏 Acknowledgments
-
-- **Socket.io** — for real-time WebSocket magic
-- **PostgreSQL** — for reliable data persistence
-- **Vite** — for blazing-fast frontend development
-- **Express** — for the robust backend framework
-- The open-source community for countless libraries and tools
-
----
-
-## 📊 Project Status
-
-| Component | Status |
-|-----------|--------|
-| Core Chat (Channels) | ✅ Production Ready |
-| Direct Messages (P2P) | ✅ Production Ready |
-| Real-Time Messaging | ✅ Stable |
-| Authentication | ✅ Secure |
-| Database | ✅ Optimized |
-| Frontend (React) | ✅ Responsive |
-| API (REST) | ✅ Complete |
-
----
-
+- [Backend README](./backend/README.md) — API reference, socket events, database schema
+- [Frontend README](./frontend/README.md) — component structure, design system, state management
 <div align="center">
 
 **Made with ❤️ by Zahooruddin**
