@@ -28,7 +28,7 @@ function WakingBanner({ visible }) {
 }
 
 function App() {
-	const { user, institutes, activeInstitute, logout, isActiveAdmin  } =
+	const { user, institutes, activeInstitute, logout, isActiveAdmin } =
 		useAuth();
 	const [activeChannel, setActiveChannel] = useState(null);
 	const [activeP2P, setActiveP2P] = useState(null);
@@ -53,9 +53,9 @@ function App() {
 			}, 2000);
 
 			try {
-		await fetch(`${import.meta.env.VITE_API_URL ?? ''}/ping`, {
-    method: 'GET',
-});
+				await fetch(`${import.meta.env.VITE_API_URL ?? ''}/ping`, {
+					method: 'GET',
+				});
 			} catch {
 			} finally {
 				clearTimeout(wakingTimer);
