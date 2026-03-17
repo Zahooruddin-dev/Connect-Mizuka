@@ -159,6 +159,45 @@ async function getUnreadCountsForUser(userId) {
 	}
 }
 
+async function getUserChatrooms(userId) {
+	try {
+		const { rows } = await pool.query(
+			`SELECT
+				c.id AS room_id,
+				c.created_at,
+				CASE WHEN c.user_one_id = $1 THEN c.user_two_id ELSE c.user_one_id END AS other_user_id,
+				u.username AS other_username,
+				u.profile_picture AS other_profile_picture,
+				u.role AS other_role,
+				u.email AS other_email,
+				(
+					SELECT content FROM p2p_messages
+					WHERE chatroom_id = c.id
+					ORDER BY created_at DESC LIMIT 1
+				) AS last_content,
+				(
+					SELECT sender_id FROM p2p_messages
+					WHERE chatroom_id = c.id
+					ORDER BY created_at DESC LIMIT 1
+				) AS last_sender_id,
+				(
+					SELECT created_at FROM p2p_messages
+					WHERE chatroom_id = c.id
+					ORDER BY created_at DESC LIMIT 1
+				) AS last_created_at
+			FROM p2p_chatrooms c
+			JOIN users u ON u.id = CASE WHEN c.user_one_id = $1 THEN c.user_two_id ELSE c.user_one_id END
+			WHERE c.user_one_id = $1 OR c.user_two_id = $1
+			ORDER BY last_created_at DESC NULLS LAST`,
+			[userId],
+		);
+		return rows;
+	} catch (error) {
+		console.error('getUserChatrooms error:', error);
+		throw error;
+	}
+}
+
 async function getChatroomMembers(chatroomId) {
 	try {
 		const { rows } = await pool.query(
@@ -185,5 +224,6 @@ module.exports = {
 	deleteP2PMessagesQuery,
 	editP2PMessagesQuery,
 	searchP2PMessagesQuery,
+	getUserChatrooms,
 	getChatroomMembers,
 };

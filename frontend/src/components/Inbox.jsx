@@ -20,17 +20,17 @@ function Inbox({
 	setRoomUnread,
 	currentUserPicture,
 }) {
-	const [searchTerm, setSearchTerm] = useState('');
-	const [results, setResults] = useState([]);
-	const [loading, setLoading] = useState(false);
-	const [startingChat, setStartingChat] = useState(null);
-	const [msgSearchOpen, setMsgSearchOpen] = useState(false);
-	const [msgSearchTerm, setMsgSearchTerm] = useState('');
+	const [searchTerm,       setSearchTerm]       = useState('');
+	const [results,          setResults]          = useState([]);
+	const [loading,          setLoading]          = useState(false);
+	const [startingChat,     setStartingChat]     = useState(null);
+	const [msgSearchOpen,    setMsgSearchOpen]    = useState(false);
+	const [msgSearchTerm,    setMsgSearchTerm]    = useState('');
 	const [msgSearchResults, setMsgSearchResults] = useState([]);
 	const [msgSearchLoading, setMsgSearchLoading] = useState(false);
 
-	const debounceTimer = useRef(null);
-	const msgDebounceTimer = useRef(null);
+	const debounceTimer     = useRef(null);
+	const msgDebounceTimer  = useRef(null);
 	const msgSearchInputRef = useRef(null);
 
 	useEffect(() => {
@@ -60,18 +60,11 @@ function Inbox({
 		(val) => {
 			setSearchTerm(val);
 			clearTimeout(debounceTimer.current);
-			if (val.length < 2) {
-				setResults([]);
-				return;
-			}
+			if (val.length < 2) { setResults([]); return; }
 			setLoading(true);
 			debounceTimer.current = setTimeout(async () => {
 				try {
-					const users = await searchInstituteMembers(
-						activeInstitute.id,
-						val,
-						currentUser.id,
-					);
+					const users = await searchInstituteMembers(activeInstitute.id, val, currentUser.id);
 					setResults(users || []);
 				} catch {
 					setResults([]);
@@ -105,19 +98,14 @@ function Inbox({
 
 				setRecentChats((prev) => {
 					const idx = prev.findIndex((c) => c.roomId === entry.roomId);
-					const next =
-						idx !== -1
-							? prev.map((c, i) => (i === idx ? { ...c, ...entry } : c))
-							: [entry, ...prev].slice(0, 20);
+					const next = idx !== -1
+						? prev.map((c, i) => (i === idx ? { ...c, ...entry } : c))
+						: [entry, ...prev].slice(0, 20);
 					localStorage.setItem('mizuka_recent_p2p_chats', JSON.stringify(next));
 					return next;
 				});
 
-				onStartP2P?.({
-					roomId: res.chatroom.id,
-					otherUserId: user.id,
-					otherUsername: user.username,
-				});
+				onStartP2P?.({ roomId: res.chatroom.id, otherUserId: user.id, otherUsername: user.username });
 				setSearchTerm('');
 				setResults([]);
 			} catch {
@@ -137,14 +125,8 @@ function Inbox({
 		(val) => {
 			setMsgSearchTerm(val);
 			clearTimeout(msgDebounceTimer.current);
-			if (!val.trim() || val.length < 2) {
-				setMsgSearchResults([]);
-				return;
-			}
-			if (!recentChats.length) {
-				setMsgSearchResults([]);
-				return;
-			}
+			if (!val.trim() || val.length < 2) { setMsgSearchResults([]); return; }
+			if (!recentChats.length) { setMsgSearchResults([]); return; }
 			setMsgSearchLoading(true);
 			msgDebounceTimer.current = setTimeout(async () => {
 				try {
@@ -160,9 +142,7 @@ function Inbox({
 							otherUsername: recentChats[i].username,
 						}));
 					});
-					merged.sort(
-						(a, b) => new Date(b.created_at) - new Date(a.created_at),
-					);
+					merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 					setMsgSearchResults(merged);
 				} catch {
 					setMsgSearchResults([]);
@@ -176,12 +156,7 @@ function Inbox({
 
 	const handleMsgResultClick = useCallback(
 		(result) => {
-			onJumpToP2PMessage?.(
-				result.roomId,
-				result.id,
-				result.otherUserId,
-				result.otherUsername,
-			);
+			onJumpToP2PMessage?.(result.roomId, result.id, result.otherUserId, result.otherUsername);
 			setMsgSearchOpen(false);
 			setMsgSearchTerm('');
 			setMsgSearchResults([]);
@@ -195,14 +170,8 @@ function Inbox({
 		setMsgSearchResults([]);
 	}, []);
 
-	const isOnline = useCallback(
-		(userId) => onlineUsers.has(String(userId)),
-		[onlineUsers],
-	);
-	const getUnread = useCallback(
-		(roomId) => roomUnread[roomId] || 0,
-		[roomUnread],
-	);
+	const isOnline  = useCallback((userId) => onlineUsers.has(String(userId)), [onlineUsers]);
+	const getUnread = useCallback((roomId) => roomUnread[roomId] || 0, [roomUnread]);
 
 	return (
 		<div className='inbox-container'>
@@ -240,23 +209,15 @@ function Inbox({
 							onKeyDown={(e) => e.key === 'Escape' && handleCloseMsgSearch()}
 						/>
 						{msgSearchTerm && (
-							<button
-								className='inbox-msg-search-clear'
-								onClick={handleCloseMsgSearch}
-								aria-label='Clear'
-							>
+							<button className='inbox-msg-search-clear' onClick={handleCloseMsgSearch} aria-label='Clear'>
 								<X size={12} />
 							</button>
 						)}
 					</div>
-					{msgSearchLoading && (
-						<div className='inbox-msg-search-status'>Searching…</div>
+					{msgSearchLoading && <div className='inbox-msg-search-status'>Searching…</div>}
+					{!msgSearchLoading && msgSearchTerm.length >= 2 && msgSearchResults.length === 0 && (
+						<div className='inbox-msg-search-status'>No results found</div>
 					)}
-					{!msgSearchLoading &&
-						msgSearchTerm.length >= 2 &&
-						msgSearchResults.length === 0 && (
-							<div className='inbox-msg-search-status'>No results found</div>
-						)}
 					{msgSearchResults.length > 0 && (
 						<ul className='inbox-msg-search-results'>
 							{msgSearchResults.map((result) => (
@@ -273,15 +234,11 @@ function Inbox({
 											{result.otherUsername}
 										</span>
 										<span className='inbox-msg-result-content'>
-											{result.content?.length > 80
-												? result.content.slice(0, 80) + '…'
-												: result.content}
+											{result.content?.length > 80 ? result.content.slice(0, 80) + '…' : result.content}
 										</span>
 										{result.username && (
 											<span className='inbox-msg-result-meta'>
-												{result.username === currentUser.username
-													? 'You'
-													: result.username}
+												{result.username === currentUser.username ? 'You' : result.username}
 											</span>
 										)}
 									</button>
@@ -308,11 +265,7 @@ function Inbox({
 						className='inbox-search-input'
 					/>
 					{searchTerm && (
-						<button
-							className='inbox-search-clear'
-							onClick={handleClearSearch}
-							aria-label='Clear search'
-						>
+						<button className='inbox-search-clear' onClick={handleClearSearch} aria-label='Clear search'>
 							<X size={14} />
 						</button>
 					)}
@@ -322,9 +275,7 @@ function Inbox({
 			{searchTerm ? (
 				<div className='inbox-results'>
 					{loading ? (
-						<div className='inbox-loading'>
-							<span>Searching...</span>
-						</div>
+						<div className='inbox-loading'><span>Searching...</span></div>
 					) : results.length > 0 ? (
 						<div className='inbox-user-list'>
 							{results.map((user) => (
@@ -336,11 +287,7 @@ function Inbox({
 									title={`Message ${user.username}`}
 								>
 									<div className='inbox-user-avatar-wrap'>
-										<Avatar
-											src={user.profile_picture || null}
-											username={user.username}
-											size={34}
-										/>
+										<Avatar src={user.profile_picture || null} username={user.username} size={34} />
 										{isOnline(user.id) && <span className='inbox-online-dot' />}
 									</div>
 									<div className='inbox-user-info'>
@@ -352,9 +299,7 @@ function Inbox({
 							))}
 						</div>
 					) : (
-						<div className='inbox-empty'>
-							<span>No members found</span>
-						</div>
+						<div className='inbox-empty'><span>No members found</span></div>
 					)}
 				</div>
 			) : (
@@ -364,20 +309,13 @@ function Inbox({
 							<div className='inbox-recent-header'>Recent</div>
 							<div className='inbox-user-list'>
 								{recentChats.map((chat) => {
-									const unread = getUnread(chat.roomId);
+									const unread  = getUnread(chat.roomId);
 									const lastMsg = chat.lastMessage;
 									return (
 										<button
 											key={chat.roomId}
 											className={`inbox-user-item${unread > 0 ? ' has-unread' : ''}`}
-											onClick={() =>
-												handleStartChat({
-													id: chat.id,
-													username: chat.username,
-													email: chat.email,
-													role: chat.role,
-												})
-											}
+											onClick={() => handleStartChat({ id: chat.id, username: chat.username, email: chat.email, role: chat.role })}
 											disabled={startingChat === chat.id}
 											title={`Message ${chat.username}`}
 										>
@@ -385,38 +323,23 @@ function Inbox({
 												<div className='inbox-user-avatar'>
 													{chat.username?.[0]?.toUpperCase() || 'U'}
 												</div>
-												{isOnline(chat.id) && (
-													<span className='inbox-online-dot' />
-												)}
+												{isOnline(chat.id) && <span className='inbox-online-dot' />}
 											</div>
 											<div className='inbox-user-info'>
 												<div className='inbox-user-name'>{chat.username}</div>
 												{lastMsg ? (
-													<div
-														className={`inbox-last-message${unread > 0 ? ' inbox-last-message--unread' : ''}`}
-													>
-														{lastMsg.fromMe && (
-															<span className='inbox-last-message-you'>
-																You:{' '}
-															</span>
-														)}
-														{lastMsg.content?.length > 40
-															? lastMsg.content.slice(0, 40) + '…'
-															: lastMsg.content}
+													<div className={`inbox-last-message${unread > 0 ? ' inbox-last-message--unread' : ''}`}>
+														{lastMsg.fromMe && <span className='inbox-last-message-you'>You: </span>}
+														{lastMsg.content?.length > 40 ? lastMsg.content.slice(0, 40) + '…' : lastMsg.content}
 													</div>
 												) : (
 													<div className='inbox-user-role'>{chat.role}</div>
 												)}
 											</div>
 											{unread > 0 ? (
-												<span className='inbox-unread-badge'>
-													{unread > 99 ? '99+' : unread}
-												</span>
+												<span className='inbox-unread-badge'>{unread > 99 ? '99+' : unread}</span>
 											) : (
-												<MessageCircle
-													size={16}
-													className='inbox-user-action'
-												/>
+												<MessageCircle size={16} className='inbox-user-action' />
 											)}
 										</button>
 									);
@@ -424,9 +347,7 @@ function Inbox({
 							</div>
 						</>
 					) : (
-						<div className='inbox-empty'>
-							<span>No recent chats. Search to start one!</span>
-						</div>
+						<div className='inbox-empty'><span>No recent chats. Search to start one!</span></div>
 					)}
 				</div>
 			)}
