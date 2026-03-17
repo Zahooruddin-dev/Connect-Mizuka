@@ -3,19 +3,14 @@ import { Pencil, Check, X, Trash2, Hash, ArrowLeft } from 'lucide-react';
 import { deleteChannel, updateChannel, getUserProfile } from '../services/api';
 import UserProfilePopover from './Userprofilepopover';
 import socket from '../services/socket';
-import './styles/ChatHeader.css';
+
+const iconBtnCls =
+	'flex items-center justify-center w-8 h-8 rounded-lg transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
 
 function ChatHeader({
-	channelId,
-	channelLabel,
-	instituteId,
-	onChannelDeleted,
-	onChannelRenamed,
-	isAdmin,
-	isP2P,
-	otherUsername,
-	otherUserId,
-	onCloseP2P,
+	channelId, channelLabel, instituteId,
+	onChannelDeleted, onChannelRenamed,
+	isAdmin, isP2P, otherUsername, otherUserId, onCloseP2P,
 }) {
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -30,84 +25,37 @@ function ChatHeader({
 	const inputRef = useRef(null);
 	const channelIdRef = useRef(channelId);
 
-	useEffect(() => {
-		channelIdRef.current = channelId;
-	}, [channelId]);
-
-	useEffect(() => {
-		setNameInput(channelLabel || '');
-		setDisplayName(channelLabel || '');
-	}, [channelLabel]);
-
-	useEffect(() => {
-		if (editing) {
-			inputRef.current?.focus();
-			inputRef.current?.select();
-		}
-	}, [editing]);
-
+	useEffect(() => { channelIdRef.current = channelId; }, [channelId]);
+	useEffect(() => { setNameInput(channelLabel || ''); setDisplayName(channelLabel || ''); }, [channelLabel]);
+	useEffect(() => { if (editing) { inputRef.current?.focus(); inputRef.current?.select(); } }, [editing]);
 	useEffect(() => {
 		if (!isP2P || !otherUserId) return;
-		getUserProfile(otherUserId)
-			.then((data) => {
-				if (data?.user?.profile_picture)
-					setOtherPicture(data.user.profile_picture);
-			})
-			.catch(() => {});
+		getUserProfile(otherUserId).then((data) => { if (data?.user?.profile_picture) setOtherPicture(data.user.profile_picture); }).catch(() => {});
 	}, [isP2P, otherUserId]);
 
 	useEffect(() => {
 		if (isP2P) return;
 		const handleSocketRenamed = ({ channel }) => {
-			if (channel.id === channelIdRef.current) {
-				setDisplayName(channel.name);
-				setNameInput(channel.name);
-			}
+			if (channel.id === channelIdRef.current) { setDisplayName(channel.name); setNameInput(channel.name); }
 		};
 		const handleSocketDeleted = ({ channelId: deletedId }) => {
 			if (deletedId === channelIdRef.current) onChannelDeleted?.(deletedId);
 		};
 		socket.on('channel_renamed', handleSocketRenamed);
 		socket.on('channel_deleted', handleSocketDeleted);
-		return () => {
-			socket.off('channel_renamed', handleSocketRenamed);
-			socket.off('channel_deleted', handleSocketDeleted);
-		};
+		return () => { socket.off('channel_renamed', handleSocketRenamed); socket.off('channel_deleted', handleSocketDeleted); };
 	}, [isP2P, onChannelDeleted]);
 
-	const handleEditStart = useCallback(() => {
-		setNameInput(channelLabel || '');
-		setError('');
-		setEditing(true);
-	}, [channelLabel]);
-
-	const handleEditCancel = useCallback(() => {
-		setEditing(false);
-		setNameInput(channelLabel || '');
-		setError('');
-	}, [channelLabel]);
+	const handleEditStart = useCallback(() => { setNameInput(channelLabel || ''); setError(''); setEditing(true); }, [channelLabel]);
+	const handleEditCancel = useCallback(() => { setEditing(false); setNameInput(channelLabel || ''); setError(''); }, [channelLabel]);
 
 	const handleEditSave = useCallback(async () => {
-		const trimmed = nameInput
-			.trim()
-			.toLowerCase()
-			.replace(/\s+/g, '-')
-			.replace(/[^a-z0-9-_]/g, '');
-
-		if (!trimmed) {
-			setError('Channel name cannot be empty');
-			return;
-		}
-		if (trimmed === channelLabel) {
-			setEditing(false);
-			return;
-		}
-
-		setSaving(true);
-		setError('');
+		const trimmed = nameInput.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
+		if (!trimmed) { setError('Channel name cannot be empty'); return; }
+		if (trimmed === channelLabel) { setEditing(false); return; }
+		setSaving(true); setError('');
 		const res = await updateChannel(channelId, { name: trimmed });
 		setSaving(false);
-
 		if (res?.channel) {
 			setDisplayName(res.channel.name);
 			socket.emit('channel_renamed', { channel: res.channel, instituteId });
@@ -118,140 +66,105 @@ function ChatHeader({
 		}
 	}, [nameInput, channelLabel, channelId, instituteId, onChannelRenamed]);
 
-	const handleKeyDown = useCallback(
-		(e) => {
-			if (e.key === 'Enter') handleEditSave();
-			if (e.key === 'Escape') handleEditCancel();
-		},
-		[handleEditSave, handleEditCancel],
-	);
+	const handleKeyDown = useCallback((e) => {
+		if (e.key === 'Enter') handleEditSave();
+		if (e.key === 'Escape') handleEditCancel();
+	}, [handleEditSave, handleEditCancel]);
 
 	const handleDeleteChannel = useCallback(async () => {
-		setDeleting(true);
-		setError('');
+		setDeleting(true); setError('');
 		try {
 			const res = await deleteChannel(channelId);
-			if (res?.error) {
-				setError(res.error);
-				setDeleting(false);
-				setShowConfirm(false);
-				return;
-			}
+			if (res?.error) { setError(res.error); setDeleting(false); setShowConfirm(false); return; }
 			socket.emit('channel_deleted', { channelId, instituteId });
 			onChannelDeleted?.(channelId);
 		} catch {
 			setError('Failed to delete channel');
 		} finally {
-			setDeleting(false);
-			setShowConfirm(false);
+			setDeleting(false); setShowConfirm(false);
 		}
 	}, [channelId, instituteId, onChannelDeleted]);
 
 	if (isP2P) {
 		return (
 			<>
-				<header className='chat-header chat-header--p2p'>
-					<div className='chat-header-left'>
-						{onCloseP2P && (
-							<button
-								className='chat-header-icon-btn chat-header-back'
-								onClick={onCloseP2P}
-								aria-label='Back to channels'
-								title='Back'
-							>
-								<ArrowLeft size={16} strokeWidth={2} />
-							</button>
-						)}
+				<header className="flex items-center gap-2 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0">
+					{onCloseP2P && (
 						<button
-							className='chat-header-avatar-btn'
-							onClick={() => setShowPopover(true)}
-							title={`View ${otherUsername}'s profile`}
+							className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]`}
+							onClick={onCloseP2P}
+							aria-label="Back to channels"
 						>
-							{otherPicture ? (
-								<img
-									src={otherPicture}
-									alt={otherUsername}
-									className='chat-header-p2p-avatar chat-header-p2p-avatar--img'
-								/>
-							) : (
-								<div className='chat-header-p2p-avatar'>
-									{otherUsername?.[0]?.toUpperCase() || 'U'}
-								</div>
-							)}
+							<ArrowLeft size={16} strokeWidth={2} />
 						</button>
-						<div className='chat-header-p2p-info'>
-							<span className='chat-header-name'>
-								{otherUsername
-									? otherUsername[0].toUpperCase() + otherUsername.slice(1)
-									: 'Chat'}
-							</span>
-							<span className='chat-header-p2p-sub'>Direct Message</span>
+					)}
+					<button
+						className="flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg px-1 py-1 transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
+						onClick={() => setShowPopover(true)}
+						title={`View ${otherUsername}'s profile`}
+					>
+						{otherPicture ? (
+							<img src={otherPicture} alt={otherUsername} className="w-8 h-8 rounded-full object-cover shrink-0" />
+						) : (
+							<div
+								className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white/90 shrink-0"
+								style={{ background: 'linear-gradient(135deg, var(--teal-800), var(--teal-600))' }}
+								aria-hidden="true"
+							>
+								{otherUsername?.[0]?.toUpperCase() || 'U'}
+							</div>
+						)}
+						<div className="min-w-0">
+							<div className="text-sm font-medium text-[var(--text-primary)] truncate leading-tight">
+								{otherUsername ? otherUsername[0].toUpperCase() + otherUsername.slice(1) : 'Chat'}
+							</div>
+							<div className="text-[11px] text-[var(--text-ghost)]">Direct Message</div>
 						</div>
-					</div>
+					</button>
 				</header>
 
 				{showPopover && otherUserId && (
-					<UserProfilePopover
-						userId={otherUserId}
-						onClose={() => setShowPopover(false)}
-						onStartP2P={null}
-					/>
+					<UserProfilePopover userId={otherUserId} onClose={() => setShowPopover(false)} onStartP2P={null} />
 				)}
 			</>
 		);
 	}
 
 	return (
-		<header className='chat-header'>
-			<div className='chat-header-left'>
-				<Hash
-					className='chat-header-hash'
-					size={18}
-					strokeWidth={2}
-					aria-hidden='true'
-				/>
-
+		<header className="hidden md:flex items-center gap-3 px-5 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0">
+			<div className="flex items-center gap-2 flex-1 min-w-0">
 				{editing ? (
-					<div className='chat-header-edit'>
+					<div className="flex items-center gap-1.5 flex-1 min-w-0">
+						<Hash size={15} strokeWidth={2} className="text-[var(--text-ghost)] shrink-0" aria-hidden="true" />
 						<input
 							ref={inputRef}
-							className='chat-header-input'
+							className="flex-1 min-w-0 bg-[var(--bg-input)] border border-[var(--teal-600)] rounded-lg px-2.5 py-1.5 text-sm text-[var(--text-primary)] outline-none shadow-[0_0_0_2px_rgba(20,184,166,0.07)] font-[inherit] transition-[border-color] duration-150 disabled:opacity-50"
 							value={nameInput}
 							onChange={(e) => setNameInput(e.target.value)}
 							onKeyDown={handleKeyDown}
 							maxLength={64}
 							disabled={saving}
-							aria-label='Channel name'
+							aria-label="Channel name"
 							spellCheck={false}
 						/>
-						<button
-							className='chat-header-icon-btn chat-header-save'
-							onClick={handleEditSave}
-							disabled={saving}
-							aria-label='Save name'
-							title='Save'
-						>
+						<button className={`${iconBtnCls} text-[var(--teal-600)] hover:bg-teal-500/[0.08] disabled:opacity-40`} onClick={handleEditSave} disabled={saving} aria-label="Save name">
 							<Check size={14} strokeWidth={2.5} />
 						</button>
-						<button
-							className='chat-header-icon-btn chat-header-cancel'
-							onClick={handleEditCancel}
-							disabled={saving}
-							aria-label='Cancel editing'
-							title='Cancel'
-						>
+						<button className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-red-400 disabled:opacity-40`} onClick={handleEditCancel} disabled={saving} aria-label="Cancel editing">
 							<X size={14} strokeWidth={2.5} />
 						</button>
 					</div>
 				) : (
-					<div className='chat-header-name-wrap'>
-						<span className='chat-header-name'>{displayName || channelId}</span>
+					<div className="flex items-center gap-2 group flex-1 min-w-0">
+						<Hash size={15} strokeWidth={2} className="text-[var(--text-ghost)] shrink-0" aria-hidden="true" />
+						<span className="text-sm font-medium text-[var(--text-primary)] tracking-[-0.1px] truncate">
+							{displayName || channelId}
+						</span>
 						{isAdmin && (
 							<button
-								className='chat-header-icon-btn chat-header-edit-btn'
+								className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-[opacity,background,color] duration-150`}
 								onClick={handleEditStart}
-								aria-label='Rename channel'
-								title='Rename channel'
+								aria-label="Rename channel"
 							>
 								<Pencil size={13} strokeWidth={2} />
 							</button>
@@ -260,22 +173,21 @@ function ChatHeader({
 				)}
 			</div>
 
-			<div className='chat-header-actions'>
-				{error && <span className='chat-header-error'>{error}</span>}
-				{isAdmin &&
-					!editing &&
-					(showConfirm ? (
-						<div className='delete-confirm'>
-							<span>Delete channel?</span>
+			<div className="flex items-center gap-2 shrink-0">
+				{error && <span className="text-[12px] text-red-400">{error}</span>}
+				{isAdmin && !editing && (
+					showConfirm ? (
+						<div className="flex items-center gap-2">
+							<span className="text-[12px] text-[var(--text-muted)]">Delete channel?</span>
 							<button
-								className='confirm-yes'
+								className="px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 text-[12px] font-medium hover:bg-red-500/20 transition-[background] duration-150 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-400"
 								onClick={handleDeleteChannel}
 								disabled={deleting}
 							>
 								{deleting ? 'Deleting…' : 'Yes'}
 							</button>
 							<button
-								className='confirm-no'
+								className="px-2.5 py-1 rounded-md bg-[var(--bg-hover)] text-[var(--text-muted)] text-[12px] font-medium hover:bg-[var(--border)] transition-[background] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
 								onClick={() => setShowConfirm(false)}
 							>
 								No
@@ -283,14 +195,15 @@ function ChatHeader({
 						</div>
 					) : (
 						<button
-							className='channel-delete-btn'
+							className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-ghost)] hover:text-red-400 hover:bg-red-400/[0.06] transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
 							onClick={() => setShowConfirm(true)}
-							title='Delete channel'
+							title="Delete channel"
 						>
-							<Trash2 size={14} strokeWidth={2} aria-hidden='true' />
-							Delete channel
+							<Trash2 size={13} strokeWidth={2} aria-hidden="true" />
+							Delete
 						</button>
-					))}
+					)
+				)}
 			</div>
 		</header>
 	);
