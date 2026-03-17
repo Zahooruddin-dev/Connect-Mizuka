@@ -46,9 +46,11 @@ async function createNewRoom(u1, u2) {
 async function getP2PMessagesQuery(roomId) {
 	try {
 		const { rows } = await pool.query(
-			`SELECT * FROM p2p_messages 
-			 WHERE chatroom_id = $1 
-			 ORDER BY created_at ASC`,
+			`SELECT m.*, u.username, u.profile_picture
+			 FROM p2p_messages m
+			 JOIN users u ON m.sender_id = u.id
+			 WHERE m.chatroom_id = $1
+			 ORDER BY m.created_at ASC`,
 			[roomId],
 		);
 		return rows;
