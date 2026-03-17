@@ -4,8 +4,8 @@ import { getUserProfile, getOrCreateP2PRoom } from '../services/api';
 import { useAuth } from '../services/AuthContext';
 
 const infoGroupCls = 'flex flex-col gap-1.5 mb-4 pb-4 border-b border-[var(--border)] last:border-b-0 last:mb-0 last:pb-0';
-const infoLabelCls = 'text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-ghost)]';
-const infoValueCls = 'text-sm text-[var(--text-secondary)] break-all';
+const infoLabelCls = 'text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-muted)]';
+const infoValueCls = 'text-sm text-[var(--text-primary)] flex items-center gap-2';
 
 function UserProfilePopover({ userId, onClose, onStartP2P }) {
 	const [user, setUser] = useState(null);
