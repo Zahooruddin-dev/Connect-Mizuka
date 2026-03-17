@@ -1,17 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatTime } from '../utils/time';
 import { deleteMessage } from '../services/api';
-import './styles/MessageItem.css';
 import Toast from './Toast';
 
-function MessageItem({
-	message,
-	currentUserId,
-	currentUserPicture,
-	onDeleted,
-	onEdit,
-	onUserClick,
-}) {
+function MessageItem({ message, currentUserId, currentUserPicture, onDeleted, onEdit, onUserClick }) {
 	const [deleting, setDeleting] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState(message.content || '');
@@ -23,13 +15,10 @@ function MessageItem({
 	const msgId = message.id || message._id;
 	const isMine = senderId === currentUserId;
 
-	// Close menu when clicking outside
 	useEffect(() => {
 		if (!menuOpen) return;
 		const handler = (e) => {
-			if (menuRef.current && !menuRef.current.contains(e.target)) {
-				setMenuOpen(false);
-			}
+			if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
 		};
 		document.addEventListener('mousedown', handler);
 		document.addEventListener('touchstart', handler);
@@ -52,10 +41,7 @@ function MessageItem({
 	};
 
 	const handleSaveEdit = async () => {
-		if (!editContent.trim() || editContent === message.content) {
-			setIsEditing(false);
-			return;
-		}
+		if (!editContent.trim() || editContent === message.content) { setIsEditing(false); return; }
 		try {
 			await onEdit(msgId, editContent);
 			setIsEditing(false);
@@ -71,7 +57,6 @@ function MessageItem({
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		} catch {
-			// fallback for older browsers
 			const el = document.createElement('textarea');
 			el.value = message.content || '';
 			document.body.appendChild(el);
@@ -97,15 +82,31 @@ function MessageItem({
 	const minePicture = currentUserPicture || null;
 	const theirInitial = message.username?.[0]?.toUpperCase() || '?';
 	const mineInitial = message.username?.[0]?.toUpperCase() || '?';
-console.log(theirPicture);
-console.log(theirInitial);
+
+	const avatarBase = 'w-7 h-7 min-w-[28px] rounded-full flex items-center justify-center text-[11px] font-semibold text-white/85 mb-[18px] shrink-0';
+
+	const actionIconBase = 'p-[5px] rounded-[var(--radius-sm)] flex items-center cursor-pointer transition-[color,background] duration-150 text-[var(--text-ghost)] hover:text-[var(--text-muted)] hover:bg-white/[0.06] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
+
+	const contextItemBase = 'w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-[var(--text-secondary)] cursor-pointer transition-[background] duration-[120ms] text-left [-webkit-tap-highlight-color:transparent] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] disabled:opacity-50 disabled:pointer-events-none';
+
+	const CopyIcon = () => copied ? (
+		<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+			<polyline points="20,6 9,17 4,12" />
+		</svg>
+	) : (
+		<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+			<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+			<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+		</svg>
+	);
 
 	return (
 		<>
-			<div className={`message-item ${isMine ? 'mine' : 'theirs'}`}>
+			<div className={`group flex items-end gap-2.5 py-[3px] animate-[msg-in_0.2s_cubic-bezier(0.16,1,0.3,1)] ${isMine ? 'flex-row-reverse' : ''}`}>
+
 				{!isMine && (
 					<button
-						className='message-avatar-btn'
+						className="p-0 flex items-center rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
 						onClick={handleUserClick}
 						title={`View ${message.username}'s profile`}
 					>
@@ -113,18 +114,20 @@ console.log(theirInitial);
 							<img
 								src={theirPicture}
 								alt={message.username}
-								className='message-avatar message-avatar--img'
+								className="w-7 h-7 min-w-[28px] rounded-full object-cover mb-[18px]"
 							/>
 						) : (
-							<div className='message-avatar'>{theirInitial}</div>
+							<div className={avatarBase} style={{ background: 'linear-gradient(135deg, var(--teal-900), var(--teal-700))' }}>
+								{theirInitial}
+							</div>
 						)}
 					</button>
 				)}
 
-				<div className='message-content'>
+				<div className={`flex flex-col gap-[3px] max-w-[65%] ${isMine ? 'items-end' : ''}`}>
 					{!isMine && (
 						<button
-							className='message-author-btn'
+							className="px-1 py-0 m-0 text-[11px] font-medium text-[var(--text-secondary)] tracking-[0.01em] cursor-pointer transition-colors duration-150 text-left hover:text-[var(--text-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
 							onClick={handleUserClick}
 							title={`View ${message.username}'s profile`}
 						>
@@ -132,12 +135,18 @@ console.log(theirInitial);
 						</button>
 					)}
 
-					<div className='message-bubble-wrap'>
-						<div className='message-bubble'>
+					<div className={`flex items-center gap-1.5 ${isMine ? 'flex-row-reverse' : ''}`}>
+						<div
+							className={`px-3.5 py-2.5 relative ${
+								isMine
+									? 'bg-[var(--teal-700)] rounded-[var(--radius-lg)] rounded-br-[4px]'
+									: 'bg-[var(--bg-panel)] border border-[var(--border)] rounded-[var(--radius-lg)] rounded-bl-[4px]'
+							}`}
+						>
 							{isEditing ? (
-								<div className='edit-input-container'>
+								<div className="flex flex-col gap-2 min-w-[180px]">
 									<input
-										type='text'
+										type="text"
 										value={editContent}
 										onChange={(e) => setEditContent(e.target.value)}
 										onKeyDown={(e) => {
@@ -145,255 +154,100 @@ console.log(theirInitial);
 											if (e.key === 'Escape') setIsEditing(false);
 										}}
 										autoFocus
-										className='edit-input'
+										className="bg-black/20 border border-white/10 text-[var(--text-primary)] text-sm leading-[1.55] px-2.5 py-1.5 rounded-[var(--radius-sm)] outline-none font-[inherit] w-full transition-[border-color,background] duration-150 focus:border-teal-500/40 focus:bg-black/[0.28]"
 									/>
-									<div className='edit-actions'>
-										<button onClick={handleSaveEdit} className='edit-save-btn'>
+									<div className="flex justify-end gap-1.5">
+										<button
+											onClick={handleSaveEdit}
+											className="text-teal-400 bg-teal-400/10 text-[11px] font-medium px-2.5 py-1 rounded transition-[background] duration-150 hover:bg-teal-400/[0.18]"
+										>
 											Save
 										</button>
 										<button
 											onClick={() => setIsEditing(false)}
-											className='edit-cancel-btn'
+											className="text-[var(--text-ghost)] text-[11px] font-medium px-2.5 py-1 rounded transition-[background,color] duration-150 hover:bg-white/[0.06] hover:text-[var(--text-muted)]"
 										>
 											Cancel
 										</button>
 									</div>
 								</div>
 							) : (
-								<p className='message-text'>
+								<p className={`text-sm leading-[1.55] break-words ${isMine ? 'text-white' : 'text-[var(--text-primary)]'}`}>
 									{message.content}
 									{message.is_edited && (
-										<span className='edited-flag'> (edited)</span>
+										<span className={`text-[10px] italic ml-1.5 select-none ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}>
+											(edited)
+										</span>
 									)}
 								</p>
 							)}
 						</div>
 
-						{/* ── Desktop actions (hover, always mine) ── */}
 						{isMine && !isEditing && (
-							<div className='message-action-buttons message-action-buttons--desktop'>
-								<button
-									className='message-action-icon'
-									onClick={handleCopy}
-									title={copied ? 'Copied!' : 'Copy'}
-								>
-									{copied ? (
-										<svg
-											width='13'
-											height='13'
-											viewBox='0 0 24 24'
-											fill='none'
-											stroke='currentColor'
-											strokeWidth='2'
-											strokeLinecap='round'
-											strokeLinejoin='round'
-										>
-											<polyline points='20,6 9,17 4,12' />
-										</svg>
-									) : (
-										<svg
-											width='13'
-											height='13'
-											viewBox='0 0 24 24'
-											fill='none'
-											stroke='currentColor'
-											strokeWidth='2'
-											strokeLinecap='round'
-											strokeLinejoin='round'
-										>
-											<rect
-												x='9'
-												y='9'
-												width='13'
-												height='13'
-												rx='2'
-												ry='2'
-											></rect>
-											<path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'></path>
-										</svg>
-									)}
+							<div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+								<button className={actionIconBase} onClick={handleCopy} title={copied ? 'Copied!' : 'Copy'} aria-label={copied ? 'Copied' : 'Copy message'}>
+									<CopyIcon />
 								</button>
-								<button
-									className='message-action-icon'
-									onClick={handleStartEdit}
-									title='Edit'
-								>
-									<svg
-										width='13'
-										height='13'
-										viewBox='0 0 24 24'
-										fill='none'
-										stroke='currentColor'
-										strokeWidth='2'
-										strokeLinecap='round'
-										strokeLinejoin='round'
-									>
-										<path d='M12 20h9'></path>
-										<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'></path>
+								<button className={actionIconBase} onClick={handleStartEdit} title="Edit" aria-label="Edit message">
+									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+										<path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
 									</svg>
 								</button>
 								<button
-									className={`message-action-icon message-delete ${deleting ? 'deleting' : ''}`}
+									className={`${actionIconBase} hover:!text-red-400 hover:!bg-red-400/[0.08] ${deleting ? 'opacity-40 pointer-events-none' : ''}`}
 									onClick={handleDelete}
-									title='Delete'
+									title="Delete"
+									aria-label="Delete message"
 								>
-									<svg
-										width='13'
-										height='13'
-										viewBox='0 0 24 24'
-										fill='none'
-										stroke='currentColor'
-										strokeWidth='2'
-										strokeLinecap='round'
-										strokeLinejoin='round'
-									>
-										<polyline points='3,6 5,6 21,6' />
-										<path d='M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6' />
-										<path d='M10,11v6M14,11v6' />
-										<path d='M9,6V4h6v2' />
+									<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+										<polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6" /><path d="M10,11v6M14,11v6" /><path d="M9,6V4h6v2" />
 									</svg>
 								</button>
 							</div>
 						)}
 
-						{/* ── Copy button for "theirs" on desktop ── */}
 						{!isMine && !isEditing && (
-							<div className='message-action-buttons message-action-buttons--desktop message-action-buttons--theirs'>
-								<button
-									className='message-action-icon'
-									onClick={handleCopy}
-									title={copied ? 'Copied!' : 'Copy'}
-								>
-									{copied ? (
-										<svg
-											width='13'
-											height='13'
-											viewBox='0 0 24 24'
-											fill='none'
-											stroke='currentColor'
-											strokeWidth='2'
-											strokeLinecap='round'
-											strokeLinejoin='round'
-										>
-											<polyline points='20,6 9,17 4,12' />
-										</svg>
-									) : (
-										<svg
-											width='13'
-											height='13'
-											viewBox='0 0 24 24'
-											fill='none'
-											stroke='currentColor'
-											strokeWidth='2'
-											strokeLinecap='round'
-											strokeLinejoin='round'
-										>
-											<rect
-												x='9'
-												y='9'
-												width='13'
-												height='13'
-												rx='2'
-												ry='2'
-											></rect>
-											<path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'></path>
-										</svg>
-									)}
+							<div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+								<button className={actionIconBase} onClick={handleCopy} title={copied ? 'Copied!' : 'Copy'} aria-label={copied ? 'Copied' : 'Copy message'}>
+									<CopyIcon />
 								</button>
 							</div>
 						)}
 
-						{/* ── Mobile three-dot menu ── */}
 						{!isEditing && (
-							<div className='message-mobile-menu' ref={menuRef}>
+							<div className="relative flex md:hidden items-center" ref={menuRef}>
 								<button
-									className='message-dots-btn'
+									className="w-7 h-7 rounded-[var(--radius-sm)] text-[var(--text-ghost)] flex items-center justify-center cursor-pointer transition-[opacity,background,color] duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]"
 									onClick={() => setMenuOpen((v) => !v)}
-									aria-label='Message options'
+									aria-label="Message options"
 									aria-expanded={menuOpen}
 								>
-									<svg
-										width='14'
-										height='14'
-										viewBox='0 0 24 24'
-										fill='currentColor'
-									>
-										<circle cx='5' cy='12' r='2' />
-										<circle cx='12' cy='12' r='2' />
-										<circle cx='19' cy='12' r='2' />
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+										<circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
 									</svg>
 								</button>
 
 								{menuOpen && (
-									<div
-										className={`message-context-menu ${isMine ? 'message-context-menu--mine' : 'message-context-menu--theirs'}`}
-									>
-										<button
-											className='message-context-item'
-											onClick={handleCopy}
-										>
-											<svg
-												width='13'
-												height='13'
-												viewBox='0 0 24 24'
-												fill='none'
-												stroke='currentColor'
-												strokeWidth='2'
-												strokeLinecap='round'
-												strokeLinejoin='round'
-											>
-												<rect
-													x='9'
-													y='9'
-													width='13'
-													height='13'
-													rx='2'
-													ry='2'
-												></rect>
-												<path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'></path>
-											</svg>
+									<div className={`absolute bottom-[calc(100%+6px)] z-[200] bg-[var(--bg-panel)] border border-[var(--border-strong)] rounded-[var(--radius-md)] shadow-md min-w-[130px] overflow-hidden animate-[context-pop_0.12s_cubic-bezier(0.16,1,0.3,1)] ${isMine ? 'right-0' : 'left-0'}`}>
+										<button className={contextItemBase} onClick={handleCopy}>
+											<CopyIcon />
 											{copied ? 'Copied!' : 'Copy'}
 										</button>
 										{isMine && (
 											<>
-												<button
-													className='message-context-item'
-													onClick={handleStartEdit}
-												>
-													<svg
-														width='13'
-														height='13'
-														viewBox='0 0 24 24'
-														fill='none'
-														stroke='currentColor'
-														strokeWidth='2'
-														strokeLinecap='round'
-														strokeLinejoin='round'
-													>
-														<path d='M12 20h9'></path>
-														<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'></path>
+												<button className={contextItemBase} onClick={handleStartEdit}>
+													<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+														<path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
 													</svg>
 													Edit
 												</button>
 												<button
-													className='message-context-item message-context-item--danger'
+													className={`${contextItemBase} !text-red-600 hover:!bg-red-600/[0.06]`}
 													onClick={handleDelete}
 													disabled={deleting}
 												>
-													<svg
-														width='13'
-														height='13'
-														viewBox='0 0 24 24'
-														fill='none'
-														stroke='currentColor'
-														strokeWidth='2'
-														strokeLinecap='round'
-														strokeLinejoin='round'
-													>
-														<polyline points='3,6 5,6 21,6' />
-														<path d='M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6' />
-														<path d='M10,11v6M14,11v6' />
-														<path d='M9,6V4h6v2' />
+													<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+														<polyline points="3,6 5,6 21,6" /><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6" /><path d="M10,11v6M14,11v6" /><path d="M9,6V4h6v2" />
 													</svg>
 													{deleting ? 'Deleting…' : 'Delete'}
 												</button>
@@ -405,19 +259,14 @@ console.log(theirInitial);
 						)}
 					</div>
 
-					<span className='message-time'>
-						{formatTime(
-							message.created_at ||
-								message.createdAt ||
-								message.timestamp ||
-								Date.now(),
-						)}
+					<span className="text-[10px] text-[var(--text-ghost)] font-mono px-1">
+						{formatTime(message.created_at || message.createdAt || message.timestamp || Date.now())}
 					</span>
 				</div>
 
 				{isMine && (
 					<button
-						className='message-avatar-btn'
+						className="p-0 flex items-center rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
 						onClick={handleUserClick}
 						title={`View ${message.username}'s profile`}
 					>
@@ -425,16 +274,18 @@ console.log(theirInitial);
 							<img
 								src={minePicture}
 								alt={message.username}
-								className='message-avatar mine-avatar message-avatar--img'
+								className="w-7 h-7 min-w-[28px] rounded-full object-cover mb-[18px]"
 							/>
 						) : (
-							<div className='message-avatar mine-avatar'>{mineInitial}</div>
+							<div className={avatarBase} style={{ background: 'linear-gradient(135deg, var(--teal-800), var(--teal-600))' }}>
+								{mineInitial}
+							</div>
 						)}
 					</button>
 				)}
 			</div>
 
-			<Toast message='Copied to clipboard' visible={copied} type='success' />
+			<Toast message="Copied to clipboard" visible={copied} type="success" />
 		</>
 	);
 }
