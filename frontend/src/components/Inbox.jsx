@@ -320,9 +320,7 @@ function Inbox({
 											title={`Message ${chat.username}`}
 										>
 											<div className='inbox-user-avatar-wrap'>
-												<div className='inbox-user-avatar'>
-													{chat.username?.[0]?.toUpperCase() || 'U'}
-												</div>
+												<Avatar src={chat.profile_picture || null} username={chat.username} size={36} />
 												{isOnline(chat.id) && <span className='inbox-online-dot' />}
 											</div>
 											<div className='inbox-user-info'>
