@@ -1,12 +1,11 @@
-import React from 'react'
-import './styles/DateDivider.css'
-
 export default function DateDivider({ label }) {
-  return (
-    <div className="date-divider">
-      <span className="date-divider-line" />
-      <span className="date-divider-label">{label}</span>
-      <span className="date-divider-line" />
-    </div>
-  )
+	return (
+		<div className="flex items-center gap-2.5 py-3 px-5">
+			<span className="flex-1 h-px bg-[var(--border)]" />
+			<span className="text-[11px] font-normal text-[var(--text-ghost)] whitespace-nowrap tracking-[0.2px]">
+				{label}
+			</span>
+			<span className="flex-1 h-px bg-[var(--border)]" />
+		</div>
+	);
 }
