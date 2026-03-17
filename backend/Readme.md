@@ -1,332 +1,213 @@
-# Mizuka Chat Engine Backend
+# Mizuka Connect — Backend
 
-The backend for the **Mizuka** multi-tenant chat engine. Provides REST endpoints, Socket.io event handlers, and PostgreSQL query helpers to support users, institutes, channels, real-time messaging, peer-to-peer chat, presence tracking, and password reset flows. Built with Express and PostgreSQL (`pg` pool), designed for multi-institute deployments where users may belong to multiple organizations with distinct roles.
+Node.js + Express + Socket.io + PostgreSQL backend powering the Mizuka Connect chat platform.
 
----
+## Stack
 
-## 🔧 Prerequisites
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js v24 |
+| Framework | Express v5 |
+| Realtime | Socket.io v4 |
+| Database | PostgreSQL (via `pg`) |
+| Auth | JWT (`jsonwebtoken`) + `bcrypt` |
+| File uploads | Multer + Cloudinary |
+| Validation | Zod |
+| Email | Nodemailer |
+| Dev server | Nodemon |
 
-- Node.js 18+ (LTS recommended)
-- PostgreSQL database (Neon, local, or managed)
-- npm / Yarn
-- Gmail account (for password reset emails via Nodemailer)
-
----
-
-## 🚀 Getting Started
-
-1. **Clone the repository**
-   ```bash
-   git clone <repo-url> && cd Connect-Mizuka/backend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables**
-
-   Create a `.env` file in the root and populate:
-   ```text
-   PORT=4000
-   DATABASE_URL=postgres://user:pass@host:port/dbname
-   JWT_SECRET=your_jwt_secret_here
-   EMAIL_USER=your_gmail@gmail.com
-   EMAIL_PASS=your_gmail_app_password
-   ```
-
-4. **Run the server**
-   ```bash
-   npm run server   # development (nodemon)
-   npm start        # production
-   ```
-
----
-
-## 🗂️ Folder Structure
+## Project Structure
 
 ```
 backend/
-├─ app.js                        # Entry point — Express + Socket.io setup
-├─ Controller/
-│  ├─ AuthController.js          # Auth logic (login, register, profile, etc.)
-│  ├─ channelController.js       # Channel CRUD
-│  ├─ instituteController.js     # Institute management
-│  ├─ messageController.js       # Channel message history + deletion
-│  ├─ p2pController.js           # P2P chatroom + messaging
-│  └─ ResetController.js         # Password reset flow
-├─ db/
-│  ├─ Pool.js                    # pg Pool singleton
-│  ├─ queryAuth.js               # User queries
-│  ├─ queryChannel.js            # Channel queries
-│  ├─ queryInstitute.js          # Institute queries
-│  ├─ queryMessage.js            # Channel message queries
-│  ├─ queryP2P.js                # P2P message queries
-│  ├─ queryReset.js              # Password reset code queries
-│  └─ querySocketMessage.js      # Real-time message persistence
-├─ middleware/
-│  └─ authMiddleware.js          # JWT verification + admin role guard
-├─ Routes/
-│  ├─ authRoutes.js
-│  ├─ channelRoutes.js
-│  ├─ instituteRoutes.js
-│  ├─ messageRoutes.js
-│  └─ p2pRoutes.js
-├─ Socket-Controllers/
-│  ├─ messageController.js       # Institute/channel socket handlers
-│  └─ P2psocketcontroller.js     # P2P socket handlers
-└─ utility/
-   └─ emailSender.js             # Nodemailer transporter (Gmail)
+├── app.js                          # Express app + Socket.io server entry
+├── Routes/
+│   ├── authRoutes.js               # Auth endpoints
+│   ├── channelRoutes.js            # Channel CRUD
+│   ├── instituteRoutes.js          # Institute management
+│   ├── messageRoutes.js            # Channel message history
+│   └── p2pRoutes.js                # P2P chat endpoints
+├── Controller/
+│   ├── AuthController.js           # Login, register, profile update
+│   ├── channelController.js        # Channel logic
+│   ├── instituteController.js      # Institute logic
+│   ├── messageController.js        # Channel message REST
+│   └── p2pController.js            # P2P REST (rooms, messages, unread)
+├── Socket-Controllers/
+│   ├── messageController.js        # Channel socket handler
+│   └── P2psocketcontroller.js      # P2P socket handler
+├── db/
+│   ├── Pool.js                     # pg pool singleton
+│   ├── queryAuth.js                # User queries
+│   ├── queryInstitute.js           # Institute + member queries
+│   ├── queryP2P.js                 # P2P room + message queries
+│   └── querySocketMessage.js       # Channel message save query
+├── middleware/
+│   ├── authMiddleware.js           # verifyToken, restrictToAdmin
+│   ├── uploadMiddleware.js         # Multer + Cloudinary upload
+│   └── validateRequest.js          # Zod validation wrapper
+└── validation/
+    ├── authValidation.js
+    ├── channelValidation.js
+    └── instituteValidation.js
 ```
 
----
+## Environment Variables
 
-## 📦 API Endpoints
+Create a `.env` file in the backend root:
 
-All protected routes require a `Bearer <token>` header. Routes marked **[Admin]** additionally require `role = 'admin'` in the JWT payload.
+```env
+PORT=3000
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+JWT_SECRET=your_jwt_secret
+FRONTEND_URL=http://localhost:5173
 
-### Authentication — `/api/auth`
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/register` | Public | Register a new user; optionally link to an institute |
-| POST | `/login` | Public | Login and receive a JWT + user info |
-| POST | `/request-reset` | Public | Send a 6-digit reset code to the user's email |
-| POST | `/reset-password` | Public | Verify code and set a new password |
-| GET | `/my-memberships` | 🔒 | List all institutes the authenticated user belongs to |
-| GET | `/user-info` | 🔒 | Get full profile for the authenticated user |
-| GET | `/user-profile/:userId` | 🔒 | Get public profile for any user (popover use) |
-| PUT | `/update-profile` | 🔒 | Update username, email, and/or password |
-| PATCH | `/change-password` | 🔒 | Change password (requires old password) |
-| POST | `/link-to-institute` | 🔒 | Join an institute as a member |
-| POST | `/delete` | 🔒 | Delete own account (requires email + password) |
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+```
 
-### Institutes — `/api/institute`
+## Database Setup
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/create` | 🔒 [Admin] | Create a new institute + default "General Hallway" channel, linking the creator as admin |
-| GET | `/dashboard` | 🔒 [Admin] | List all institutes the authenticated user administers |
-| GET | `/key/:instituteId` | 🔒 [Admin] | Retrieve institute details (name/id) — admin of that institute only |
-| GET | `/:instituteId/search-members` | 🔒 | Search institute members by username (`?query=`) |
-| GET | `/:instituteId/institute-members` | 🔒 | List all members of an institute |
+Run this migration once to add the profile picture column:
 
-### Channels — `/api/channel`
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/create` | 🔒 [Admin] | Create a channel inside an institute |
-| PUT | `/:channelId` | 🔒 [Admin] | Update channel name or privacy |
-| DELETE | `/:channelId` | 🔒 [Admin] | Delete a channel |
-| GET | `/institute/:instituteId` | 🔒 | List all channels for an institute |
-| GET | `/:channelId` | 🔒 | Get a single channel by ID |
-| GET | `/:channelId/search-messages` | 🔒 | Full-text search messages in a channel (`?searchTerm=`) |
-
-### Messages — `/api/messages`
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/:channelId` | 🔒 | Paginated channel message history (`?limit=&offset=`) |
-| DELETE | `/message/:messageId` | 🔒 | Delete own message from a channel |
-| DELETE | `/channel/:channelId` | 🔒 [Admin] | Delete an entire channel and its messages |
-
-### P2P (Direct Messaging) — `/api/p2p`
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/room` | 🔒 | Get or create a chatroom between two users |
-| GET | `/messages/:roomId` | 🔒 | Load message history for a room (marks as read) |
-| GET | `/messages/:roomId/search` | 🔒 | Search messages in a room (`?searchTerm=`) |
-| PATCH | `/messages/:messageId/delete` | 🔒 | Soft-delete own P2P message |
-| PATCH | `/messages/:messageId/edit` | 🔒 | Edit own P2P message |
-| GET | `/unread-counts` | 🔒 | Get unread message counts per chatroom for the authenticated user |
-| POST | `/read/:roomId` | 🔒 | Mark all messages in a room as read |
-
----
-
-## 🛠️ Database Schema
+```sql
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT DEFAULT NULL;
+```
 
 ### Core Tables
 
-```sql
--- Users
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    role TEXT DEFAULT 'member',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+| Table | Purpose |
+|---|---|
+| `users` | User accounts (id, username, email, password_hash, role, profile_picture) |
+| `institutes` | Organisations |
+| `user_institutes` | Many-to-many membership with role |
+| `channels` | Channels belonging to an institute |
+| `messages` | Channel messages |
+| `p2p_chatrooms` | Direct message rooms (user_one_id, user_two_id) |
+| `p2p_messages` | Direct messages with read tracking |
 
--- Institutes
-CREATE TABLE institutes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL
-);
+## API Reference
 
--- Many-to-many user ↔ institute memberships
-CREATE TABLE user_institutes (
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    institute_id UUID REFERENCES institutes(id) ON DELETE CASCADE,
-    role TEXT CHECK (role IN ('admin', 'member', 'teacher')),
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, institute_id)
-);
+### Auth — `/api/auth`
 
--- Channels
-CREATE TABLE channels (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    institute_id UUID REFERENCES institutes(id) ON DELETE CASCADE,
-    is_private BOOLEAN DEFAULT FALSE
-);
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/login` | — | Login, returns JWT + user |
+| POST | `/register` | — | Register new user |
+| GET | `/user-info` | ✓ | Get own profile |
+| GET | `/user-profile/:userId` | ✓ | Get any user's profile |
+| PUT | `/update-profile` | ✓ | Update username / email / password / profile picture |
+| PATCH | `/change-password` | ✓ | Change password |
+| GET | `/my-memberships` | ✓ | Get institute memberships |
+| POST | `/link-to-institute` | ✓ | Join an institute |
+| POST | `/request-reset` | — | Request password reset email |
+| POST | `/reset-password` | — | Reset password with code |
 
--- Channel messages
-CREATE TABLE messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    channel_id UUID REFERENCES channels(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### Institute — `/api/institute`
 
--- P2P chatrooms
-CREATE TABLE p2p_chatrooms (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_one_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    user_two_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/create` | Admin | Create institute + default channel |
+| GET | `/dashboard` | Admin | Get managed institutes |
+| GET | `/key/:instituteId` | Admin | Get institute details |
+| GET | `/:instituteId/search-members` | ✓ | Search members by username |
+| GET | `/:instituteId/institute-members` | ✓ | Get all members |
 
--- P2P messages
-CREATE TABLE p2p_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    chatroom_id UUID REFERENCES p2p_chatrooms(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    content TEXT NOT NULL,
-    is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    is_deleted BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### Channel — `/api/channel`
 
--- Password reset codes
-CREATE TABLE password_resets (
-    email TEXT PRIMARY KEY,
-    code TEXT NOT NULL,
-    expires_at TIMESTAMP NOT NULL
-);
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/create` | ✓ | Create channel |
+| GET | `/:channelId` | ✓ | Get channel by ID |
+| GET | `/institute/:instituteId` | ✓ | Get all channels for institute |
+| PUT | `/:channelId` | ✓ | Rename / update channel |
+| DELETE | `/:channelId` | ✓ | Delete channel |
+| GET | `/:channelId/search-messages` | ✓ | Search messages in channel |
+
+### P2P — `/api/p2p`
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/room` | ✓ | Get or create DM room |
+| GET | `/rooms` | ✓ | Get all DM rooms for current user |
+| GET | `/messages/:roomId` | ✓ | Get message history |
+| GET | `/messages/:roomId/search` | ✓ | Search messages |
+| PATCH | `/messages/:messageId/delete` | ✓ | Soft-delete message |
+| PATCH | `/messages/:messageId/edit` | ✓ | Edit message |
+| GET | `/unread-counts` | ✓ | Unread counts per room |
+| POST | `/read/:roomId` | ✓ | Mark room as read |
+
+### Misc
+
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/ping` | Health check (no auth) |
+
+## Socket Events
+
+### Client → Server
+
+| Event | Payload | Description |
+|---|---|---|
+| `user_online` | `userId` | Register presence |
+| `join_user_room` | `userId` | Join personal notification room |
+| `join_institute_room` | `instituteId` | Subscribe to institute events |
+| `join_institute` | `channelId` | Join channel room |
+| `leave_institute` | `channelId` | Leave channel room |
+| `send_message` | `{ channel_id, message, sender_id, username }` | Send channel message |
+| `channel_created` | `{ channel, instituteId }` | Broadcast new channel |
+| `channel_renamed` | `{ channel, instituteId }` | Broadcast rename |
+| `channel_deleted` | `{ channelId, instituteId }` | Broadcast deletion |
+| `join_p2p` | `roomId` | Join DM room |
+| `leave_p2p` | `roomId` | Leave DM room |
+| `send_p2p_message` | `{ chatroom_id, message, sender_id, username }` | Send DM |
+| `delete_p2p_message` | `{ roomId, messageId }` | Broadcast delete |
+| `edit_p2p_message` | `{ roomId, messageId, content }` | Broadcast edit |
+| `typing` | `{ channel_id, username }` | Channel typing indicator |
+| `stop_typing` | `{ channel_id }` | Stop channel typing |
+| `typing_p2p` | `{ room_id, username }` | DM typing indicator |
+| `stop_typing_p2p` | `{ room_id }` | Stop DM typing |
+| `get_online_users` | — | Request online user list |
+
+### Server → Client
+
+| Event | Payload | Description |
+|---|---|---|
+| `receive_message` | `{ id, text, from, username, profile_picture, timestamp, channel_id }` | New channel message |
+| `receive_p2p_message` | `{ id, chatroom_id, content, sender_id, username, profile_picture, created_at }` | New DM |
+| `p2p_message_deleted` | `{ messageId, newContent }` | DM soft-deleted |
+| `p2p_message_edited` | `{ messageId, newContent }` | DM edited |
+| `channel_created` | `{ channel }` | New channel in institute |
+| `channel_renamed` | `{ channel }` | Channel renamed |
+| `channel_deleted` | `{ channelId }` | Channel deleted |
+| `update_user_status` | `{ userId, status }` | Online / offline |
+| `online_users_list` | `[userId, ...]` | Current online users |
+| `Display_typing` | `{ username, channel_id }` | Channel typing |
+| `hide_typing` | `{ channel_id }` | Stop channel typing |
+| `Display_p2p_typing` | `{ username, room_id }` | DM typing |
+| `hide_p2p_typing` | `{ room_id }` | Stop DM typing |
+
+## Installation
+
+```bash
+cd backend
+npm install
 ```
 
-### Migrations
+## Running
 
-**P2P read receipts** (if adding to an existing DB):
-```sql
-ALTER TABLE p2p_messages
-  ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE;
+```bash
+# Development
+npm run server
 
-CREATE INDEX IF NOT EXISTS idx_p2p_messages_unread
-  ON p2p_messages (chatroom_id, sender_id, is_read)
-  WHERE is_read = FALSE;
+# Production
+npm start
 ```
 
----
+## Deployment Notes
 
-## 🔐 Security Model
-
-### JWT Authentication
-All protected routes are gated by `verifyToken` middleware. The token is signed with `JWT_SECRET`, expires in 24 hours, and carries `id`, `email`, `role`, and `username`.
-
-### Admin Double-Lock
-All admin-scoped actions (channel create/update/delete, institute management) enforce a two-step check:
-1. `restrictToAdmin` middleware verifies `role = 'admin'` in the JWT.
-2. `verifyAdminOfInstitute(adminId, instituteId)` confirms the user is the admin of the *specific* institute being modified, preventing cross-institute privilege escalation.
-
-### P2P Participant Guard
-P2P message endpoints verify via `isParticipant(roomId, userId)` that the requesting user is `user_one_id` or `user_two_id` of the chatroom before returning or modifying any data.
-
----
-
-## 💬 Socket.io Contract
-
-The Socket.io server runs on the same HTTP server as Express. All events are handled in `app.js`, `Socket-Controllers/messageController.js`, and `Socket-Controllers/P2psocketcontroller.js`.
-
-### Institute / Channel Events
-
-| Event | Direction | Payload | Notes |
-|-------|-----------|---------|-------|
-| `join_institute` | client → server | `channelId` (string) | Join a channel room |
-| `leave_institute` | client → server | `channelId` (string) | Leave a channel room |
-| `join_institute_room` | client → server | `instituteId` (string) | Join the institute-level broadcast room |
-| `send_message` | client → server | `{ channel_id, sender_id, message, username }` | Persists to DB, emits `receive_message` |
-| `receive_message` | server → client | `{ id, text, from, username, timestamp, channel_id }` | Broadcast to channel room |
-| `channel_created` | client → server | `{ channel, instituteId }` | Broadcasts new channel to institute room |
-| `channel_renamed` | client → server | `{ channel, instituteId }` | Broadcasts rename to institute room |
-| `channel_deleted` | client → server | `{ channelId, instituteId }` | Broadcasts deletion to institute room |
-| `typing` | client → server | `{ channel_id, username }` | Emits `Display_typing` to others in room |
-| `stop_typing` | client → server | `{ channel_id }` | Emits `hide_typing` to others in room |
-
-### P2P Events
-
-| Event | Direction | Payload | Notes |
-|-------|-----------|---------|-------|
-| `join_p2p` | client → server | `roomId` (string) | Join a P2P room |
-| `leave_p2p` | client → server | `roomId` (string) | Leave a P2P room |
-| `send_p2p_message` | client → server | `{ chatroom_id, message, sender_id, username }` | Persists and emits `receive_p2p_message` |
-| `receive_p2p_message` | server → client | `{ id, chatroom_id, content, sender_id, username, created_at, is_read }` | Broadcast to P2P room |
-| `delete_p2p_message` | client → server | `{ roomId, messageId }` | Emits `p2p_message_deleted` to room |
-| `p2p_message_deleted` | server → client | `{ messageId, newContent }` | Notifies room of soft-delete |
-| `edit_p2p_message` | client → server | `{ roomId, messageId, content }` | Emits `p2p_message_edited` to room |
-| `p2p_message_edited` | server → client | `{ messageId, newContent }` | Notifies room of edit |
-| `typing_p2p` | client → server | `{ room_id, username }` | Emits `Display_p2p_typing` to others |
-| `stop_typing_p2p` | client → server | `{ room_id }` | Emits `hide_p2p_typing` to others |
-| `mark_as_read` | client → server | `{ chatroom_id, reader_id }` | Marks unread messages in DB as read |
-| `messages_read` | server → client | `{ chatroom_id, reader_id, message_ids }` | Emitted after DB update |
-
-### Presence Events
-
-| Event | Direction | Payload | Notes |
-|-------|-----------|---------|-------|
-| `user_online` | client → server | `userId` | Registers user as online; broadcasts `update_user_status` |
-| `update_user_status` | server → client | `{ userId, status }` | Broadcast on connect and disconnect |
-| `get_online_users` | client → server | — | Request snapshot of online users |
-| `online_users_list` | server → client | `[userId, ...]` | Response to `get_online_users` |
-
----
-
-## 📧 Email (Password Reset)
-
-Password reset uses Nodemailer with a Gmail transporter. When a reset is requested:
-1. A 6-digit code is generated and stored in `password_resets` with a 15-minute expiry.
-2. The code is emailed to the user via `sendResetEmail`.
-3. On verification, the code is deleted and the password hash is updated.
-
-Set `EMAIL_USER` and `EMAIL_PASS` (Gmail App Password) in `.env`.
-
----
-
-## 🧪 Testing
-
-- Use the included `test.rest` file or any REST client (Postman, Insomnia, etc.).
-- Example SQL for manual seeding is available under `SQL/sql.sql`.
-- All admin-protected endpoints require a JWT with `role: 'admin'` and a corresponding `user_institutes` row with `role = 'admin'` for the target institute.
-
----
-
-## 📝 Notes
-
-- Keep `.env` values out of version control.
-- P2P chatrooms are keyed by a sorted user ID pair — duplicate rooms between the same two users are prevented at the DB query level.
-- Soft-delete for P2P messages sets `is_deleted = true` and replaces `content` with `"This message was deleted"` rather than removing the row.
-- When modifying the schema, test on a development branch first (Neon supports branch-based migrations).
-
----
-
-## 🤝 Contributing
-
-Issues and PRs welcome. Follow the existing code style and add tests where appropriate.
-
----
-
-_Last updated: March 2026_
+The backend is hosted on **Koyeb free tier**. On first request after inactivity the server takes ~30 seconds to wake. The frontend shows a waking banner during this period, detected by polling `/api/ping`.
