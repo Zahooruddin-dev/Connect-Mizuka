@@ -7,7 +7,6 @@ import TypingIndicator from '../components/TypingIndicator';
 import DateDivider from '../components/DateDivider';
 import ChatSkeleton from '../components/ChatSkeleton';
 import { formatDate, isSameDay, resolveTimestamp } from '../utils/dateFormat';
-import './styles/ChatWindow.css';
 
 export default function ChatWindow({ channelId }) {
 	const { user } = useAuth();
@@ -37,19 +36,21 @@ export default function ChatWindow({ channelId }) {
 	});
 
 	return (
-		<div className='chat-window'>
-			<div className='chat-header'>
-				<span className='chat-header-hash'>#</span>
-				<span className='chat-header-name'>{channelId}</span>
-				<span className='chat-header-status'>
-					<span className='chat-header-dot' />
-					Live
+		<div className='flex-1 flex flex-col h-screen overflow-hidden bg-[var(--bg-surface)]'>
+			<div className='h-[var(--header-height)] flex items-center gap-2 px-5 border-b border-[var(--border)] shrink-0 bg-[var(--bg-surface)]'>
+				<span className='font-mono text-base text-[var(--text-ghost)]'>#</span>
+				<span className='text-sm font-medium text-[var(--text-primary)] tracking-[-0.1px]'>
+					{channelId}
 				</span>
+				<div className='ml-auto flex items-center gap-[5px] text-[11px] text-[var(--text-muted)]'>
+					<span className='w-1.5 h-1.5 rounded-full bg-green-500 opacity-70' />
+					Live
+				</div>
 			</div>
 
-			<div className='chat-messages'>
+			<div className='flex-1 overflow-y-auto pt-3 pb-1 flex flex-col'>
 				{sorted.length === 0 && (
-					<div className='chat-no-messages'>
+					<div className='flex-1 flex items-center justify-center text-[var(--text-muted)] text-[13px]'>
 						<p>No messages yet. Say hello!</p>
 					</div>
 				)}
