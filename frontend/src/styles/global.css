@@ -36,6 +36,21 @@
 	--radius-lg: 16px;
 	--radius-xl: 22px;
 }
+[data-theme="dark"] {
+  --bg-base:    #1a1917;
+  --bg-surface: #211f1c;
+  --bg-panel:   #2a2724;
+  --bg-hover:   #2e2b27;
+  --bg-input:   #262320;
+
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text-primary:   #f0ece6;
+  --text-secondary: #c9c3bb;
+  --text-muted:     #8a8278;
+  --text-ghost:     #5c5650;
+}
 
 /* ── Tell Tailwind to generate utility classes from your tokens ── */
 @theme inline {
