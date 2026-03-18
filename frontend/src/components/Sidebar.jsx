@@ -438,6 +438,7 @@ function Sidebar({
 				className={`fixed inset-0 bg-black/40 z-40 touch-none md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
 				onClick={onClose}
 				aria-hidden='true'
+				onTouchStart={(e) => e.stopPropagation()}
 			/>
 
 			<aside

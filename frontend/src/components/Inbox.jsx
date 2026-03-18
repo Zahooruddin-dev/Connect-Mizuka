@@ -113,6 +113,8 @@ function Inbox({
 						aria-label="Search messages"
 						aria-expanded={msgSearchOpen}
 						title="Search messages"
+						    onTouchStart={(e) => e.stopPropagation()}
+
 					>
 						<MessagesSquare size={13} strokeWidth={2} />
 					</button>
