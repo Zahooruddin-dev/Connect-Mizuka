@@ -259,13 +259,12 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 													{avatarError}
 												</span>
 											)}
-<div className="text-base font-medium text-zinc-900 mb-1">
+<div className="text-base font-medium text-zinc-800 dark:text-zinc-100 mb-1">
     {userInfo.username}
 </div>
-<div className="text-[11px] text-zinc-500 uppercase tracking-[0.06em] font-medium">
+<div className="text-[11px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.06em] font-medium">
     {userInfo.role || 'Member'}
-</div>
-										</div>
+</div>				</div>
 
 										<div className={`${infoGroupCls} group`}>
 											<span className={infoLabelCls}>Username</span>

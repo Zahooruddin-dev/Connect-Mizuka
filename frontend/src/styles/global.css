@@ -51,6 +51,7 @@
   --text-muted:     #8a8278;
   --text-ghost:     #5c5650;
 }
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ── Tell Tailwind to generate utility classes from your tokens ── */
 @theme inline {
