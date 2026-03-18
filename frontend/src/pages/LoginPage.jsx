@@ -220,6 +220,12 @@ export default function LoginPage() {
 							value={form.email}
 							onChange={handleChange}
 							onBlur={handleBlur}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									document.getElementById('login-password')?.focus();
+								}
+							}}
 							required
 							autoFocus
 							autoComplete='email'
@@ -333,6 +339,12 @@ export default function LoginPage() {
 							value={form.email}
 							onChange={handleChange}
 							onBlur={handleBlur}
+							onKeyDown={(e) => {
+								if (e.key === 'Enter') {
+									e.preventDefault();
+									document.getElementById('reg-password')?.focus();
+								}
+							}}
 							required
 							autoComplete='email'
 							aria-invalid={emailInvalid}
