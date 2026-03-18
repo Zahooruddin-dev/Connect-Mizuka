@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -22,8 +22,17 @@ export function AuthProvider({ children }) {
 		return stored ? JSON.parse(stored) : null;
 	});
 
-	// On mount, if we have a token re-fetch user info to hydrate any
-	// fields that weren't in localStorage from older sessions (e.g. profile_picture).
+	const clearSession = useCallback(() => {
+		setUser(null);
+		setToken(null);
+		setInstitutes([]);
+		setActiveInstituteState(null);
+		localStorage.removeItem('mizuka_user');
+		localStorage.removeItem('mizuka_token');
+		localStorage.removeItem('mizuka_institutes');
+		localStorage.removeItem('mizuka_active_institute');
+	}, []);
+
 	useEffect(() => {
 		const storedToken = localStorage.getItem('mizuka_token');
 		if (!storedToken) return;
@@ -31,7 +40,13 @@ export function AuthProvider({ children }) {
 		fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/user-info`, {
 			headers: { Authorization: `Bearer ${storedToken}` },
 		})
-			.then((r) => r.ok ? r.json() : null)
+			.then((r) => {
+				if (r.status === 401 || r.status === 403) {
+					clearSession();
+					return null;
+				}
+				return r.ok ? r.json() : null;
+			})
 			.then((data) => {
 				if (!data?.user) return;
 				setUser((prev) => {
@@ -42,7 +57,13 @@ export function AuthProvider({ children }) {
 				});
 			})
 			.catch(() => {});
-	}, []);
+	}, [clearSession]);
+
+	useEffect(() => {
+		const handleExpired = () => clearSession();
+		window.addEventListener('mizuka:session-expired', handleExpired);
+		return () => window.removeEventListener('mizuka:session-expired', handleExpired);
+	}, [clearSession]);
 
 	function login(userData, tokenValue) {
 		setUser(userData);
@@ -74,14 +95,7 @@ export function AuthProvider({ children }) {
 	}
 
 	function logout() {
-		setUser(null);
-		setToken(null);
-		setInstitutes([]);
-		setActiveInstituteState(null);
-		localStorage.removeItem('mizuka_user');
-		localStorage.removeItem('mizuka_token');
-		localStorage.removeItem('mizuka_institutes');
-		localStorage.removeItem('mizuka_active_institute');
+		clearSession();
 	}
 
 	function addInstitute(institute) {
