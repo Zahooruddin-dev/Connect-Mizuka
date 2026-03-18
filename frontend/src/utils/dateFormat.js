@@ -8,7 +8,6 @@ function getValidDate(timestamp) {
 		s = s.replace(' ', 'T');
 	}
 
-	// Truncate microseconds to milliseconds — JS Date only handles 3 decimal digits
 	s = s.replace(/(\.\d{3})\d+/, '$1');
 
 	if (!s.endsWith('Z') && !s.includes('+') && !s.includes('-', 10)) {

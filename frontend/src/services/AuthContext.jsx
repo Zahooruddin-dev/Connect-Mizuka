@@ -34,30 +34,32 @@ export function AuthProvider({ children }) {
 	}, []);
 
 	useEffect(() => {
-		const storedToken = localStorage.getItem('mizuka_token');
-		if (!storedToken) return;
+    const storedToken = localStorage.getItem('mizuka_token');
+    if (!storedToken) return;
 
-		fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/user-info`, {
-			headers: { Authorization: `Bearer ${storedToken}` },
-		})
-			.then((r) => {
-				if (r.status === 401 || r.status === 403) {
-					clearSession();
-					return null;
-				}
-				return r.ok ? r.json() : null;
-			})
-			.then((data) => {
-				if (!data?.user) return;
-				setUser((prev) => {
-					if (!prev) return prev;
-					const merged = { ...prev, ...data.user };
-					localStorage.setItem('mizuka_user', JSON.stringify(merged));
-					return merged;
-				});
-			})
-			.catch(() => {});
-	}, [clearSession]);
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/user-info`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+    })
+        .then((r) => {
+            if (!r.ok) {
+                clearSession();
+                return null;
+            }
+            return r.json();
+        })
+        .then((data) => {
+            if (!data?.user) return;
+            setUser((prev) => {
+                if (!prev) return prev;
+                const merged = { ...prev, ...data.user };
+                localStorage.setItem('mizuka_user', JSON.stringify(merged));
+                return merged;
+            });
+        })
+        .catch(() => {
+            clearSession();
+        });
+}, [clearSession]);
 
 	useEffect(() => {
 		const handleExpired = () => clearSession();
