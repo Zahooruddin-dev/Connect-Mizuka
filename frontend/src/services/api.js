@@ -5,15 +5,12 @@ const api = axios.create({
   timeout: 10000,
 });
 
-api.interceptors.response.use(
-	(response) => response,
-	(error) => {
-		if (error.response?.status === 401 || error.response?.status === 403) {
-			window.dispatchEvent(new Event('mizuka:session-expired'));
-		}
-		return Promise.reject(error);
-	},
-);
+api.interceptors.request.use((config) => {
+	const token = localStorage.getItem('mizuka_token');
+	if (token) config.headers.Authorization = `Bearer ${token}`;
+	return config;
+});
+
 
 // ── AUTH ──────────────────────────────────────────────────────────────────
 
