@@ -56,7 +56,7 @@ async function getAdminInstitutes(adminId) {
 
 async function searchInstituteMembers(instituteId, userId, searchTerm) {
 	const { rows } = await pool.query(
-		`SELECT u.id, u.username, u.email, u.role, u.profile_picture
+		`SELECT u.id, u.username, u.email, u.profile_picture, ui.role
 		 FROM users u
 		 JOIN user_institutes ui ON u.id = ui.user_id
 		 WHERE ui.institute_id = $1
@@ -67,10 +67,9 @@ async function searchInstituteMembers(instituteId, userId, searchTerm) {
 	);
 	return rows;
 }
-
 async function getInstituteMembersQuery(instituteId) {
 	const { rows } = await pool.query(
-		`SELECT u.id, u.username, u.email, u.role, u.profile_picture
+		`SELECT u.id, u.username, u.email, u.profile_picture, ui.role
 		 FROM users u
 		 JOIN user_institutes ui ON u.id = ui.user_id
 		 WHERE ui.institute_id = $1
@@ -79,7 +78,6 @@ async function getInstituteMembersQuery(instituteId) {
 	);
 	return rows;
 }
-
 module.exports = {
 	createInstituteQuery,
 	createDefaultChannelQuery,
