@@ -104,3 +104,4 @@ WHERE is_read = false AND is_deleted = false;
 CREATE INDEX IF NOT EXISTS idx_p2p_chatrooms_participants 
 ON p2p_chatrooms (user_one_id, user_two_id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_institutes_institute_id ON user_institutes(institute_id);
