@@ -10,10 +10,13 @@ import {
 	ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
-import { linkToInstitute, getInstituteMembers } from '../services/api';
+import {
+	linkToInstitute,
+	getInstituteMembers,
+	createInstitute,
+} from '../services/api';
 import Toast from './Toast';
 import UserProfilePopover from './Userprofilepopover';
-
 const membersCache = new Map();
 
 const labelCls =
@@ -51,6 +54,10 @@ export default function InstituteSidebar({ onClose, onStartP2P }) {
 	const [membersOpen, setMembersOpen] = useState(false);
 	const [membersLoading, setMembersLoading] = useState(false);
 	const [selectedUser, setSelectedUser] = useState(null);
+	const [creating, setCreating] = useState(false);
+	const [newInstName, setNewInstName] = useState('');
+	const [createError, setCreateError] = useState('');
+	const [createLoading, setCreateLoading] = useState(false);
 
 	const toastTimer = useRef(null);
 	const panelRef = useRef(null);
@@ -163,7 +170,37 @@ export default function InstituteSidebar({ onClose, onStartP2P }) {
 		},
 		[newId, newLabel, institutes, user.id, addInstitute, showToast],
 	);
+	const resetCreateForm = useCallback(() => {
+		setCreating(false);
+		setCreateError('');
+		setNewInstName('');
+	}, []);
 
+	const handleCreateSubmit = useCallback(
+		async (e) => {
+			e.preventDefault();
+			if (!newInstName.trim()) {
+				setCreateError('Name is required');
+				return;
+			}
+			setCreateLoading(true);
+			const res = await createInstitute(newInstName.trim());
+			setCreateLoading(false);
+			if (res.institute && res.membership) {
+				addInstitute({
+					id: res.institute.id,
+					label: res.institute.name,
+					role: 'admin',
+				});
+				setNewInstName('');
+				setCreating(false);
+				showToast('Institute created', 'success');
+			} else {
+				setCreateError(res.message || 'Failed to create institute');
+			}
+		},
+		[newInstName, addInstitute, showToast],
+	);
 	const adminCount = members.filter((m) => m.role === 'admin').length;
 	const memberCount = members.length;
 
@@ -385,6 +422,64 @@ export default function InstituteSidebar({ onClose, onStartP2P }) {
 							</div>
 						</form>
 					)}
+					{user.role === 'admin' && (
+    <div className="border-t border-[var(--border)] pt-4">
+        {!creating ? (
+            <button
+                className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl border border-dashed border-[var(--border-strong)] text-[13px] text-[var(--text-muted)] transition-[background,border-color,color] duration-150 hover:bg-[var(--bg-hover)] hover:border-[var(--teal-700)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
+                onClick={() => setCreating(true)}
+            >
+                <Plus size={14} strokeWidth={2.5} aria-hidden="true" />
+                Create new institute
+            </button>
+        ) : (
+            <form
+                className="flex flex-col gap-3 p-4 rounded-xl bg-[var(--bg-panel)] border border-[var(--border)]"
+                onSubmit={handleCreateSubmit}
+                noValidate
+            >
+                <p className="text-[13px] font-medium text-[var(--text-primary)]">
+                    Create a new institute
+                </p>
+                {createError && (
+                    <p className="text-[12px] text-red-400 bg-red-400/[0.06] border border-red-400/[0.15] rounded-md px-2.5 py-1.5" role="alert">
+                        {createError}
+                    </p>
+                )}
+                <div>
+                    <label className={labelCls} htmlFor="new-inst-name">Institute Name</label>
+                    <input
+                        id="new-inst-name"
+                        className={inputCls}
+                        type="text"
+                        value={newInstName}
+                        onChange={(e) => { setNewInstName(e.target.value); setCreateError(''); }}
+                        placeholder="e.g. Pinecrest High"
+                        required
+                        autoFocus
+                        autoComplete="off"
+                    />
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        type="submit"
+                        className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-[13px] font-medium rounded-lg transition-[background] duration-150 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
+                        disabled={createLoading}
+                    >
+                        {createLoading ? 'Creating…' : 'Create'}
+                    </button>
+                    <button
+                        type="button"
+                        className="px-4 py-2 bg-[var(--bg-hover)] hover:bg-[var(--border)] text-[var(--text-muted)] text-[13px] font-medium rounded-lg transition-[background] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
+                        onClick={resetCreateForm}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        )}
+    </div>
+)}
 
 					{activeInstitute && (
 						<div>
