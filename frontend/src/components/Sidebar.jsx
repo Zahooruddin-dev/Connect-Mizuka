@@ -71,6 +71,7 @@ function Sidebar({
 	const activeP2PRef = useRef(activeP2P);
 	const searchDebounce = useRef(null);
 	const searchInputRef = useRef(null);
+	const channelsRef = useRef(channels);
 
 	useEffect(() => {
 		activeInstituteRef.current = activeInstitute?.id;
@@ -96,9 +97,11 @@ function Sidebar({
 		setSearchResults([]);
 	}, [activeChannel, activeTab]);
 	useEffect(() => {
-    if (activeInstitute?.id) setActiveTab('channels');
-}, [activeInstitute?.id]);
-
+		if (activeInstitute?.id) setActiveTab('channels');
+	}, [activeInstitute?.id]);
+	useEffect(() => {
+		channelsRef.current = channels;
+	}, [channels]);
 	const refreshUnreadCount = useCallback(() => {
 		if (!user?.id) return;
 		fetchUnreadCounts(user.id)
