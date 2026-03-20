@@ -214,7 +214,23 @@ async function getChatroomMembers(chatroomId) {
 		throw error;
 	}
 }
-
+async function searchAllP2PMessagesQuery(roomIds, searchTerm) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT m.id, m.chatroom_id AS room_id, m.content, m.created_at, u.username
+       FROM p2p_messages m
+       JOIN users u ON m.sender_id = u.id
+       WHERE m.chatroom_id = ANY($1::int[]) AND m.content ILIKE $2
+       ORDER BY m.created_at DESC
+       LIMIT 50`,
+      [roomIds, `%${searchTerm}%`]
+    );
+    return rows;
+  } catch (error) {
+    console.error('searchAllP2PMessagesQuery error:', error);
+    throw error;
+  }
+}
 module.exports = {
 	getRoomById,
 	findExistingRoomQuery,
@@ -228,4 +244,5 @@ module.exports = {
 	searchP2PMessagesQuery,
 	getUserChatrooms,
 	getChatroomMembers,
+	searchAllP2PMessagesQuery,
 };

@@ -39,10 +39,14 @@ function Inbox({
 	const debounceTimer = useRef(null);
 	const msgDebounceTimer = useRef(null);
 	const msgSearchInputRef = useRef(null);
+	const recentChatsRef = useRef(recentChats);
 
 	useEffect(() => {
 		if (msgSearchOpen) msgSearchInputRef.current?.focus();
 	}, [msgSearchOpen]);
+	useEffect(() => {
+		recentChatsRef.current = recentChats;
+	}, [recentChats]);
 
 	useEffect(() => {
 		if (!activeP2P?.roomId || !currentUser?.id) return;
@@ -135,44 +139,45 @@ function Inbox({
 		setSearchTerm('');
 		setResults([]);
 	}, []);
+	const handleMsgSearchInput = useCallback((val) => {
+		setMsgSearchTerm(val);
+		clearTimeout(msgDebounceTimer.current);
 
-	const handleMsgSearchInput = useCallback(
-		(val) => {
-			setMsgSearchTerm(val);
-			clearTimeout(msgDebounceTimer.current);
-			if (!val.trim() || val.length < 2 || !recentChats.length) {
-				setMsgSearchResults([]);
+		if (!val.trim() || val.length < 2) {
+			setMsgSearchResults([]);
+			return;
+		}
+
+		setMsgSearchLoading(true);
+		msgDebounceTimer.current = setTimeout(async () => {
+			const chats = recentChatsRef.current;
+			if (!chats.length) {
+				setMsgSearchLoading(false);
 				return;
 			}
-			setMsgSearchLoading(true);
-			msgDebounceTimer.current = setTimeout(async () => {
-				try {
-					const settled = await Promise.allSettled(
-						recentChats.map((chat) => searchP2PMessages(chat.roomId, val)),
-					);
-					const merged = settled.flatMap((r, i) => {
-						if (r.status !== 'fulfilled') return [];
-						return (r.value || []).map((msg) => ({
-							...msg,
-							roomId: recentChats[i].roomId,
-							otherUserId: recentChats[i].id,
-							otherUsername: recentChats[i].username,
-						}));
-					});
-					merged.sort(
-						(a, b) => new Date(b.created_at) - new Date(a.created_at),
-					);
-					setMsgSearchResults(merged);
-				} catch {
-					setMsgSearchResults([]);
-				} finally {
-					setMsgSearchLoading(false);
-				}
-			}, 300);
-		},
-		[recentChats],
-	);
 
+			try {
+				const raw = await searchAllP2PChats(
+					chats.map((c) => c.roomId),
+					val,
+				);
+				const results = raw.map((msg) => {
+					const chat = chats.find((c) => c.roomId === msg.room_id);
+					return {
+						...msg,
+						roomId: msg.room_id,
+						otherUserId: chat?.id,
+						otherUsername: chat?.username,
+					};
+				});
+				setMsgSearchResults(results);
+			} catch {
+				setMsgSearchResults([]);
+			} finally {
+				setMsgSearchLoading(false);
+			}
+		}, 300);
+	}, []);
 	const handleMsgResultClick = useCallback(
 		(result) => {
 			onJumpToP2PMessage?.(

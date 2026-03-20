@@ -133,7 +133,25 @@ async function getUserChatrooms(req, res) {
 		res.status(500).json({ error: 'Failed to fetch chatrooms' });
 	}
 }
- 
+ async function searchAllP2PMessages(req, res) {
+  const { roomIds, searchTerm } = req.body;
+  const myUserId = req.user.id;
+
+  if (!Array.isArray(roomIds) || !roomIds.length || !searchTerm?.trim()) {
+    return res.status(400).json({ messages: [] });
+  }
+
+  try {
+    const messages = await db.searchAllP2PMessagesQuery(
+      roomIds,
+      searchTerm,
+      myUserId  
+    );
+    res.status(200).json({ messages });
+  } catch (error) {
+    res.status(500).json({ error: 'Search failed: ' + error.message });
+  }
+}
 module.exports = {
 	getOrCreateChatroom,
 	getMessages,
@@ -142,5 +160,6 @@ module.exports = {
 	markRoomAsRead,
 	deleteMsg,
 	editMsg,
-	getUserChatrooms
+	getUserChatrooms,
+	searchAllP2PMessages,
 };

@@ -301,7 +301,15 @@ export const searchP2PMessages = async (roomId, searchTerm) => {
 		return [];
 	}
 };
-
+export const searchAllP2PChats = async (roomIds, searchTerm) => {
+  try {
+    const res = await api.post('/p2p/messages/search', { roomIds, searchTerm });
+    return res.data.messages || [];
+  } catch (err) {
+    console.error('Search Error:', err);
+    return [];
+  }
+};
 export const editP2PMessage = async (messageId, content) => {
 	try {
 		const res = await api.patch(`/p2p/messages/${messageId}/edit`, { content });
