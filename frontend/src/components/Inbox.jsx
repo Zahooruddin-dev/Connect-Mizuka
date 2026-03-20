@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, MessageCircle, MessagesSquare } from 'lucide-react';
-import { searchInstituteMembers, searchP2PMessages } from '../services/api';
+import { searchInstituteMembers, searchAllP2PChats } from '../services/api';
 import { getOrCreateP2PRoom, markRoomAsRead } from '../services/p2p-api';
 import socket from '../services/socket';
 import Avatar from './Avatar';
@@ -39,18 +39,19 @@ function Inbox({
 	const debounceTimer = useRef(null);
 	const msgDebounceTimer = useRef(null);
 	const msgSearchInputRef = useRef(null);
-	const recentChatsRef = useRef(recentChats);
 
-	useEffect(() => {
-		if (msgSearchOpen) msgSearchInputRef.current?.focus();
-	}, [msgSearchOpen]);
+	const recentChatsRef = useRef(recentChats);
 	useEffect(() => {
 		recentChatsRef.current = recentChats;
 	}, [recentChats]);
 
 	useEffect(() => {
+		if (msgSearchOpen) msgSearchInputRef.current?.focus();
+	}, [msgSearchOpen]);
+
+	useEffect(() => {
 		if (!activeP2P?.roomId || !currentUser?.id) return;
-		markRoomAsRead(activeP2P.roomId, currentUser.id).then(() => {
+		markRoomAsRead(activeP2P.roomId).then(() => {
 			onUnreadUpdate?.();
 		});
 		setRoomUnread((prev) => {
@@ -132,13 +133,14 @@ function Inbox({
 				setStartingChat(null);
 			}
 		},
-		[recentChats, onStartP2P, startingChat, setRecentChats],
+		[onStartP2P, startingChat, setRecentChats],
 	);
 
 	const handleClearSearch = useCallback(() => {
 		setSearchTerm('');
 		setResults([]);
 	}, []);
+
 	const handleMsgSearchInput = useCallback((val) => {
 		setMsgSearchTerm(val);
 		clearTimeout(msgDebounceTimer.current);
@@ -170,6 +172,7 @@ function Inbox({
 						otherUsername: chat?.username,
 					};
 				});
+				results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 				setMsgSearchResults(results);
 			} catch {
 				setMsgSearchResults([]);
@@ -178,6 +181,7 @@ function Inbox({
 			}
 		}, 300);
 	}, []);
+
 	const handleMsgResultClick = useCallback(
 		(result) => {
 			onJumpToP2PMessage?.(
@@ -198,6 +202,7 @@ function Inbox({
 		setMsgSearchTerm('');
 		setMsgSearchResults([]);
 	}, []);
+
 	const isOnline = useCallback(
 		(userId) => onlineUsers.has(String(userId)),
 		[onlineUsers],

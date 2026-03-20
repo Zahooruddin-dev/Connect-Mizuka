@@ -53,13 +53,13 @@ async function searchChannelMessagesQuery(channelId, searchTerm) {
     [channelId, `%${searchTerm}%`]
   );
   return rows;
-}
-async function searchAllChannelsQuery(channelIds, searchTerm) {
+}async function searchAllChannelsQuery(channelIds, searchTerm) {
   const { rows } = await pool.query(
     `SELECT m.id, m.channel_id, m.content, m.created_at, u.username
      FROM messages m
      JOIN users u ON m.sender_id = u.id
-     WHERE m.channel_id = ANY($1::int[]) AND m.content ILIKE $2
+     WHERE m.channel_id = ANY($1::uuid[])
+       AND m.content ILIKE $2
      ORDER BY m.created_at DESC
      LIMIT 50`,
     [channelIds, `%${searchTerm}%`]
