@@ -121,7 +121,6 @@ export default function InstituteSidebar({ onClose, onStartP2P }) {
 	const handleSelect = useCallback(
 		(institute) => {
 			setActiveInstitute(institute);
-			onClose();
 		},
 		[setActiveInstitute, onClose],
 	);
