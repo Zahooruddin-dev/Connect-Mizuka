@@ -12,7 +12,7 @@ import {
 import {
 	fetchChannelsByInstitute,
 	createChannel,
-	searchChannelMessages,
+	searchAllChannels,
 	getInstituteMembers,
 	fetchUserChatrooms,
 } from '../services/api';
@@ -348,37 +348,37 @@ function Sidebar({
 		};
 	}, [onChannelSelect]);
 
-	const handleSearchInput = useCallback(
-		(val) => {
-			setSearchTerm(val);
-			clearTimeout(searchDebounce.current);
-			if (!val.trim() || val.length < 2 || !channels.length) {
-				setSearchResults([]);
+	const handleSearchInput = useCallback((val) => {
+		setSearchTerm(val);
+		clearTimeout(searchDebounce.current);
+
+		if (!val.trim() || val.length < 2) {
+			setSearchResults([]);
+			return;
+		}
+
+		setSearchLoading(true);
+		searchDebounce.current = setTimeout(async () => {
+			const currentChannels = channelsRef.current; // fix 3 — always fresh
+			if (!currentChannels.length) {
+				setSearchLoading(false);
 				return;
 			}
-			setSearchLoading(true);
-			searchDebounce.current = setTimeout(async () => {
-				try {
-					const settled = await Promise.allSettled(
-						channels.map((ch) => searchChannelMessages(ch.id, val)),
-					);
-					const merged = settled.flatMap((r) =>
-						r.status === 'fulfilled' ? r.value || [] : [],
-					);
-					merged.sort(
-						(a, b) => new Date(b.created_at) - new Date(a.created_at),
-					);
-					setSearchResults(merged);
-				} catch {
-					setSearchResults([]);
-				} finally {
-					setSearchLoading(false);
-				}
-			}, 300);
-		},
-		[channels],
-	);
 
+			try {
+				const results = await searchAllChannels(
+					currentChannels.map((c) => c.id),
+					val,
+				);
+				results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+				setSearchResults(results);
+			} catch {
+				setSearchResults([]);
+			} finally {
+				setSearchLoading(false);
+			}
+		}, 300);
+	}, []);
 	const handleSearchResultClick = useCallback(
 		(result) => {
 			const targetChannel = channels.find(

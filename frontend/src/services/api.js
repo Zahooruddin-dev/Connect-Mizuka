@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
-  timeout: 10000,
+	baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+	timeout: 10000,
 });
 
 api.interceptors.request.use((config) => {
@@ -10,7 +10,6 @@ api.interceptors.request.use((config) => {
 	if (token) config.headers.Authorization = `Bearer ${token}`;
 	return config;
 });
-
 
 // ── AUTH ──────────────────────────────────────────────────────────────────
 
@@ -25,7 +24,12 @@ export const login = async (email, password) => {
 
 export const register = async (username, email, password, role) => {
 	try {
-		const res = await api.post('/auth/register', { username, email, password, role });
+		const res = await api.post('/auth/register', {
+			username,
+			email,
+			password,
+			role,
+		});
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -50,16 +54,23 @@ export const getUserProfile = async (userId) => {
 	}
 };
 
-export const updateProfile = async ({ username, email, currentPassword, newPassword, profilePicture } = {}) => {
+export const updateProfile = async ({
+	username,
+	email,
+	currentPassword,
+	newPassword,
+	profilePicture,
+} = {}) => {
 	try {
 		const isFileUpload = profilePicture instanceof File;
 
 		if (isFileUpload) {
 			const form = new FormData();
-			if (username        !== undefined) form.append('username',         username);
-			if (email           !== undefined) form.append('email',            email);
-			if (currentPassword !== undefined) form.append('currentPassword',  currentPassword);
-			if (newPassword     !== undefined) form.append('newPassword',      newPassword);
+			if (username !== undefined) form.append('username', username);
+			if (email !== undefined) form.append('email', email);
+			if (currentPassword !== undefined)
+				form.append('currentPassword', currentPassword);
+			if (newPassword !== undefined) form.append('newPassword', newPassword);
 			form.append('profile_picture', profilePicture);
 
 			const res = await api.put('/auth/update-profile', form, {
@@ -69,10 +80,10 @@ export const updateProfile = async ({ username, email, currentPassword, newPassw
 		}
 
 		const res = await api.put('/auth/update-profile', {
-			...(username        !== undefined && { username }),
-			...(email           !== undefined && { email }),
+			...(username !== undefined && { username }),
+			...(email !== undefined && { email }),
 			...(currentPassword !== undefined && { currentPassword }),
-			...(newPassword     !== undefined && { newPassword }),
+			...(newPassword !== undefined && { newPassword }),
 		});
 		return res.data;
 	} catch (err) {
@@ -82,7 +93,10 @@ export const updateProfile = async ({ username, email, currentPassword, newPassw
 
 export const changePassword = async (oldPassword, newPassword) => {
 	try {
-		const res = await api.patch('/auth/change-password', { oldPassword, newPassword });
+		const res = await api.patch('/auth/change-password', {
+			oldPassword,
+			newPassword,
+		});
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -100,7 +114,11 @@ export const requestPasswordReset = async (email) => {
 
 export const resetPassword = async (email, code, newPassword) => {
 	try {
-		const res = await api.post('/auth/reset-password', { email, code, newPassword });
+		const res = await api.post('/auth/reset-password', {
+			email,
+			code,
+			newPassword,
+		});
 		return res.data;
 	} catch (err) {
 		return err.response?.data || { message: 'Network error' };
@@ -206,7 +224,7 @@ export const fetchChannelsByInstitute = async (instituteId) => {
 export const updateChannel = async (channelId, { name, isPrivate } = {}) => {
 	try {
 		const res = await api.put(`/channel/${channelId}`, {
-			...(name      !== undefined && { name }),
+			...(name !== undefined && { name }),
 			...(isPrivate !== undefined && { is_private: isPrivate }),
 		});
 		return res.data;
@@ -236,6 +254,18 @@ export const searchChannelMessages = async (channelId, searchTerm) => {
 	}
 };
 
+export const searchAllChannels = async (channelIds, searchTerm) => {
+	try {
+		const res = await api.post('/channel/search-messages', {
+			channelIds,
+			searchTerm,
+		});
+		return res.data.messages || [];
+	} catch (err) {
+		console.error('Search Error:', err);
+		return [];
+	}
+};
 // ── MESSAGES ──────────────────────────────────────────────────────────────
 
 export const fetchMessages = (channelId, limit = 20, offset = 0) =>
@@ -251,7 +281,9 @@ export const getOrCreateP2PRoom = async (otherUserId) => {
 		const res = await api.post('/p2p/room', { otherUserId });
 		return res.data;
 	} catch (err) {
-		return { error: err.response?.data?.message || 'Failed to create chat room' };
+		return {
+			error: err.response?.data?.message || 'Failed to create chat room',
+		};
 	}
 };
 

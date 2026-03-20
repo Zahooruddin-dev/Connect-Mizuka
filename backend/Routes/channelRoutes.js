@@ -8,6 +8,7 @@ const { createChannelSchema, updateChannelSchema } = require('../validations/cha
 router.use(verifyToken);
 
 router.post('/create', validate(createChannelSchema), channelController.createChannel);
+router.post('/search-messages', channelController.searchAllChannelMessages);  
 router.put('/:channelId', validate(updateChannelSchema), channelController.updateChannel);
 router.delete('/:channelId', channelController.deleteChannelById);
 
