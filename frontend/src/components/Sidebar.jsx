@@ -283,13 +283,6 @@ function Sidebar({
 				...prev,
 				[msg.chatroom_id]: (prev[msg.chatroom_id] || 0) + 1,
 			}));
-			fetchUnreadCounts(user.id)
-				.then((counts) => {
-					setUnreadCount(
-						counts.reduce((s, r) => s + Number(r.unread_count), 0),
-					);
-				})
-				.catch(() => {});
 		};
 		socket.on('receive_p2p_message', handleP2PMessage);
 		return () => socket.off('receive_p2p_message', handleP2PMessage);
