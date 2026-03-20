@@ -9,7 +9,6 @@ import {
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
-import ChatSkeleton from './ChatSkelton';
 
 const channelCache = new Map();
 const p2pCache = new Map();
@@ -373,17 +372,17 @@ function ChatArea({
 				onCloseP2P={onCloseP2P}
 				isAdmin={isAdmin}
 			/>
-	<MessageList
-    messages={messages}
-    typingUsers={typingUsers.filter((u) => u !== user.username)}
-    currentUserId={user.id}
-    currentUserPicture={user.profile_picture || null}
-    onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
-    onMessageEdited={handleP2PEdit}
-    onStartP2P={onStartP2P}
-    onRetry={handleRetry}
-    loading={loading}
-/>
+			<MessageList
+				messages={messages}
+				typingUsers={typingUsers.filter((u) => u !== user.username)}
+				currentUserId={user.id}
+				currentUserPicture={user.profile_picture || null}
+				onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
+				onMessageEdited={handleP2PEdit}
+				onStartP2P={onStartP2P}
+				onRetry={handleRetry}
+				loading={loading}
+			/>
 			<MessageInput
 				onSend={handleSend}
 				onTyping={handleTyping}

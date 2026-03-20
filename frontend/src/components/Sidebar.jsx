@@ -95,6 +95,9 @@ function Sidebar({
 		setSearchTerm('');
 		setSearchResults([]);
 	}, [activeChannel, activeTab]);
+	useEffect(() => {
+    if (activeInstitute?.id) setActiveTab('channels');
+}, [activeInstitute?.id]);
 
 	const refreshUnreadCount = useCallback(() => {
 		if (!user?.id) return;
