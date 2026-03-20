@@ -44,34 +44,35 @@ async function deleteChannelQuery(channelId) {
 	return rows[0] || null;
 }
 async function searchChannelMessagesQuery(channelId, searchTerm) {
-  const { rows } = await pool.query(
-    `SELECT m.id, m.channel_id, m.content, m.created_at, u.username 
+	const { rows } = await pool.query(
+		`SELECT m.id, m.channel_id, m.content, m.created_at, u.username 
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      WHERE m.channel_id = $1 AND m.content ILIKE $2
      ORDER BY m.created_at DESC`,
-    [channelId, `%${searchTerm}%`]
-  );
-  return rows;
-}async function searchAllChannelsQuery(channelIds, searchTerm) {
-  const { rows } = await pool.query(
-    `SELECT m.id, m.channel_id, m.content, m.created_at, u.username
+		[channelId, `%${searchTerm}%`],
+	);
+	return rows;
+}
+async function searchAllChannelsQuery(channelIds, searchTerm) {
+	const { rows } = await pool.query(
+		`SELECT m.id, m.channel_id, m.content, m.created_at, u.username
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      WHERE m.channel_id = ANY($1::uuid[])
        AND m.content ILIKE $2
      ORDER BY m.created_at DESC
      LIMIT 50`,
-    [channelIds, `%${searchTerm}%`]
-  );
-  return rows;
+		[channelIds, `%${searchTerm}%`],
+	);
+	return rows;
 }
 module.exports = {
 	createChannelQuery,
 	getChannelsByInstitute,
 	getChannelById,
 	deleteChannelQuery,
-  updateChannelQuery,
+	updateChannelQuery,
 	searchChannelMessagesQuery,
 	searchAllChannelsQuery,
 };
