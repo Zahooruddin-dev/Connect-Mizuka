@@ -108,14 +108,13 @@ async function editP2PMessagesQuery(message_id, userId, content) {
 		throw error;
 	}
 }
-
-async function saveP2PMessage(chatroom_id, sender_id, content) {
+async function saveP2PMessage(chatroom_id, sender_id, content, type = 'text') {
 	try {
 		const { rows } = await pool.query(
-			`INSERT INTO p2p_messages (chatroom_id, sender_id, content, is_read, created_at) 
-			 VALUES ($1, $2, $3, FALSE, NOW()) 
-			 RETURNING *`,
-			[chatroom_id, sender_id, content],
+			`INSERT INTO p2p_messages (chatroom_id, sender_id, content, type, is_read, created_at) 
+       VALUES ($1, $2, $3, $4, FALSE, NOW()) 
+       RETURNING *`,
+			[chatroom_id, sender_id, content, type],
 		);
 		return rows[0] || null;
 	} catch (error) {
@@ -215,8 +214,8 @@ async function getChatroomMembers(chatroomId) {
 	}
 }
 async function searchAllP2PMessagesQuery(roomIds, searchTerm, userId) {
-  const { rows } = await pool.query(
-    `SELECT m.id, m.chatroom_id AS room_id, m.content, m.created_at, u.username
+	const { rows } = await pool.query(
+		`SELECT m.id, m.chatroom_id AS room_id, m.content, m.created_at, u.username
      FROM p2p_messages m
      JOIN users u ON m.sender_id = u.id
      JOIN p2p_chatrooms c ON c.id = m.chatroom_id
@@ -225,9 +224,9 @@ async function searchAllP2PMessagesQuery(roomIds, searchTerm, userId) {
        AND m.content ILIKE $2
      ORDER BY m.created_at DESC
      LIMIT 50`,
-    [roomIds, `%${searchTerm}%`, userId]
-  );
-  return rows;
+		[roomIds, `%${searchTerm}%`, userId],
+	);
+	return rows;
 }
 module.exports = {
 	getRoomById,
