@@ -18,29 +18,57 @@ function AudioPlayer({ src, isMine }) {
 	useEffect(() => {
 		const el = audioRef.current;
 		if (!el) return;
+
 		const onLoaded = () => {
-			setDuration(el.duration);
-			setLoaded(true);
+			if (el.duration === Infinity || isNaN(el.duration)) {
+				el.currentTime = 1e10;
+			} else {
+				setDuration(el.duration);
+				setLoaded(true);
+			}
 		};
+
 		const onTime = () => {
+			if (el.duration === Infinity || isNaN(el.duration)) {
+				if (el.currentTime > 0 && el.buffered.length > 0) {
+					el.currentTime = 0;
+				}
+				return;
+			}
+			if (!loaded) {
+				setDuration(el.duration);
+				setLoaded(true);
+			}
 			setCurrentTime(el.currentTime);
 			setProgress(el.duration ? (el.currentTime / el.duration) * 100 : 0);
 		};
+
+		const onDurationChange = () => {
+			if (el.duration && el.duration !== Infinity && !isNaN(el.duration)) {
+				setDuration(el.duration);
+				setLoaded(true);
+				el.currentTime = 0;
+			}
+		};
+
 		const onEnded = () => {
 			setPlaying(false);
 			setProgress(0);
 			setCurrentTime(0);
 			el.currentTime = 0;
 		};
+
 		el.addEventListener('loadedmetadata', onLoaded);
 		el.addEventListener('timeupdate', onTime);
+		el.addEventListener('durationchange', onDurationChange);
 		el.addEventListener('ended', onEnded);
 		return () => {
 			el.removeEventListener('loadedmetadata', onLoaded);
 			el.removeEventListener('timeupdate', onTime);
+			el.removeEventListener('durationchange', onDurationChange);
 			el.removeEventListener('ended', onEnded);
 		};
-	}, []);
+	}, [loaded]);
 
 	function togglePlay() {
 		const el = audioRef.current;
