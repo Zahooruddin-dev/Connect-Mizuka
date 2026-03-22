@@ -1,6 +1,6 @@
-# Mizuka Chat Engine Backend
+# Mizuka Connect Chat Engine Backend
 
-The backend for the **Mizuka** multi-tenant chat engine. Provides REST endpoints, Socket.io event handlers, and PostgreSQL query helpers to support users, institutes, channels, real-time messaging, peer-to-peer chat, presence tracking, and password reset flows. Built with Express and PostgreSQL (`pg` pool), designed for multi-institute deployments where users may belong to multiple organizations with distinct roles.
+The backend for the **Mizuka Connect** multi-tenant chat engine. Provides REST endpoints, Socket.io event handlers, and PostgreSQL query helpers to support users, institutes, channels, real-time messaging, peer-to-peer chat, presence tracking, and password reset flows. Built with Express and PostgreSQL (`pg` pool), designed for multi-institute deployments where users may belong to multiple organizations with distinct roles.
 
 ---
 
@@ -10,6 +10,7 @@ The backend for the **Mizuka** multi-tenant chat engine. Provides REST endpoints
 - PostgreSQL database (Neon, local, or managed)
 - npm / Yarn
 - Gmail account (for password reset emails via Nodemailer)
+- Cloundiary (for storing upload files)
 
 ---
 
