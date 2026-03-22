@@ -268,8 +268,8 @@ export const searchAllChannels = async (channelIds, searchTerm) => {
 };
 // ── MESSAGES ──────────────────────────────────────────────────────────────
 
-export const fetchMessages = (channelId, limit = 20, offset = 0) =>
-	api.get(`/messages/${channelId}`, { params: { limit, offset } });
+export const fetchMessages = (channelId, limit = 50, offset = 0) =>
+    api.get(`/messages/${channelId}`, { params: { limit, offset } });
 
 export const deleteMessage = (messageId) =>
 	api.delete(`/messages/message/${messageId}`);

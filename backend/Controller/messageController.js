@@ -1,16 +1,20 @@
 const db = require('../db/queryMessage');
 const dbInstitute = require('../db/queryInstitute');
-
-async function getChatHistory(req, res) {
-	const { channelId } = req.params;
-	const limit = parseInt(req.query.limit) || 50;
-	const offset = parseInt(req.query.offset) || 0;
-	try {
-		const messages = await db.getChatHistoryQuery(channelId, limit, offset);
-		res.status(200).json(messages);
-	} catch (error) {
-		res.status(500).json({ error: 'Failed to load messages' });
-	}
+async function getChatHistoryQuery(channel_id, limit, offset) {
+    const { rows } = await pool.query(
+        `SELECT * FROM (
+            SELECT m.id, m.content, m.type, m.created_at, m.sender_id,
+                   u.username, u.profile_picture
+            FROM messages m
+            JOIN users u ON m.sender_id = u.id
+            WHERE m.channel_id = $1
+            ORDER BY m.created_at DESC
+            LIMIT $2 OFFSET $3
+        ) sub
+        ORDER BY created_at ASC`,
+        [channel_id, limit, offset],
+    );
+    return rows || [];
 }
 
 async function deleteMessage(req, res) {
