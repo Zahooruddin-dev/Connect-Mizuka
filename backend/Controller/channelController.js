@@ -1,5 +1,4 @@
 const db = require('../db/queryChannel');
-const dbChannel = require('../db/queryChannel');
 const dbInstitute = require('../db/queryInstitute');
 
 async function createChannel(req, res) {
@@ -37,7 +36,7 @@ async function updateChannel(req, res) {
 	const adminId = req.user.id;
 
 	try {
-		const existing = await dbChannel.getChannelById(channelId);
+		const existing = await db.getChannelById(channelId);
 		if (!existing) {
 			return res.status(404).json({ error: 'Channel not found' });
 		}
@@ -52,7 +51,7 @@ async function updateChannel(req, res) {
 				.json({ message: 'Access Denied: Institute management required' });
 		}
 
-		const updated = await dbChannel.updateChannelQuery(channelId, {
+		const updated = await db.updateChannelQuery(channelId, {
 			name: name ?? existing.name,
 			is_private: is_private ?? existing.is_private,
 		});
@@ -67,7 +66,7 @@ async function deleteChannelById(req, res) {
 	const adminId = req.user.id;
 
 	try {
-		const channel = await dbChannel.getChannelById(channelId);
+		const channel = await db.getChannelById(channelId);
 		if (!channel) {
 			return res.status(404).json({ error: 'Channel not found' });
 		}
@@ -82,7 +81,7 @@ async function deleteChannelById(req, res) {
 				.json({ message: 'Access Denied: Institute management required' });
 		}
 
-		const deleted = await dbChannel.deleteChannelQuery(channelId);
+		const deleted = await db.deleteChannelQuery(channelId);
 		res.status(200).json({ message: 'Channel deleted', channel: deleted });
 	} catch (error) {
 		res.status(500).json({ error: 'Failed to delete channel' });
