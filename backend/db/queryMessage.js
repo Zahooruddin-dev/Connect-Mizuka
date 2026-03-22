@@ -1,31 +1,42 @@
 const pool = require('./Pool');
+
 async function getChatHistoryQuery(channel_id, limit, offset) {
-	const query = `SELECT m.id, m.content, m.created_at, u.username, m.sender_id ,   u.profile_picture 
-    FROM messages m
-    JOIN users u ON m.sender_id = u.id
-    WHERE m.channel_id = $1
-    ORDER BY m.created_at DESC
-    LIMIT $2 OFFSET $3
-  `;
-	const { rows } = await pool.query(query, [channel_id, limit, offset]);
+	const { rows } = await pool.query(
+		`SELECT m.id, m.content, m.type, m.created_at, m.sender_id,
+		        u.username, u.profile_picture
+		 FROM messages m
+		 JOIN users u ON m.sender_id = u.id
+		 WHERE m.channel_id = $1
+		 ORDER BY m.created_at ASC
+		 LIMIT $2 OFFSET $3`,
+		[channel_id, limit, offset],
+	);
 	return rows || null;
 }
 
 async function getSingleMessageQuery(messageId) {
-	const query = `SELECT m.*, u.username FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.id = $1`;
-	const { rows } = await pool.query(query, [messageId]);
+	const { rows } = await pool.query(
+		`SELECT m.*, u.username
+		 FROM messages m
+		 JOIN users u ON m.sender_id = u.id
+		 WHERE m.id = $1`,
+		[messageId],
+	);
 	return rows[0] || null;
 }
 
 async function deleteMessageQuery(messageId, userId) {
-	const query = `DELETE FROM messages WHERE id =$1 AND sender_id =$2
-  RETURNING *`;
-	const { rows } = await pool.query(query, [messageId, userId]);
+	const { rows } = await pool.query(
+		`DELETE FROM messages WHERE id = $1 AND sender_id = $2 RETURNING *`,
+		[messageId, userId],
+	);
 	return rows || null;
 }
+
 async function deleteChannelQuery(channelId) {
-	const query = `DELETE FROM channels WHERE id = $1`;
-	const { rows } = await pool.query(query, [channelId]);
+	const { rows } = await pool.query(`DELETE FROM channels WHERE id = $1`, [
+		channelId,
+	]);
 	return rows || null;
 }
 
