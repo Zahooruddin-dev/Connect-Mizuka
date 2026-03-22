@@ -105,3 +105,10 @@ CREATE INDEX IF NOT EXISTS idx_p2p_chatrooms_participants
 ON p2p_chatrooms (user_one_id, user_two_id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT DEFAULT NULL;
 CREATE INDEX IF NOT EXISTS idx_user_institutes_institute_id ON user_institutes(institute_id);
+-- Update Channel Messages
+ALTER TABLE messages 
+ADD COLUMN type TEXT DEFAULT 'text';
+
+-- Update P2P Messages
+ALTER TABLE p2p_messages 
+ADD COLUMN type TEXT DEFAULT 'text';
