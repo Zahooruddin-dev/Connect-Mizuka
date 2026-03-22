@@ -58,11 +58,14 @@ app.get('/api/ping', (req, res) => res.sendStatus(200));
 const onlineUsers = new Map();
 
 io.on('connection', (socket) => {
+	console.log(`[Server] New socket connection: ${socket.id}`);
+	
 	socket.on('user_online', (userId) => {
 		if (!userId) return;
 		const uid = String(userId);
 		onlineUsers.set(uid, socket.id);
 		socket.userId = uid;
+		console.log(`[user_online] User ${uid} online, socket ${socket.id}`);
 		io.emit('update_user_status', { userId: uid, status: 'online' });
 	});
 
@@ -89,6 +92,8 @@ io.on('connection', (socket) => {
 
 	socket.on('join_institute', (channelId) => {
 		socket.join(channelId);
+		console.log(`[socket.join] Socket ${socket.id} joined channel: ${channelId}`);
+		console.log(`[socket.join] All rooms for this socket:`, socket.rooms);
 	});
 
 	socket.on('leave_institute', (channelId) => {
@@ -96,6 +101,7 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on('send_message', (data) => {
+		console.log('[send_message event] Received data:', data);
 		socketController.handleSendMessage(socket, io, data);
 	});
 
@@ -164,6 +170,11 @@ io.on('connection', (socket) => {
 		socket.to(data.room_id).emit('hide_p2p_typing', {
 			room_id: data.room_id,
 		});
+	});
+
+	socket.on('test_emit', () => {
+		console.log('[test_emit] Received test event from socket:', socket.id);
+		socket.emit('test_response', { message: 'Backend received your test!', timestamp: new Date().toISOString() });
 	});
 });
 
