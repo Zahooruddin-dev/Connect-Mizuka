@@ -10,6 +10,7 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 
+
 const channelCache = new Map();
 const p2pCache = new Map();
 
@@ -160,8 +161,10 @@ function ChatArea({
 			const normalised = {
 				id: msg.id,
 				content: msg.text ?? msg.content,
+				type: msg.type || 'text',
 				sender_id: msg.from ?? msg.sender_id,
 				username: msg.username,
+				profile_picture: msg.profile_picture || null,
 				created_at: msg.timestamp ?? msg.created_at,
 			};
 
@@ -249,9 +252,13 @@ function ChatArea({
 
 	const handleSend = useCallback(
 		(content) => {
+			const type = content.startsWith('https://res.cloudinary.com')
+				? 'audio'
+				: 'text';
 			const tempMessage = {
 				id: `temp-${Date.now()}`,
 				content,
+				type,
 				sender_id: user.id,
 				username: user.username,
 				created_at: new Date().toISOString(),
@@ -263,6 +270,7 @@ function ChatArea({
 					message: content,
 					sender_id: user.id,
 					username: user.username,
+					type,
 				});
 			} else {
 				socket.emit('send_message', {
@@ -270,6 +278,7 @@ function ChatArea({
 					message: content,
 					sender_id: user.id,
 					username: user.username,
+					type,
 				});
 			}
 		},
