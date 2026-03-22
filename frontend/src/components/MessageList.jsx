@@ -22,14 +22,8 @@ function MessageList({
 	return (
 		<div className='flex-1 overflow-y-auto py-4'>
 			<div className='flex flex-col gap-0.5 px-5 min-h-full justify-end'>
-				{messages.length === 0 && !loading && (
-					<div className='flex items-center justify-center py-[60px] text-[var(--text-ghost)] text-[13px] italic'>
-						<span>No messages yet. Start the conversation.</span>
-					</div>
-				)}
-
-				{messages.length === 0 && loading && (
-					<div className='flex flex-col gap-1 px-4 py-4 justify-end flex-1'>
+				{loading && messages.length === 0 && (
+					<div className='flex flex-col gap-1 py-4 justify-end flex-1'>
 						{[
 							{ mine: false, w: '52%' },
 							{ mine: false, w: '38%' },
@@ -62,6 +56,13 @@ function MessageList({
 						))}
 					</div>
 				)}
+
+				{!loading && messages.length === 0 && (
+					<div className='flex items-center justify-center py-[60px] text-[var(--text-ghost)] text-[13px] italic'>
+						<span>No messages yet. Start the conversation.</span>
+					</div>
+				)}
+
 				{messages.filter(Boolean).map((msg) => (
 					<MessageItem
 						key={msg._id || msg.id || msg.tempId}
@@ -73,6 +74,7 @@ function MessageList({
 						onUserClick={(userId) => setSelectedUser(userId)}
 					/>
 				))}
+
 				{typingUsers.length > 0 && (
 					<div className='flex items-center gap-2.5 py-2 px-1 animate-[msg-in_0.2s_ease]'>
 						<div className='flex items-center gap-1 px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border)] rounded-[var(--radius-lg)] rounded-bl-[4px]'>
@@ -90,6 +92,7 @@ function MessageList({
 						</span>
 					</div>
 				)}
+
 				<div ref={bottomRef} />
 			</div>
 
