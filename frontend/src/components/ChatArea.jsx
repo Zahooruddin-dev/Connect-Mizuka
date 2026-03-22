@@ -281,35 +281,37 @@ function ChatArea({
 		};
 	}, [channelId, roomId, isP2P, user.id, retryCount, onChannelRenamed]);
 
-	const handleSend = useCallback(
-		(content) => {
-			const tempMessage = {
-				id: `temp-${Date.now()}`,
-				content,
-				type: 'text',
-				sender_id: user.id,
-				username: user.username,
-				created_at: new Date().toISOString(),
-			};
-			setAndCache((prev) => [...prev, tempMessage]);
-			if (isP2P) {
-				socket.emit('send_p2p_message', {
-					chatroom_id: roomId,
-					message: content,
-					sender_id: user.id,
-					username: user.username,
-				});
-			} else {
-				socket.emit('send_message', {
-					channel_id: channelId,
-					message: content,
-					sender_id: user.id,
-					username: user.username,
-				});
-			}
-		},
-		[channelId, roomId, isP2P, user, setAndCache],
-	);
+const handleSend = useCallback(
+    (content, type = 'text') => {
+        const tempMessage = {
+            id: `temp-${Date.now()}`,
+            content,
+            type,
+            sender_id: user.id,
+            username: user.username,
+            created_at: new Date().toISOString(),
+        };
+        setAndCache((prev) => [...prev, tempMessage]);
+        if (isP2P) {
+            socket.emit('send_p2p_message', {
+                chatroom_id: roomId,
+                message: content,
+                sender_id: user.id,
+                username: user.username,
+                type,
+            });
+        } else {
+            socket.emit('send_message', {
+                channel_id: channelId,
+                message: content,
+                sender_id: user.id,
+                username: user.username,
+                type,
+            });
+        }
+    },
+    [channelId, roomId, isP2P, user, setAndCache],
+);
 
 	const handleTyping = useCallback(() => {
 		if (isP2P)
