@@ -6,7 +6,7 @@ import LoginPage from './pages/LoginPage';
 import InstituteGate from './components/Institutegate';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
-import ChatSkeleton from './components/ChatSkelton';
+import ChatSkeleton from './components/ChatSkeleton';
 
 const firstChannelCache = new Map();
 let pingFired = false;

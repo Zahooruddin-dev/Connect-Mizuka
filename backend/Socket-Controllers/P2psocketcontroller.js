@@ -2,7 +2,7 @@ const db = require('../db/queryP2P');
 const pool = require('../db/Pool');
 
 async function handleSendP2PMessage(socket, io, data) {
-	const { chatroom_id, message, sender_id, username } = data;
+	const { chatroom_id, message, sender_id, username,type } = data;
 
 	if (!chatroom_id || !message || !sender_id || !username) {
 		console.error('Invalid P2P message payload:', data);
@@ -10,7 +10,12 @@ async function handleSendP2PMessage(socket, io, data) {
 	}
 
 	try {
-		const savedMessage = await db.saveP2PMessage(chatroom_id, sender_id, message);
+		const savedMessage = await db.saveP2PMessage(
+			chatroom_id,
+			sender_id,
+			message,
+			type
+		);
 
 		const { rows } = await pool.query(
 			'SELECT profile_picture FROM users WHERE id = $1',
@@ -24,6 +29,7 @@ async function handleSendP2PMessage(socket, io, data) {
 			content: savedMessage.content,
 			sender_id: savedMessage.sender_id,
 			username: username,
+			type:type,
 			profile_picture,
 			created_at: new Date(savedMessage.created_at || Date.now()).toISOString(),
 			is_read: false,
@@ -34,11 +40,16 @@ async function handleSendP2PMessage(socket, io, data) {
 		const members = await db.getChatroomMembers(chatroom_id);
 		members.forEach((member) => {
 			if (String(member.user_id) !== String(sender_id)) {
-				io.to(`user_${member.user_id}`).emit('receive_p2p_message', messagePayload);
+				io.to(`user_${member.user_id}`).emit(
+					'receive_p2p_message',
+					messagePayload,
+				);
 			}
 		});
 
-		console.log(`[Server] P2P message sent in room ${chatroom_id} by ${username}`);
+		console.log(
+			`[Server] P2P message sent in room ${chatroom_id} by ${username}`,
+		);
 	} catch (error) {
 		console.error('handleSendP2PMessage error:', error);
 	}

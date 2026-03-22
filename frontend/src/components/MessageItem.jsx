@@ -3,14 +3,6 @@ import { formatTime } from '../utils/time';
 import { deleteMessage } from '../services/api';
 import Toast from './Toast';
 
-function isAudioMessage(content) {
-	if (!content) return false;
-	return (
-		content.startsWith('https://res.cloudinary.com') &&
-		/\.(webm|mp3|wav|ogg|m4a)(\?|$)/i.test(content)
-	);
-}
-
 function AudioPlayer({ src, isMine }) {
 	return (
 		<audio
@@ -248,7 +240,7 @@ function MessageItem({
 										</button>
 									</div>
 								</div>
-							) : isAudioMessage(message.content) ? (
+							) : message.type === 'audio' ? (
 								<AudioPlayer src={message.content} isMine={isMine} />
 							) : (
 								<p
