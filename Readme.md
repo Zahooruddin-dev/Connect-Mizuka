@@ -41,7 +41,7 @@
 | **Vite 5** | Build tool & dev server |
 | **Socket.io Client 4** | Real-time WebSocket client |
 | **Axios** | HTTP client |
-| **Vanilla CSS** | Styling (no frameworks) |
+| **Tailwind CSS** | Utility-first styling framework |
 | **Lucide React** | Icon library |
 
 ### Backend
