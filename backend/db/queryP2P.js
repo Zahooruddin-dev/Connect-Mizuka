@@ -159,7 +159,6 @@ async function getUnreadCountsForUser(userId) {
 		throw error;
 	}
 }
-
 async function getUserChatrooms(userId) {
 	try {
 		const { rows } = await pool.query(
@@ -176,6 +175,11 @@ async function getUserChatrooms(userId) {
 					WHERE chatroom_id = c.id
 					ORDER BY created_at DESC LIMIT 1
 				) AS last_content,
+				(
+					SELECT type FROM p2p_messages
+					WHERE chatroom_id = c.id
+					ORDER BY created_at DESC LIMIT 1
+				) AS last_type,
 				(
 					SELECT sender_id FROM p2p_messages
 					WHERE chatroom_id = c.id
@@ -198,7 +202,6 @@ async function getUserChatrooms(userId) {
 		throw error;
 	}
 }
-
 async function getChatroomMembers(chatroomId) {
 	try {
 		const { rows } = await pool.query(
