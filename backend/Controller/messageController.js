@@ -19,7 +19,9 @@ async function deleteMessage(req, res) {
 	try {
 		const result = await db.deleteMessageQuery(messageId, userId);
 		if (!result || result.length === 0) {
-			return res.status(403).json({ error: 'Unauthorized: You can only delete your own messages' });
+			return res
+				.status(403)
+				.json({ error: 'Unauthorized: You can only delete your own messages' });
 		}
 		res.status(200).json({ message: 'Message deleted successfully' });
 	} catch (error) {
@@ -34,9 +36,14 @@ async function deleteChannel(req, res) {
 		const channel = await db.getChannelById(channelId);
 		if (!channel) return res.status(404).json({ error: 'Channel not found' });
 
-		const isAdminHere = await dbInstitute.verifyAdminOfInstitute(adminId, channel.institute_id);
+		const isAdminHere = await dbInstitute.verifyAdminOfInstitute(
+			adminId,
+			channel.institute_id,
+		);
 		if (!isAdminHere) {
-			return res.status(403).json({ error: 'Not authorized for this institute' });
+			return res
+				.status(403)
+				.json({ error: 'Not authorized for this institute' });
 		}
 
 		await db.deleteChannelQuery(channelId);
