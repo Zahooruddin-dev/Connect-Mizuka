@@ -142,7 +142,9 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 
 	const discardRecording = useCallback(() => {
 		clearInterval(timerRef.current);
-		mediaRecorderRef.current?.stop();
+		if (mediaRecorderRef.current?.state === 'recording') {
+			mediaRecorderRef.current.stop();
+		}
 		streamRef.current?.getTracks().forEach((t) => t.stop());
 		streamRef.current = null;
 		if (audioUrl) URL.revokeObjectURL(audioUrl);
@@ -190,6 +192,24 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 	const isPreview = recState === 'preview';
 	const isUploading = recState === 'uploading';
 	const isRequesting = recState === 'requesting';
+	const isIdle = recState === 'idle';
+
+	const SendIcon = () => (
+		<svg
+			width='18'
+			height='18'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<line x1='22' y1='2' x2='11' y2='13' />
+			<polygon points='22,2 15,22 11,13 2,9' />
+		</svg>
+	);
 
 	const MicIcon = () => (
 		<svg
@@ -207,23 +227,6 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 			<path d='M19 10v2a7 7 0 0 1-14 0v-2' />
 			<line x1='12' y1='19' x2='12' y2='23' />
 			<line x1='8' y1='23' x2='16' y2='23' />
-		</svg>
-	);
-
-	const SendIcon = () => (
-		<svg
-			width='18'
-			height='18'
-			viewBox='0 0 24 24'
-			fill='none'
-			stroke='currentColor'
-			strokeWidth='2'
-			strokeLinecap='round'
-			strokeLinejoin='round'
-			aria-hidden='true'
-		>
-			<line x1='22' y1='2' x2='11' y2='13' />
-			<polygon points='22,2 15,22 11,13 2,9' />
 		</svg>
 	);
 
@@ -249,14 +252,12 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 				</div>
 			)}
 
-			{isPreview || isUploading ? (
-				<div
-					className={`flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--teal-700)] shadow-[0_0_0_2px_rgba(13,148,136,0.06)] rounded-[var(--radius-lg)] px-3 py-2`}
-				>
+			{(isPreview || isUploading) && (
+				<div className='flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--teal-700)] shadow-[0_0_0_2px_rgba(13,148,136,0.06)] rounded-[var(--radius-lg)] px-3 py-2'>
 					<button
 						type='button'
 						onClick={discardRecording}
-						className='w-7 h-7 min-w-[28px] rounded-[var(--radius-sm)] flex items-center justify-center text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] shrink-0'
+						className='w-7 h-7 min-w-[28px] rounded-[var(--radius-sm)] flex items-center justify-center text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] transition-[background,color] duration-150 shrink-0'
 						aria-label='Discard recording'
 						title='Discard'
 					>
@@ -273,7 +274,7 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 						type='button'
 						onClick={sendAudio}
 						disabled={isUploading}
-						className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center bg-[var(--teal-600)] text-white hover:bg-[var(--teal-700)] transition-[background] duration-200 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] shrink-0'
+						className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center bg-[var(--teal-600)] text-white hover:bg-[var(--teal-700)] transition-[background] duration-200 disabled:opacity-60 disabled:cursor-not-allowed shrink-0'
 						aria-label={isUploading ? 'Sending…' : 'Send voice message'}
 						title={isUploading ? 'Sending…' : 'Send'}
 					>
@@ -295,106 +296,120 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 						)}
 					</button>
 				</div>
-			) : (
-				<div
-					className={`flex items-end gap-1.5 bg-[var(--bg-input)] border rounded-[var(--radius-lg)] pl-4 pr-1 py-1 transition-[border-color,box-shadow] duration-200 ${isRecording ? 'border-red-500/60 shadow-[0_0_0_2px_rgba(239,68,68,0.08)]' : hasText ? 'border-[var(--teal-700)] shadow-[0_0_0_2px_rgba(13,148,136,0.06)] focus-within:border-[var(--teal-700)]' : 'border-[var(--border)] focus-within:border-[var(--teal-700)] focus-within:shadow-[0_0_0_2px_rgba(13,148,136,0.06)]'}`}
-				>
-					{isRecording ? (
-						<div className='flex-1 flex items-center gap-2.5 py-2 min-w-0'>
-							<span
-								className='w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0'
-								aria-hidden='true'
-							/>
-							<span className='text-[12px] font-mono text-[var(--text-muted)] tabular-nums'>
-								{formatDur(duration)}
-							</span>
-							<span className='text-[12px] text-[var(--text-ghost)] italic truncate'>
-								Recording…
-							</span>
-						</div>
-					) : isRequesting ? (
-						<div className='flex-1 flex items-center py-2'>
-							<span className='text-[12px] text-[var(--text-ghost)] animate-pulse'>
-								Waiting for mic…
-							</span>
-						</div>
-					) : (
-						<textarea
-							ref={textareaRef}
-							className='flex-1 bg-transparent outline-none text-[var(--text-primary)] text-[16px] md:text-sm leading-[1.6] resize-none max-h-[120px] overflow-y-auto py-2 font-[inherit] placeholder:text-[var(--text-ghost)]'
-							value={text}
-							onChange={handleChange}
-							onKeyDown={handleKeyDown}
-							placeholder='Message...'
-							rows={1}
-							aria-label='Message input'
-							aria-multiline='true'
+			)}
+
+			<div
+				className={`flex items-end gap-1.5 bg-[var(--bg-input)] border rounded-[var(--radius-lg)] pl-4 pr-1 py-1 transition-[border-color,box-shadow] duration-200 ${
+					isRecording
+						? 'border-red-500/60 shadow-[0_0_0_2px_rgba(239,68,68,0.08)]'
+						: hasText
+							? 'border-[var(--teal-700)] shadow-[0_0_0_2px_rgba(13,148,136,0.06)]'
+							: 'border-[var(--border)] focus-within:border-[var(--teal-700)] focus-within:shadow-[0_0_0_2px_rgba(13,148,136,0.06)]'
+				}`}
+			>
+				{isRecording ? (
+					<div className='flex-1 flex items-center gap-2.5 py-2 min-w-0'>
+						<span
+							className='w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0'
+							aria-hidden='true'
 						/>
+						<span className='text-[12px] font-mono text-[var(--text-muted)] tabular-nums'>
+							{formatDur(duration)}
+						</span>
+						<span className='text-[12px] text-[var(--text-ghost)] italic truncate'>
+							Recording…
+						</span>
+					</div>
+				) : isRequesting ? (
+					<div className='flex-1 flex items-center py-2'>
+						<span className='text-[12px] text-[var(--text-ghost)] animate-pulse'>
+							Waiting for mic…
+						</span>
+					</div>
+				) : (
+					<textarea
+						ref={textareaRef}
+						className='flex-1 bg-transparent outline-none text-[var(--text-primary)] text-[16px] md:text-sm leading-[1.6] resize-none max-h-[120px] overflow-y-auto py-2 font-[inherit] placeholder:text-[var(--text-ghost)]'
+						value={text}
+						onChange={handleChange}
+						onKeyDown={handleKeyDown}
+						placeholder='Message...'
+						rows={1}
+						aria-label='Message input'
+						aria-multiline='true'
+					/>
+				)}
+
+				<div className='flex items-center gap-0.5 mb-[3px] shrink-0'>
+					{hasText && isIdle && (
+						<button
+							type='button'
+							onClick={handleCancelText}
+							className='w-7 h-7 min-w-[28px] rounded-[var(--radius-sm)] text-[var(--text-ghost)] flex items-center justify-center transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]'
+							title='Clear'
+							aria-label='Clear message'
+						>
+							<X size={14} strokeWidth={2} />
+						</button>
 					)}
 
-					<div className='flex items-center gap-0.5 mb-[3px] shrink-0'>
-						{hasText && !isRecording && (
-							<button
-								type='button'
-								onClick={handleCancelText}
-								className='w-7 h-7 min-w-[28px] rounded-[var(--radius-sm)] text-[var(--text-ghost)] flex items-center justify-center transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
-								title='Clear'
-								aria-label='Clear message'
-							>
-								<X size={14} strokeWidth={2} />
-							</button>
-						)}
+					{isIdle && (
+						<button
+							type='button'
+							onClick={startRecording}
+							className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] transition-[background,color] duration-200 m-0.5'
+							title='Record voice message'
+							aria-label='Record voice message'
+						>
+							<MicIcon />
+						</button>
+					)}
 
-						{isRecording ? (
-							<button
-								type='button'
-								onClick={stopRecording}
-								className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center bg-red-500 text-white hover:bg-red-600 transition-[background] duration-200 m-0.5 focus-visible:outline-2 focus-visible:outline-red-500'
-								title='Stop recording'
-								aria-label='Stop recording'
+					{isRecording && (
+						<button
+							type='button'
+							onClick={stopRecording}
+							className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center bg-red-500 text-white hover:bg-red-600 transition-[background] duration-200 m-0.5'
+							title='Stop recording'
+							aria-label='Stop recording'
+						>
+							<svg
+								width='14'
+								height='14'
+								viewBox='0 0 24 24'
+								fill='currentColor'
+								aria-hidden='true'
 							>
-								<svg
-									width='14'
-									height='14'
-									viewBox='0 0 24 24'
-									fill='currentColor'
-									aria-hidden='true'
-								>
-									<rect x='4' y='4' width='16' height='16' rx='2' />
-								</svg>
-							</button>
-						) : hasText ? (
-							<button
-								type='button'
-								onClick={handleSendText}
-								className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center bg-[var(--teal-600)] text-white hover:bg-[var(--teal-700)] transition-[background] duration-200 m-0.5 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
-								title='Send'
-								aria-label='Send message'
-							>
-								<SendIcon />
-							</button>
-						) : (
-							<button
-								type='button'
-								onClick={startRecording}
-								disabled={isRequesting}
-								className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] transition-[background,color] duration-200 m-0.5 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
-								title='Record voice message'
-								aria-label='Record voice message'
-							>
-								<MicIcon />
-							</button>
-						)}
-					</div>
+								<rect x='4' y='4' width='16' height='16' rx='2' />
+							</svg>
+						</button>
+					)}
+
+					{isIdle && (
+						<button
+							type='button'
+							onClick={handleSendText}
+							disabled={!hasText}
+							className={`w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center transition-[background,color] duration-200 m-0.5 ${
+								hasText
+									? 'bg-[var(--teal-600)] text-white hover:bg-[var(--teal-700)]'
+									: 'bg-[var(--bg-surface)] text-[var(--text-ghost)] pointer-events-none'
+							}`}
+							title='Send'
+							aria-label='Send message'
+						>
+							<SendIcon />
+						</button>
+					)}
 				</div>
-			)}
+			</div>
 
 			<p
 				className='hidden md:block text-[10px] text-[var(--text-ghost)] tracking-[0.01em] pl-1'
 				aria-live='polite'
 			>
 				{isRecording
-					? 'Stop recording to preview · recording in progress'
+					? 'Stop to preview your recording'
 					: 'Enter to send · Shift+Enter for new line · Esc to clear'}
 			</p>
 		</div>
