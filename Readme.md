@@ -64,7 +64,7 @@
 | **Vite 5** | Build tool & dev server |
 | **Socket.io Client 4** | Real-time WebSocket client |
 | **Axios** | HTTP client with JWT interceptor |
-| **Vanilla CSS + CSS Variables** | Styling (no framework) |
+| **Tailwind CSS + CSS Variables** | Styling (Tailwind) |
 | **Lucide React** | Icon library |
 | **Sora + DM Mono** | Typography (Google Fonts) |
 
