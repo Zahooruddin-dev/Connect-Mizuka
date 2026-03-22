@@ -170,7 +170,7 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 				headers: { 'Content-Type': 'multipart/form-data' },
 			});
 			if (res.data?.url) {
-				onSend(res.data.url);
+				onSend(res.data.url, 'audio');
 				URL.revokeObjectURL(audioUrl);
 				setAudioBlob(null);
 				setAudioUrl('');

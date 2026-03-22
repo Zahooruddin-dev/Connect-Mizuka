@@ -10,7 +10,6 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 
-
 const channelCache = new Map();
 const p2pCache = new Map();
 
@@ -251,10 +250,8 @@ function ChatArea({
 	}, [channelId, roomId, isP2P, user.id, retryCount, onChannelRenamed]);
 
 	const handleSend = useCallback(
-		(content) => {
-			const type = content.startsWith('https://res.cloudinary.com')
-				? 'audio'
-				: 'text';
+		(content, explicitType) => {
+			const type = explicitType || 'text';
 			const tempMessage = {
 				id: `temp-${Date.now()}`,
 				content,
