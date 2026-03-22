@@ -154,7 +154,29 @@ function ChatArea({
 				}
 			} else {
 				if (msg.channel_id && msg.channel_id !== activeId) return;
-				if (msg.from === user.id || msg.sender_id === user.id) return;
+				if (msg.from === user.id || msg.sender_id === user.id) {
+					setAndCache((prev) => {
+						const idx = prev.findIndex(
+							(m) =>
+								String(m.id).startsWith('temp-') &&
+								m.content === (msg.text ?? msg.content) &&
+								m.sender_id === user.id,
+						);
+						if (idx === -1) return prev;
+						const next = [...prev];
+						next[idx] = {
+							id: msg.id,
+							content: msg.text ?? msg.content,
+							type: msg.type || 'text',
+							sender_id: msg.from ?? msg.sender_id,
+							username: msg.username,
+							profile_picture: msg.profile_picture || null,
+							created_at: msg.timestamp ?? msg.created_at,
+						};
+						return next;
+					});
+					return;
+				}
 			}
 
 			const normalised = {
