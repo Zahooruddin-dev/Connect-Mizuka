@@ -157,6 +157,7 @@ function Sidebar({
 										content: r.last_content,
 										created_at: r.last_created_at,
 										fromMe: String(r.last_sender_id) === String(user.id),
+										type: r.last_type || 'text',
 									}
 								: existing?.lastMessage || null,
 						};
@@ -254,6 +255,7 @@ function Sidebar({
 								content: msg.content,
 								created_at: msg.created_at,
 								fromMe,
+								type: msg.type || 'text',
 							},
 						}
 					: {
@@ -264,10 +266,12 @@ function Sidebar({
 							lastChat: msg.created_at,
 							lastMessage: {
 								content: msg.content,
+								type: msg.type || 'text',
 								created_at: msg.created_at,
 								fromMe: false,
 							},
 						};
+
 				const idx = prev.findIndex((c) => c.roomId === entry.roomId);
 				const next =
 					idx !== -1

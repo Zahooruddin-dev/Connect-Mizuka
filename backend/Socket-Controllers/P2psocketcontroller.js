@@ -2,7 +2,7 @@ const db = require('../db/queryP2P');
 const pool = require('../db/Pool');
 
 async function handleSendP2PMessage(socket, io, data) {
-	const { chatroom_id, message, sender_id, username,type } = data;
+	const { chatroom_id, message, sender_id, username, type } = data;
 
 	if (!chatroom_id || !message || !sender_id || !username) {
 		console.error('Invalid P2P message payload:', data);
@@ -14,7 +14,7 @@ async function handleSendP2PMessage(socket, io, data) {
 			chatroom_id,
 			sender_id,
 			message,
-			type
+			type,
 		);
 
 		const { rows } = await pool.query(
@@ -29,7 +29,7 @@ async function handleSendP2PMessage(socket, io, data) {
 			content: savedMessage.content,
 			sender_id: savedMessage.sender_id,
 			username: username,
-			type:type,
+			type: type,
 			profile_picture,
 			created_at: new Date(savedMessage.created_at || Date.now()).toISOString(),
 			is_read: false,
