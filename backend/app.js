@@ -59,7 +59,7 @@ const onlineUsers = new Map();
 
 io.on('connection', (socket) => {
 	console.log(`[Server] New socket connection: ${socket.id}`);
-	
+
 	socket.on('user_online', (userId) => {
 		if (!userId) return;
 		const uid = String(userId);
@@ -92,7 +92,9 @@ io.on('connection', (socket) => {
 
 	socket.on('join_institute', (channelId) => {
 		socket.join(channelId);
-		console.log(`[socket.join] Socket ${socket.id} joined channel: ${channelId}`);
+		console.log(
+			`[socket.join] Socket ${socket.id} joined channel: ${channelId}`,
+		);
 		console.log(`[socket.join] All rooms for this socket:`, socket.rooms);
 	});
 
@@ -117,9 +119,9 @@ io.on('connection', (socket) => {
 		io.to(instituteId).emit('channel_created', { channel });
 	});
 	socket.on('join_user_room', (userId) => {
-    if (!userId) return;
-    socket.join(`user_${userId}`);
-});
+		if (!userId) return;
+		socket.join(`user_${userId}`);
+	});
 
 	socket.on('typing', (data) => {
 		socket.to(data.channel_id).emit('Display_typing', {
@@ -146,16 +148,35 @@ io.on('connection', (socket) => {
 	socket.on('send_p2p_message', (data) => {
 		p2pSocketController.handleSendP2PMessage(socket, io, data);
 	});
-	socket.on('delete_p2p_message', (data) => {
+	socket.on('delete_p2p_message', async (data) => {
 		io.to(data.roomId).emit('p2p_message_deleted', {
 			messageId: data.messageId,
 			newContent: 'This message was deleted',
 		});
+		const members = await require('./db/queryP2P').getChatroomMembers(
+			data.roomId,
+		);
+		members.forEach((member) => {
+			io.to(`user_${member.user_id}`).emit('p2p_message_deleted', {
+				messageId: data.messageId,
+				newContent: 'This message was deleted',
+			});
+		});
 	});
-	socket.on('edit_p2p_message', (data) => {
+
+	socket.on('edit_p2p_message', async (data) => {
 		io.to(data.roomId).emit('p2p_message_edited', {
 			messageId: data.messageId,
 			newContent: data.content,
+		});
+		const members = await require('./db/queryP2P').getChatroomMembers(
+			data.roomId,
+		);
+		members.forEach((member) => {
+			io.to(`user_${member.user_id}`).emit('p2p_message_edited', {
+				messageId: data.messageId,
+				newContent: data.content,
+			});
 		});
 	});
 
@@ -174,7 +195,10 @@ io.on('connection', (socket) => {
 
 	socket.on('test_emit', () => {
 		console.log('[test_emit] Received test event from socket:', socket.id);
-		socket.emit('test_response', { message: 'Backend received your test!', timestamp: new Date().toISOString() });
+		socket.emit('test_response', {
+			message: 'Backend received your test!',
+			timestamp: new Date().toISOString(),
+		});
 	});
 });
 
