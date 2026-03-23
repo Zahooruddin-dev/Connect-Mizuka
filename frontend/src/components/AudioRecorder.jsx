@@ -117,14 +117,14 @@ function AudioPreviewPlayer({ src }) {
 				/>
 			</div>
 			<span className='text-[10px] font-mono text-[var(--text-ghost)] tabular-nums shrink-0 min-w-[32px] text-right'>
-				{formatDur(total > 0 && current > 0 ? current : total)}
+				{formatDur(playing ? current : total)}
 			</span>
 		</div>
 	);
 }
 
 export default function AudioRecorder({ onAudioSent, onCancel }) {
-	const [state, setState] = useState('idle');
+	const [state, setState] = useState('requesting');
 	const [duration, setDuration] = useState(0);
 	const [audioBlob, setAudioBlob] = useState(null);
 	const [audioUrl, setAudioUrl] = useState('');
@@ -183,6 +183,10 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 			);
 			setState('idle');
 		}
+	}, []);
+
+	useEffect(() => {
+		start();
 	}, []);
 
 	const stop = useCallback(() => {
@@ -253,45 +257,6 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 			<polygon points='22,2 15,22 11,13 2,9' />
 		</svg>
 	);
-
-	if (state === 'idle') {
-		return (
-			<>
-				{error && (
-					<span
-						className='text-[11px] text-red-400 flex-1 truncate'
-						role='alert'
-					>
-						{error}
-					</span>
-				)}
-				<button
-					type='button'
-					onClick={start}
-					className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] transition-[background,color] duration-200 m-0.5 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] focus-visible:outline-offset-2'
-					title='Record voice message'
-					aria-label='Record a voice message'
-				>
-					<svg
-						width='18'
-						height='18'
-						viewBox='0 0 24 24'
-						fill='none'
-						stroke='currentColor'
-						strokeWidth='2'
-						strokeLinecap='round'
-						strokeLinejoin='round'
-						aria-hidden='true'
-					>
-						<path d='M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z' />
-						<path d='M19 10v2a7 7 0 0 1-14 0v-2' />
-						<line x1='12' y1='19' x2='12' y2='23' />
-						<line x1='8' y1='23' x2='16' y2='23' />
-					</svg>
-				</button>
-			</>
-		);
-	}
 
 	if (state === 'requesting') {
 		return (
