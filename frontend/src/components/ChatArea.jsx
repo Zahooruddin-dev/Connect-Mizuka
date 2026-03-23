@@ -34,12 +34,11 @@ function ChatArea({
 }) {
 	const isP2P = !!roomId;
 	const activeId = isP2P ? roomId : channelId;
+	const cached = getCache(isP2P).get(activeId);
 
-	const [messages, setMessages] = useState(
-		() => getCache(isP2P).get(activeId) || [],
-	);
+	const [messages, setMessages] = useState(cached || []);
 	const [typingUsers, setTypingUsers] = useState([]);
-	const [loading, setLoading] = useState(true);
+	const [loading, setLoading] = useState(!cached);
 	const [currentLabel, setCurrentLabel] = useState(
 		channelLabel || otherUsername,
 	);
@@ -90,7 +89,7 @@ function ChatArea({
 		const hit = getCache(isP2P).get(activeId);
 		if (hit) {
 			setMessages(hit);
-			setTimeout(() => setLoading(false), 80);
+			setLoading(false);
 		} else {
 			setMessages([]);
 			setLoading(true);
@@ -113,19 +112,11 @@ function ChatArea({
 				const fresh = Array.isArray(res.data)
 					? res.data
 					: res.data.messages || [];
-				const freshIds = new Set(fresh.map((m) => m.id));
 				const current = messagesRef.current;
-				const tempMessages = current.filter((m) =>
-					String(m.id).startsWith('temp-'),
-				);
-				const merged = [...fresh, ...tempMessages];
-				const seen = new Set();
-				const deduped = merged.filter((m) => {
-					if (seen.has(m.id)) return false;
-					seen.add(m.id);
-					return true;
-				});
-				setAndCache(deduped);
+				const changed =
+					fresh.length !== current.length ||
+					fresh.some((m, i) => m.id !== current[i]?.id);
+				if (changed) setAndCache(fresh);
 			})
 			.catch(() => {
 				if (activeIdRef.current !== activeId) return;
@@ -153,6 +144,7 @@ function ChatArea({
 						next[idx] = {
 							id: msg.id,
 							content: msg.content,
+							type: msg.type || 'text',
 							sender_id: msg.sender_id,
 							username: msg.username,
 							profile_picture: msg.profile_picture || null,
@@ -164,24 +156,24 @@ function ChatArea({
 				}
 			} else {
 				if (msg.channel_id && msg.channel_id !== activeId) return;
-				if (msg.sender_id === user.id) {
+				if (msg.from === user.id || msg.sender_id === user.id) {
 					setAndCache((prev) => {
 						const idx = prev.findIndex(
 							(m) =>
 								String(m.id).startsWith('temp-') &&
-								m.content === msg.content &&
+								m.content === (msg.text ?? msg.content) &&
 								m.sender_id === user.id,
 						);
 						if (idx === -1) return prev;
 						const next = [...prev];
 						next[idx] = {
 							id: msg.id,
-							content: msg.content,
+							content: msg.text ?? msg.content,
 							type: msg.type || 'text',
-							sender_id: msg.sender_id,
+							sender_id: msg.from ?? msg.sender_id,
 							username: msg.username,
 							profile_picture: msg.profile_picture || null,
-							created_at: msg.created_at,
+							created_at: msg.timestamp ?? msg.created_at,
 						};
 						return next;
 					});
@@ -191,12 +183,12 @@ function ChatArea({
 
 			const normalised = {
 				id: msg.id,
-				content: msg.content,
+				content: msg.text ?? msg.content,
 				type: msg.type || 'text',
-				sender_id: msg.sender_id,
+				sender_id: msg.from ?? msg.sender_id,
 				username: msg.username,
 				profile_picture: msg.profile_picture || null,
-				created_at: msg.created_at,
+				created_at: msg.timestamp ?? msg.created_at,
 			};
 
 			setAndCache((prev) => {
@@ -281,37 +273,38 @@ function ChatArea({
 		};
 	}, [channelId, roomId, isP2P, user.id, retryCount, onChannelRenamed]);
 
-const handleSend = useCallback(
-    (content, type = 'text') => {
-        const tempMessage = {
-            id: `temp-${Date.now()}`,
-            content,
-            type,
-            sender_id: user.id,
-            username: user.username,
-            created_at: new Date().toISOString(),
-        };
-        setAndCache((prev) => [...prev, tempMessage]);
-        if (isP2P) {
-            socket.emit('send_p2p_message', {
-                chatroom_id: roomId,
-                message: content,
-                sender_id: user.id,
-                username: user.username,
-                type,
-            });
-        } else {
-            socket.emit('send_message', {
-                channel_id: channelId,
-                message: content,
-                sender_id: user.id,
-                username: user.username,
-                type,
-            });
-        }
-    },
-    [channelId, roomId, isP2P, user, setAndCache],
-);
+	const handleSend = useCallback(
+		(content, explicitType) => {
+			const type = explicitType || 'text';
+			const tempMessage = {
+				id: `temp-${Date.now()}`,
+				content,
+				type,
+				sender_id: user.id,
+				username: user.username,
+				created_at: new Date().toISOString(),
+			};
+			setAndCache((prev) => [...prev, tempMessage]);
+			if (isP2P) {
+				socket.emit('send_p2p_message', {
+					chatroom_id: roomId,
+					message: content,
+					sender_id: user.id,
+					username: user.username,
+					type,
+				});
+			} else {
+				socket.emit('send_message', {
+					channel_id: channelId,
+					message: content,
+					sender_id: user.id,
+					username: user.username,
+					type,
+				});
+			}
+		},
+		[channelId, roomId, isP2P, user, setAndCache],
+	);
 
 	const handleTyping = useCallback(() => {
 		if (isP2P)
@@ -393,6 +386,7 @@ const handleSend = useCallback(
 		[onChannelRenamed],
 	);
 	const handleRetry = useCallback(() => setRetryCount((c) => c + 1), []);
+
 
 	return (
 		<div className='flex-1 flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]'>
