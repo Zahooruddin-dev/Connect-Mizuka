@@ -100,7 +100,9 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 			aria-label='Message composer'
 		>
 			<div
-				className={`flex items-end gap-1.5 bg-[var(--bg-input)] border rounded-[var(--radius-lg)] pl-4 pr-1 py-1 transition-[border-color,box-shadow] duration-200 ${
+				className={`flex gap-1.5 bg-[var(--bg-input)] border rounded-[var(--radius-lg)] pl-4 pr-1 py-1 transition-[border-color,box-shadow] duration-200 ${
+					isRecording ? 'items-center' : 'items-end'
+				} ${
 					isRecording
 						? 'border-[var(--teal-700)] shadow-[0_0_0_2px_rgba(13,148,136,0.06)]'
 						: hasText
