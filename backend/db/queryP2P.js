@@ -81,7 +81,7 @@ async function deleteP2PMessagesQuery(message_id, userId) {
 	try {
 		const { rows } = await pool.query(
 			`UPDATE p2p_messages 
-			 SET is_deleted = true, content = 'This message was deleted' 
+			 SET is_deleted = true, content = 'This message was deleted' , type = 'text' 
 			 WHERE id = $1 AND sender_id = $2 
 			 RETURNING id`,
 			[message_id, userId],

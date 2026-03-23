@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatTime } from '../utils/time';
-import { deleteMessage } from '../services/api';
+import { deleteP2PMessage } from '../services/api';
 import Toast from './Toast';
 import AudioPlayer from './AudioPlayer';
 
@@ -42,7 +42,7 @@ function MessageItem({
 		if (deleting) return;
 		setDeleting(true);
 		try {
-			await deleteMessage(msgId, currentUserId);
+			await deleteP2PMessage(msgId, currentUserId);
 			onDeleted(msgId);
 		} catch {
 			setDeleting(false);

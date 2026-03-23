@@ -1,4 +1,5 @@
 const db = require('../db/queryP2P');
+const cloudinary = require('cloudinary').v2;
 
 async function isParticipant(roomId, userId) {
 	const room = await db.getRoomById(roomId);
@@ -37,7 +38,9 @@ async function getMessages(req, res) {
 
 	try {
 		if (!(await isParticipant(roomId, myUserId))) {
-			return res.status(403).json({ error: 'Access Denied: Not a participant' });
+			return res
+				.status(403)
+				.json({ error: 'Access Denied: Not a participant' });
 		}
 
 		const messages = await db.getP2PMessagesQuery(roomId);
@@ -70,11 +73,28 @@ async function deleteMsg(req, res) {
 	const myUserId = req.user.id;
 
 	try {
-		const deletedIds = await db.deleteP2PMessagesQuery(messageId, myUserId);
-		if (!deletedIds || deletedIds.length === 0) {
-			return res.status(404).json({ error: 'Message not found or unauthorized' });
+		const message = await db.getSingleP2PMessageQuery(messageId);
+		if (!message) return res.status(404).json({ error: 'Message not found' });
+		if (message.type === 'audio') {
+			const urlParts = message.content.split('/');
+			const fileName = urlParts.pop().split('.')[0];
+			const folder = 'mizuka_audio_messages';
+			await cloudinary.uploader.destroy(`${folder}/${fileName}`, {
+				resource_type: 'video',
+			});
+			console.log(`Successfully deleted audio from cloud: ${urlParts}`);
 		}
-		return res.status(200).json({ success: true, deletedId: deletedIds[0] });
+		const result = await db.deleteP2PMessagesQuery(messageId, myUserId);
+		if (!result) return res.status(403).json({ error: 'Unauthorized' });
+		return res.status(200).json({
+			success: true,
+			updatedMessage: {
+				id: messageId,
+				content: 'This message was deleted',
+				type: 'text',
+				is_deleted: true,
+			},
+		});
 	} catch (error) {
 		res.status(500).json({ error: 'Delete failed: ' + error.message });
 	}
@@ -90,7 +110,9 @@ async function editMsg(req, res) {
 	try {
 		const editIds = await db.editP2PMessagesQuery(messageId, myUserId, content);
 		if (!editIds || editIds.length === 0) {
-			return res.status(404).json({ error: 'Message not found or unauthorized' });
+			return res
+				.status(404)
+				.json({ error: 'Message not found or unauthorized' });
 		}
 		res.status(200).json({ success: true, messageId: editIds[0] });
 	} catch (error) {
@@ -133,24 +155,24 @@ async function getUserChatrooms(req, res) {
 		res.status(500).json({ error: 'Failed to fetch chatrooms' });
 	}
 }
- async function searchAllP2PMessages(req, res) {
-  const { roomIds, searchTerm } = req.body;
-  const myUserId = req.user.id;
+async function searchAllP2PMessages(req, res) {
+	const { roomIds, searchTerm } = req.body;
+	const myUserId = req.user.id;
 
-  if (!Array.isArray(roomIds) || !roomIds.length || !searchTerm?.trim()) {
-    return res.status(400).json({ messages: [] });
-  }
+	if (!Array.isArray(roomIds) || !roomIds.length || !searchTerm?.trim()) {
+		return res.status(400).json({ messages: [] });
+	}
 
-  try {
-    const messages = await db.searchAllP2PMessagesQuery(
-      roomIds,
-      searchTerm,
-      myUserId  
-    );
-    res.status(200).json({ messages });
-  } catch (error) {
-    res.status(500).json({ error: 'Search failed: ' + error.message });
-  }
+	try {
+		const messages = await db.searchAllP2PMessagesQuery(
+			roomIds,
+			searchTerm,
+			myUserId,
+		);
+		res.status(200).json({ messages });
+	} catch (error) {
+		res.status(500).json({ error: 'Search failed: ' + error.message });
+	}
 }
 module.exports = {
 	getOrCreateChatroom,
