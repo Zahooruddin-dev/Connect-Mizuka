@@ -82,7 +82,7 @@ async function deleteMsg(req, res) {
 			await cloudinary.uploader.destroy(`${folder}/${fileName}`, {
 				resource_type: 'video',
 			});
-			console.log(`Successfully deleted audio from cloud: ${urlParts}`);
+			console.log(`Successfully deleted audio from cloud: ${urlParts}  &&  ${fileName}`);
 		}
 		const result = await db.deleteP2PMessagesQuery(messageId, myUserId);
 		if (!result) return res.status(403).json({ error: 'Unauthorized' });

@@ -4,6 +4,7 @@ import {
 	fetchMessages,
 	fetchP2PMessages,
 	deleteP2PMessage,
+	deleteChannelMessage,
 	editP2PMessage,
 } from '../services/api';
 import MessageList from './MessageList';
@@ -50,6 +51,7 @@ function ChatArea({
 	useEffect(() => {
 		messagesRef.current = messages;
 	}, [messages]);
+
 	useEffect(() => {
 		setCurrentLabel(channelLabel || otherUsername);
 	}, [channelLabel, otherUsername]);
@@ -328,54 +330,46 @@ function ChatArea({
 
 	const handleP2PDelete = useCallback(
 		async (messageId) => {
-			try {
-				await deleteP2PMessage(messageId, user.id, roomId);
-				setAndCache((prev) =>
-					prev.map((msg) =>
-						msg.id === messageId
-							? {
-									...msg,
-									content: 'This message was deleted',
-									is_deleted: true,
-								}
-							: msg,
-					),
-				);
-				socket.emit('delete_p2p_message', { roomId, messageId });
-			} catch (err) {
-				console.error('failed to delete message', err);
-			}
+			await deleteP2PMessage(messageId);
+			setAndCache((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? { ...msg, content: 'This message was deleted', is_deleted: true }
+						: msg,
+				),
+			);
+			socket.emit('delete_p2p_message', { roomId, messageId });
 		},
-		[roomId, user.id, setAndCache],
+		[roomId, setAndCache],
+	);
+
+	const handleChannelDelete = useCallback(
+		async (messageId) => {
+			await deleteChannelMessage(messageId);
+			setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== messageId));
+		},
+		[setAndCache],
 	);
 
 	const handleP2PEdit = useCallback(
 		async (messageId, newContent) => {
-			try {
-				await editP2PMessage(messageId, user.id, roomId, newContent);
-				setAndCache((prev) =>
-					prev.map((msg) =>
-						msg.id === messageId
-							? { ...msg, content: newContent, is_deleted: false }
-							: msg,
-					),
-				);
-				socket.emit('edit_p2p_message', {
-					roomId,
-					messageId,
-					content: newContent,
-				});
-			} catch (err) {
-				console.error('failed to edit message', err);
-			}
+			await editP2PMessage(messageId, newContent);
+			setAndCache((prev) =>
+				prev.map((msg) =>
+					msg.id === messageId
+						? { ...msg, content: newContent, is_deleted: false }
+						: msg,
+				),
+			);
+			socket.emit('edit_p2p_message', {
+				roomId,
+				messageId,
+				content: newContent,
+			});
 		},
-		[roomId, user.id, setAndCache],
+		[roomId, setAndCache],
 	);
 
-	const handleMessageDeleted = useCallback(
-		(id) => setAndCache((prev) => prev.filter((m) => (m.id || m._id) !== id)),
-		[setAndCache],
-	);
 	const handleChannelDeletedCb = useCallback(() => setMessages([]), []);
 	const handleChannelRenamedCb = useCallback(
 		(updatedChannel) => {
@@ -386,7 +380,6 @@ function ChatArea({
 		[onChannelRenamed],
 	);
 	const handleRetry = useCallback(() => setRetryCount((c) => c + 1), []);
-
 
 	return (
 		<div className='flex-1 flex flex-col h-screen overflow-hidden bg-[var(--bg-base)]'>
@@ -407,7 +400,7 @@ function ChatArea({
 				typingUsers={typingUsers.filter((u) => u !== user.username)}
 				currentUserId={user.id}
 				currentUserPicture={user.profile_picture || null}
-				onMessageDeleted={isP2P ? handleP2PDelete : handleMessageDeleted}
+				onMessageDeleted={isP2P ? handleP2PDelete : handleChannelDelete}
 				onMessageEdited={handleP2PEdit}
 				onStartP2P={onStartP2P}
 				onRetry={handleRetry}

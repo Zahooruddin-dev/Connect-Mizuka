@@ -271,6 +271,16 @@ export const searchAllChannels = async (channelIds, searchTerm) => {
 export const fetchMessages = (channelId, limit = 50, offset = 0) =>
     api.get(`/messages/${channelId}`, { params: { limit, offset } });
 
+export const deleteChannelMessage = async (messageId) => {
+	try {
+		const res = await api.delete(`/messages/message/${messageId}`);
+		return res.data;
+	} catch (err) {
+		console.error('Error deleting channel message:', err);
+		throw err;
+	}
+};
+
 // ── P2P ───────────────────────────────────────────────────────────────────
 
 export const getOrCreateP2PRoom = async (otherUserId) => {

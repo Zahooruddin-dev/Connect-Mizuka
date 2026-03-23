@@ -76,6 +76,13 @@ async function searchP2PMessagesQuery(roomId, searchTerm) {
 		throw error;
 	}
 }
+async function getSingleP2PMessageQuery(message_id) {
+  const { rows } = await pool.query(
+    `SELECT * FROM p2p_messages WHERE id = $1`,
+    [message_id]
+  );
+  return rows[0] || null;
+}
 
 async function deleteP2PMessagesQuery(message_id, userId) {
 	try {
@@ -245,4 +252,5 @@ module.exports = {
 	getUserChatrooms,
 	getChatroomMembers,
 	searchAllP2PMessagesQuery,
+	getSingleP2PMessageQuery
 };
