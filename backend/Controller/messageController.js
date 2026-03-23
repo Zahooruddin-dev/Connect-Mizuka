@@ -54,8 +54,9 @@ async function deleteChannel(req, res) {
 }
 
 async function uploadAudioFile(req, res) {
-	try {
-		if (!req.file) {
+	const audioFile = !req.file
+  try {
+		if (audioFile) {
 			return res.status(400).json({ error: 'No audio file provided' });
 		}
 		res.status(200).json({ url: req.file.path });
