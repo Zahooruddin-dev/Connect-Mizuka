@@ -226,6 +226,12 @@ function MessageItem({
 										</button>
 									</div>
 								</div>
+							) : message.is_deleted ? (
+								<p
+									className={`text-sm leading-[1.55] italic ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}
+								>
+									This message was deleted
+								</p>
 							) : message.type === 'audio' ? (
 								<AudioPlayer src={message.content} isMine={isMine} />
 							) : (
