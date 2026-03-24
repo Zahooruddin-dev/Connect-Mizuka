@@ -15,6 +15,10 @@ import Toast from './components/Toast';
 const firstChannelCache = new Map();
 let pingFired = false;
 
+const SWIPE_EDGE_ZONE = 24;
+const SWIPE_MIN_DX = 56;
+const SWIPE_MAX_DY = 80;
+
 function WakingBanner({ visible }) {
 	return (
 		<div
@@ -53,6 +57,8 @@ function App() {
 
 	const lastKnownWidth = useRef(window.innerWidth);
 	const toastTimer = useRef(null);
+
+	const swipeStart = useRef({ x: 0, y: 0, active: false });
 
 	const showToast = useCallback((message, type = 'info') => {
 		clearTimeout(toastTimer.current);
@@ -127,16 +133,15 @@ function App() {
 		},
 		[activeInstitute?.id],
 	);
-useEffect(() => {
-    if (!user?.id) return;
-    
-    const register = () => socket.emit('user_online', user.id);
-    
-    if (socket.connected) register();
-    socket.on('connect', register);
-    
-    return () => socket.off('connect', register);
-}, [user?.id]);
+
+	useEffect(() => {
+		if (!user?.id) return;
+		const register = () => socket.emit('user_online', user.id);
+		if (socket.connected) register();
+		socket.on('connect', register);
+		return () => socket.off('connect', register);
+	}, [user?.id]);
+
 	useEffect(() => {
 		if (!activeInstitute) return;
 		const join = () => socket.emit('join_institute_room', activeInstitute.id);
@@ -203,6 +208,29 @@ useEffect(() => {
 		[],
 	);
 
+	const handleSwipeTouchStart = useCallback((e) => {
+		const t = e.touches[0];
+		swipeStart.current = {
+			x: t.clientX,
+			y: t.clientY,
+			active: t.clientX < SWIPE_EDGE_ZONE,
+		};
+	}, []);
+
+	const handleSwipeTouchEnd = useCallback(
+		(e) => {
+			if (!swipeStart.current.active) return;
+			const t = e.changedTouches[0];
+			const dx = t.clientX - swipeStart.current.x;
+			const dy = Math.abs(t.clientY - swipeStart.current.y);
+			if (dx > SWIPE_MIN_DX && dy < SWIPE_MAX_DY) {
+				handleOpenSidebar();
+			}
+			swipeStart.current.active = false;
+		},
+		[handleOpenSidebar],
+	);
+
 	const banner = <WakingBanner visible={isWaking} />;
 
 	if (!user)
@@ -222,6 +250,9 @@ useEffect(() => {
 
 	const effectiveChannel = activeChannel ?? defaultChannel ?? null;
 	const isAdmin = isActiveAdmin();
+
+	// Is a real chat view active? If not, ChatSkeleton is showing.
+	const chatActive = !!(activeP2P || effectiveChannel);
 
 	return (
 		<>
@@ -243,8 +274,16 @@ useEffect(() => {
 					onChannelsLoaded={handleChannelsLoaded}
 				/>
 
-				<div className='flex-1 min-w-0 flex flex-col overflow-hidden'>
-					{!sidebarOpen && isMobile && (
+				<div
+					className='flex-1 min-w-0 flex flex-col overflow-hidden'
+					onTouchStart={
+						isMobile && !sidebarOpen ? handleSwipeTouchStart : undefined
+					}
+					onTouchEnd={
+						isMobile && !sidebarOpen ? handleSwipeTouchEnd : undefined
+					}
+				>
+					{!sidebarOpen && isMobile && !chatActive && (
 						<div
 							className='flex items-center gap-2.5 px-3.5 h-12 min-h-[48px] bg-[var(--bg-surface)] border-b border-[var(--border)] shrink-0'
 							role='banner'
@@ -258,6 +297,7 @@ useEffect(() => {
 							</button>
 						</div>
 					)}
+
 					{!sidebarOpen && !isMobile && (
 						<button
 							className='fixed top-3 left-3 z-30 flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-muted)] shadow-sm transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
@@ -279,6 +319,7 @@ useEffect(() => {
 							onStartCall={startCall}
 							highlightMessageId={highlightMessageId}
 							onHighlightConsumed={handleHighlightConsumed}
+							onOpenSidebar={!sidebarOpen ? handleOpenSidebar : undefined}
 						/>
 					) : effectiveChannel ? (
 						<ChatArea
@@ -291,6 +332,7 @@ useEffect(() => {
 							isAdmin={isAdmin}
 							highlightMessageId={highlightMessageId}
 							onHighlightConsumed={handleHighlightConsumed}
+							onOpenSidebar={!sidebarOpen ? handleOpenSidebar : undefined}
 						/>
 					) : (
 						<ChatSkeleton isP2P={false} />

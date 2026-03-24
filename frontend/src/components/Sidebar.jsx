@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
 	Hash,
 	Plus,
@@ -23,6 +23,7 @@ import InstituteSidebar from './InstituteSidebar';
 import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './UserProfilePanel';
 import Inbox from './Inbox';
+
 function loadStoredChats() {
 	try {
 		const raw = localStorage.getItem('mizuka_recent_p2p_chats');
@@ -34,6 +35,9 @@ function loadStoredChats() {
 
 const iconBtnCls =
 	'flex items-center justify-center w-7 h-7 rounded-lg text-[var(--text-ghost)] transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
+
+const SWIPE_CLOSE_MIN_DX = 60;
+const SWIPE_CLOSE_MAX_DY = 80;
 
 function Sidebar({
 	activeChannel,
@@ -73,6 +77,8 @@ function Sidebar({
 	const searchInputRef = useRef(null);
 	const channelsRef = useRef(channels);
 
+	const swipeStart = useRef({ x: 0, y: 0 });
+
 	useEffect(() => {
 		activeInstituteRef.current = activeInstitute?.id;
 	}, [activeInstitute]);
@@ -102,6 +108,33 @@ function Sidebar({
 	useEffect(() => {
 		channelsRef.current = channels;
 	}, [channels]);
+
+	useEffect(() => {
+		if (!isOpen) return;
+		const onKeyDown = (e) => {
+			if (e.key === 'Escape') onClose?.();
+		};
+		document.addEventListener('keydown', onKeyDown);
+		return () => document.removeEventListener('keydown', onKeyDown);
+	}, [isOpen, onClose]);
+
+	const handleAsideTouchStart = useCallback((e) => {
+		const t = e.touches[0];
+		swipeStart.current = { x: t.clientX, y: t.clientY };
+	}, []);
+
+	const handleAsideTouchEnd = useCallback(
+		(e) => {
+			const t = e.changedTouches[0];
+			const dx = swipeStart.current.x - t.clientX;
+			const dy = Math.abs(t.clientY - swipeStart.current.y);
+			if (dx > SWIPE_CLOSE_MIN_DX && dy < SWIPE_CLOSE_MAX_DY) {
+				onClose?.();
+			}
+		},
+		[onClose],
+	);
+
 	const refreshUnreadCount = useCallback(() => {
 		if (!user?.id) return;
 		fetchUnreadCounts(user.id)
@@ -363,7 +396,7 @@ function Sidebar({
 
 		setSearchLoading(true);
 		searchDebounce.current = setTimeout(async () => {
-			const currentChannels = channelsRef.current; // fix 3 — always fresh
+			const currentChannels = channelsRef.current;
 			if (!currentChannels.length) {
 				setSearchLoading(false);
 				return;
@@ -383,6 +416,7 @@ function Sidebar({
 			}
 		}, 300);
 	}, []);
+
 	const handleSearchResultClick = useCallback(
 		(result) => {
 			const targetChannel = channels.find(
@@ -403,6 +437,7 @@ function Sidebar({
 		setSearchTerm('');
 		setSearchResults([]);
 	}, []);
+
 	useEffect(() => () => clearTimeout(searchDebounce.current), []);
 
 	const handleCreateChannel = useCallback(
@@ -439,15 +474,30 @@ function Sidebar({
 	return (
 		<>
 			<div
-				className={`fixed inset-0 bg-black/40 z-40 touch-none md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+				className={`
+					fixed inset-0 z-40 touch-none md:hidden
+					bg-black/30 backdrop-blur-[2px]
+					transition-opacity duration-300
+					${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+				`}
 				onClick={onClose}
 				aria-hidden='true'
 				onTouchStart={(e) => e.stopPropagation()}
 			/>
-
 			<aside
-				className={`fixed inset-y-0 left-0 z-50 w-[240px] flex flex-col shrink-0 bg-[var(--bg-surface)] border-r border-[var(--border)] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] md:static md:z-auto md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+				className={`
+					fixed inset-y-0 left-0 z-50
+					w-[240px] flex flex-col shrink-0
+					bg-[var(--bg-surface)] border-r border-[var(--border)]
+					transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+					md:static md:z-auto md:translate-x-0
+					${isOpen ? 'translate-x-0' : '-translate-x-full'}
+				`}
 				aria-label='Navigation'
+				role='dialog'
+				aria-modal={isOpen ? 'true' : undefined}
+				onTouchStart={handleAsideTouchStart}
+				onTouchEnd={handleAsideTouchEnd}
 			>
 				<div className='flex items-center justify-between px-3 pt-4 pb-3 shrink-0'>
 					<div className='flex items-center gap-2'>

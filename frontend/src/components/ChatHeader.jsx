@@ -8,13 +8,14 @@ import {
 	ArrowLeft,
 	Phone,
 	Video,
+	Menu,
 } from 'lucide-react';
 import { deleteChannel, updateChannel, getUserProfile } from '../services/api';
 import UserProfilePopover from './Userprofilepopover';
 import socket from '../services/socket';
 
 const iconBtnCls =
-	'flex items-center justify-center w-8 h-8 rounded-lg transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
+	'flex items-center justify-center w-9 h-9 md:w-8 md:h-8 rounded-lg transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
 
 function ChatHeader({
 	channelId,
@@ -28,6 +29,7 @@ function ChatHeader({
 	otherUserId,
 	onCloseP2P,
 	onStartCall,
+	onOpenSidebar,
 }) {
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -156,7 +158,7 @@ function ChatHeader({
 	if (isP2P) {
 		return (
 			<>
-				<header className='flex items-center gap-2 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
+				<header className='flex items-center gap-2 px-3 md:px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
 					{onCloseP2P && (
 						<button
 							className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]`}
@@ -247,8 +249,20 @@ function ChatHeader({
 		);
 	}
 
+
 	return (
-		<header className='hidden md:flex items-center gap-3 px-5 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
+		<header className='flex items-center gap-2 md:gap-3 px-3 md:px-5 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
+			{onOpenSidebar && (
+				<button
+					className={`${iconBtnCls} md:hidden text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]`}
+					onClick={onOpenSidebar}
+					aria-label='Open navigation'
+					aria-haspopup='dialog'
+				>
+					<Menu size={17} strokeWidth={2} />
+				</button>
+			)}
+
 			<div className='flex items-center gap-2 flex-1 min-w-0'>
 				{editing ? (
 					<div className='flex items-center gap-1.5 flex-1 min-w-0'>
@@ -309,13 +323,18 @@ function ChatHeader({
 					</div>
 				)}
 			</div>
+
 			<div className='flex items-center gap-2 shrink-0'>
-				{error && <span className='text-[12px] text-red-400'>{error}</span>}
+				{error && (
+					<span className='hidden sm:inline text-[12px] text-red-400'>
+						{error}
+					</span>
+				)}
 				{isAdmin &&
 					!editing &&
 					(showConfirm ? (
 						<div className='flex items-center gap-2'>
-							<span className='text-[12px] text-[var(--text-muted)]'>
+							<span className='hidden sm:inline text-[12px] text-[var(--text-muted)]'>
 								Delete channel?
 							</span>
 							<button
@@ -339,7 +358,7 @@ function ChatHeader({
 							title='Delete channel'
 						>
 							<Trash2 size={13} strokeWidth={2} aria-hidden='true' />
-							Delete
+							<span className='hidden sm:inline'>Delete</span>
 						</button>
 					))}
 			</div>

@@ -33,6 +33,7 @@ function ChatArea({
 	highlightMessageId,
 	onHighlightConsumed,
 	onStartCall,
+	onOpenSidebar, 
 }) {
 	const isP2P = !!roomId;
 	const activeId = isP2P ? roomId : channelId;
@@ -396,6 +397,7 @@ function ChatArea({
 				onCloseP2P={onCloseP2P}
 				isAdmin={isAdmin}
 				onStartCall={onStartCall}
+				onOpenSidebar={onOpenSidebar}
 			/>
 			<MessageList
 				messages={messages}
