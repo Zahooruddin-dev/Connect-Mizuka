@@ -39,90 +39,91 @@ export default function ChatHeaderContent({
   deleting,
   onToggleConfirm,
 }) {
-  if (isP2P) {
-    return (
-      <>
-        <header className="flex items-center gap-2 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0">
-          {onCloseP2P && (
-            <button
-              className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]`}
-              onClick={onCloseP2P}
-              aria-label="Back"
-            >
-              <ArrowLeft size={16} strokeWidth={2} />
-            </button>
-          )}
-
+if (isP2P) {
+  return (
+    <>
+      <header className="flex items-center gap-2 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0">
+        {onOpenSidebar && (
           <button
-            className="flex items-center gap-3 flex-1 min-w-0 rounded-md px-1 py-1 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
-            onClick={onShowPopover}
-            title={`View ${otherUsername}'s profile`}
+            className={`${iconBtnCls} md:hidden text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]`}
+            onClick={onOpenSidebar}
+            aria-label="Open navigation"
+            aria-haspopup="dialog"
           >
-            {otherPicture ? (
-              <img
-                src={otherPicture}
-                alt={otherUsername}
-                className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-[var(--border)]"
-              />
-            ) : (
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white/90 shrink-0 ring-1 ring-[var(--border)]"
-                style={{
-                  background:
-                    'linear-gradient(135deg, var(--teal-800), var(--teal-600))',
-                }}
-              >
-                {otherUsername?.[0]?.toUpperCase() || 'U'}
-              </div>
-            )}
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-[var(--text-primary)] truncate leading-tight">
-                {otherUsername
-                  ? otherUsername[0].toUpperCase() + otherUsername.slice(1)
-                  : 'Chat'}
-              </div>
-              <div className="text-[11px] text-[var(--text-ghost)]">
-                Direct Message
-              </div>
-            </div>
+            <Menu size={17} strokeWidth={2} />
           </button>
+        )}
 
-          {onStartCall && otherUserId && (
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--teal-500)]`}
-                onClick={() =>
-                  onStartCall({
-                    targetUserId: otherUserId,
-                    targetUsername: otherUsername,
-                    callType: 'audio',
-                  })
-                }
-                aria-label="Audio call"
-                title="Audio call"
-              >
-                <Phone size={16} strokeWidth={2} />
-              </button>
-              <button
-                className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--teal-500)]`}
-                onClick={() =>
-                  onStartCall({
-                    targetUserId: otherUserId,
-                    targetUsername: otherUsername,
-                    callType: 'video',
-                  })
-                }
-                aria-label="Video call"
-                title="Video call"
-              >
-                <Video size={16} strokeWidth={2} />
-              </button>
+        <button
+          className="flex items-center gap-3 flex-1 min-w-0 rounded-md px-1 py-1 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]"
+          onClick={onShowPopover}
+          title={`View ${otherUsername}'s profile`}
+        >
+          {otherPicture ? (
+            <img
+              src={otherPicture}
+              alt={otherUsername}
+              className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-[var(--border)]"
+            />
+          ) : (
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white/90 shrink-0 ring-1 ring-[var(--border)]"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--teal-800), var(--teal-600))',
+              }}
+            >
+              {otherUsername?.[0]?.toUpperCase() || 'U'}
             </div>
           )}
-        </header>
-      </>
-    );
-  }
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-[var(--text-primary)] truncate leading-tight">
+              {otherUsername
+                ? otherUsername[0].toUpperCase() + otherUsername.slice(1)
+                : 'Chat'}
+            </div>
+            <div className="text-[11px] text-[var(--text-ghost)]">
+              Direct Message
+            </div>
+          </div>
+        </button>
+
+        {onStartCall && otherUserId && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--teal-500)]`}
+              onClick={() =>
+                onStartCall({
+                  targetUserId: otherUserId,
+                  targetUsername: otherUsername,
+                  callType: 'audio',
+                })
+              }
+              aria-label="Audio call"
+              title="Audio call"
+            >
+              <Phone size={16} strokeWidth={2} />
+            </button>
+            <button
+              className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--teal-500)]`}
+              onClick={() =>
+                onStartCall({
+                  targetUserId: otherUserId,
+                  targetUsername: otherUsername,
+                  callType: 'video',
+                })
+              }
+              aria-label="Video call"
+              title="Video call"
+            >
+              <Video size={16} strokeWidth={2} />
+            </button>
+          </div>
+        )}
+      </header>
+    </>
+  );
+}
 
   return (
     <header className="flex items-center gap-3 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0">
