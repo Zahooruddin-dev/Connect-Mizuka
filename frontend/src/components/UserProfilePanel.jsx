@@ -3,9 +3,12 @@ import { X, Pencil, Check, Loader, Camera } from 'lucide-react';
 import { fetchUserInfo, updateProfile } from '../services/api';
 import ChangePasswordModal from './ChangePasswordModal';
 
-const infoGroupCls = 'flex flex-col gap-1.5 mb-4 pb-4 border-b border-[var(--border)] last:border-b-0 last:mb-0 last:pb-0';
-const infoLabelCls = 'text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-muted)]';
-const infoValueCls = 'text-sm text-[var(--text-primary)] flex items-center gap-2';
+const infoGroupCls =
+	'flex flex-col gap-1.5 mb-4 pb-4 border-b border-[var(--border)] last:border-b-0 last:mb-0 last:pb-0';
+const infoLabelCls =
+	'text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-muted)]';
+const infoValueCls =
+	'text-sm text-[var(--text-primary)] flex items-center gap-2';
 function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 	const [userInfo, setUserInfo] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -230,7 +233,6 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 													aria-label='Upload profile picture'
 												/>
 											</div>
-
 											{avatarFile && (
 												<div className='flex items-center justify-center gap-2 mb-2'>
 													<button
@@ -259,12 +261,13 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 													{avatarError}
 												</span>
 											)}
-<div className="text-base font-medium text-zinc-800 dark:text-zinc-100 mb-1">
-    {userInfo.username}
-</div>
-<div className="text-[11px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.06em] font-medium">
-    {userInfo.role || 'Member'}
-</div>				</div>
+											<div className='text-base font-medium text-zinc-800 dark:text-zinc-100 mb-1'>
+												{userInfo.username}
+											</div>
+											<div className='text-[11px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.06em] font-medium'>
+												{userInfo.role || 'Member'}
+											</div>{' '}
+										</div>
 
 										<div className={`${infoGroupCls} group`}>
 											<span className={infoLabelCls}>Username</span>
