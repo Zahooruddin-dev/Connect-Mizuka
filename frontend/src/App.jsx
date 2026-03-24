@@ -2,12 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Menu } from 'lucide-react';
 import { useAuth } from './services/AuthContext';
 import socket from './services/socket';
+import { useCallManager } from './hooks/useCallManager';
 import LoginPage from './pages/LoginPage';
 import InstituteGate from './components/Institutegate';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import ChatSkeleton from './components/ChatSkeleton';
-import VideoCall from './components/VideoCall';
+import CallModal from './components/CallModal';
+import IncomingCallModal from './components/IncomingCallModal';
+import Toast from './components/Toast';
 
 const firstChannelCache = new Map();
 let pingFired = false;
@@ -39,12 +42,36 @@ function App() {
 	const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 	const [highlightMessageId, setHighlightMessageId] = useState(null);
 	const [isWaking, setIsWaking] = useState(false);
-	const [showVideo, setShowVideo] = useState(false);
 	const [defaultChannel, setDefaultChannel] = useState(
 		() => firstChannelCache.get(activeInstitute?.id) ?? null,
 	);
+	const [toast, setToast] = useState({
+		message: '',
+		visible: false,
+		type: 'info',
+	});
 
 	const lastKnownWidth = useRef(window.innerWidth);
+	const toastTimer = useRef(null);
+
+	const showToast = useCallback((message, type = 'info') => {
+		clearTimeout(toastTimer.current);
+		setToast({ message, visible: true, type });
+		toastTimer.current = setTimeout(
+			() => setToast((t) => ({ ...t, visible: false })),
+			3500,
+		);
+	}, []);
+
+	const {
+		callState,
+		startCall,
+		acceptCall,
+		rejectCall,
+		endCall,
+		toggleMute,
+		toggleCamera,
+	} = useCallManager({ user: user ?? {}, onToast: showToast });
 
 	useEffect(() => {
 		if (pingFired) return;
@@ -75,12 +102,10 @@ function App() {
 	useEffect(() => {
 		const onResize = () => {
 			const newWidth = window.innerWidth;
-			const widthChanged = Math.abs(newWidth - lastKnownWidth.current) > 10;
-			if (!widthChanged) return;
+			if (Math.abs(newWidth - lastKnownWidth.current) <= 10) return;
 			lastKnownWidth.current = newWidth;
-			const isNowDesktop = newWidth >= 768;
-			setSidebarOpen(isNowDesktop);
-			setIsMobile(!isNowDesktop);
+			setSidebarOpen(newWidth >= 768);
+			setIsMobile(newWidth < 768);
 		};
 		window.addEventListener('resize', onResize);
 		return () => window.removeEventListener('resize', onResize);
@@ -147,10 +172,11 @@ function App() {
 
 	const handleJumpToMessage = useCallback((channelId, messageId) => {
 		setActiveP2P(null);
-		setActiveChannel((prev) => {
-			if (prev && String(prev.id) === String(channelId)) return prev;
-			return { id: channelId, name: '' };
-		});
+		setActiveChannel((prev) =>
+			prev && String(prev.id) === String(channelId)
+				? prev
+				: { id: channelId, name: '' },
+		);
 		setHighlightMessageId(messageId);
 	}, []);
 
@@ -207,12 +233,7 @@ function App() {
 					onJumpToP2PMessage={handleJumpToP2PMessage}
 					onChannelsLoaded={handleChannelsLoaded}
 				/>
-				<button
-					className='self-start px-3.5 py-[7px] rounded-lg border border-[var(--border)] bg-[var(--bg-hover)] text-[var(--text-muted)] text-[13px] font-medium font-[inherit] cursor-pointer transition-[background,border-color,color] duration-150 hover:bg-teal-500/[0.06] hover:border-[var(--teal-700)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
-					onClick={() => setShowVideo((prev) => !prev)}
-				>
-					Video Call
-				</button>
+
 				<div className='flex-1 min-w-0 flex flex-col overflow-hidden'>
 					{!sidebarOpen && isMobile && (
 						<div
@@ -228,7 +249,6 @@ function App() {
 							</button>
 						</div>
 					)}
-
 					{!sidebarOpen && !isMobile && (
 						<button
 							className='fixed top-3 left-3 z-30 flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-muted)] shadow-sm transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
@@ -238,7 +258,6 @@ function App() {
 							<Menu size={20} strokeWidth={2} aria-hidden='true' />
 						</button>
 					)}
-					{showVideo && <VideoCall />}
 
 					{activeP2P ? (
 						<ChatArea
@@ -248,6 +267,7 @@ function App() {
 							user={user}
 							onCloseP2P={handleCloseP2P}
 							onStartP2P={handleStartP2P}
+							onStartCall={startCall}
 							highlightMessageId={highlightMessageId}
 							onHighlightConsumed={handleHighlightConsumed}
 						/>
@@ -268,6 +288,30 @@ function App() {
 					)}
 				</div>
 			</div>
+
+			{callState?.phase === 'incoming' && (
+				<IncomingCallModal
+					callerUsername={callState.callerUsername}
+					callType={callState.callType}
+					onAccept={acceptCall}
+					onReject={rejectCall}
+				/>
+			)}
+
+			{(callState?.phase === 'outgoing' || callState?.phase === 'active') && (
+				<CallModal
+					callState={callState}
+					onEnd={endCall}
+					onToggleMute={toggleMute}
+					onToggleCamera={toggleCamera}
+				/>
+			)}
+
+			<Toast
+				message={toast.message}
+				visible={toast.visible}
+				type={toast.type}
+			/>
 		</>
 	);
 }
