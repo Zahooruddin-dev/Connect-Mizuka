@@ -6,8 +6,8 @@ module.exports = (io) => {
       socket.to(to).emit('call:incoming', { from: socket.id, offer });
     });
     
-    socket.on('call:accepted', ({ to, offer }) => {
-      socket.to(to).emit('call:answered', { from: socket.id, offer });
+    socket.on('call:accepted', ({ to, answer }) => {
+      socket.to(to).emit('call:answered', { from: socket.id, answer });
     });
     
     socket.on('ice-candidate', ({ to, candidate }) => {
