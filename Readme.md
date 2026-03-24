@@ -52,8 +52,9 @@
 - ✅ **Audio Upload Middleware** — Dedicated multer/Cloudinary pipeline for audio file handling with automatic cleanup on deletion
 - ✅ **Cloud Storage** — All audio and profile pictures stored in Cloudinary with version control and automatic deletion on message removal
 
-### User Experience
+### User Experience & Frontend Features
 - ✅ **Tailwind CSS Theme** — Modern design system built with Tailwind utility classes for responsive and accessible styling
+- ✅ **Light & Dark Themes** — Full theme support with persistent storage using `useTheme` hook and CSS custom properties
 - ✅ **Mobile Responsive** — Fully responsive interface with sidebar drawer navigation, touch-friendly tap targets, and iOS keyboard optimization
 - ✅ **Mobile Message Menu** — Context menu on mobile devices for Copy, Edit, and Delete actions (replaces desktop hover interactions)
 - ✅ **Message Input Features** — Clear button, Escape key cancellation, and auto-resize textarea that grows with content
@@ -61,6 +62,15 @@
 - ✅ **Waking Banner** — Informational banner displayed while backend wakes up on first load (Koyeb free tier optimization)
 - ✅ **Secure Authentication** — JWT-based authentication with email + password reset flow using 6-digit verification codes
 - ✅ **Session Persistence** — Users remain logged in across page refreshes with complete state hydration from localStorage
+- ✅ **Voice & Video Calling** — Real-time audio/video calls with WebRTC, ICE candidate handling, and connection state management
+- ✅ **Incoming Call Notifications** — Modal notifications with 15-second auto-decline timer for incoming calls
+- ✅ **Call Controls** — Mute/unmute audio, camera on/off toggle, and call duration timer during active calls
+- ✅ **Audio Messages** — Record, preview, and send audio messages directly in chat with Cloudinary storage
+- ✅ **Audio Playback** — Inline audio player with playback controls (play/pause), seek bar, volume mute, and 0.5x-2x speed controls
+- ✅ **Voice Recording** — Quick voice message recording in message input with intuitive record/stop/send/discard controls
+- ✅ **Message Type System** — Support for text and audio messages with proper type detection and rendering
+- ✅ **Date Dividers** — Visual date separators between messages from different days for temporal context
+- ✅ **Typing Indicators** — Animated three-dot typing indicator showing who's actively typing
 
 ---
 
@@ -340,37 +350,51 @@ Mizuka-Connect/
 │   └── utils/                                 ← Utility functions
 │       └── sendResetEmail.js                  ← Nodemailer email sending
 │
-└── frontend/                                  ← React + Vite SPA
+└── frontend/                                  ← React + Vite SPA with Tailwind CSS
     ├── 📘 README.md                           ← Detailed frontend documentation
-    ├── index.html
+    ├── index.html                             ← HTML entry point with root div
     ├── vite.config.js                         ← Vite configuration with API proxy
     ├── tailwind.config.js                     ← Tailwind CSS configuration
     ├── package.json
+    ├── eslint.config.js                       ← ESLint configuration
     │
     └── src/
-        ├── main.jsx
-        ├── App.jsx                            ← Layout shell, routing, state management
+        ├── main.jsx                           ← React app bootstrap
+        ├── App.jsx                            ← Layout shell, routing, state management, call handling
         │
         ├── pages/
-        │   └── LoginPage.jsx                  ← Login, register, password reset flows
+        │   └── LoginPage.jsx                  ← Login, register, password reset flows with validation
         │
         ├── components/
         │   ├── Sidebar.jsx                    ← Channels + Inbox tab + backend-seeded recent chats
         │   ├── Inbox.jsx                      ← DM list + member search + full-text message search
         │   ├── ChatArea.jsx                   ← Channel + P2P chat with audio recording support
-        │   ├── ChatHeader.jsx                 ← Channel header + P2P header with avatar popover
-        │   ├── MessageList.jsx                ← Scrollable messages with typing indicator and audio playback
-        │   ├── MessageItem.jsx                ← Message bubble with audio player, copy/edit/delete, mobile menu
-        │   ├── MessageInput.jsx               ← Textarea with send, cancel, audio button, auto-resize
-        │   ├── ChatSkelton.jsx                ← Loading skeleton screens
+        │   ├── ChatHeader.jsx                 ← Channel header + P2P header with avatar popover + call buttons
+        │   ├── ChatWindow.jsx                 ← Chat container with loading states
+        │   ├── ChatSkeleton.jsx               ← Loading skeleton screens
+        │   ├── MessageList.jsx                ← Scrollable messages with typing indicator
+        │   ├── MessageBubble.jsx              ← Message bubble with styling logic
+        │   ├── MessageItem.jsx                ← Message wrapper with audio/text, copy/edit/delete, mobile menu
+        │   ├── MessageInput.jsx               ← Textarea with send, cancel, auto-resize
+        │   ├── AudioRecorder.jsx              ← Advanced audio recorder with preview and upload
+        │   ├── AudioPlayer.jsx                ← Inline audio player with seek, volume, speed controls
+        │   ├── VoiceRecorder.jsx              ← Simple voice recorder for message input
+        │   ├── DateDivider.jsx                ← Date separator in message list
+        │   ├── TypingIndicator.jsx            ← Animated typing indicator component
         │   ├── UserProfilePanel.jsx           ← Own profile editor with photo upload via Cloudinary
-        │   ├── UserProfilePopover.jsx         ← Other user's profile popup + Direct Message button
+        │   ├── Userprofilepopover.jsx         ← Other user's profile popup + Direct Message button
         │   ├── InstituteSidebar.jsx           ← Institute management panel for admins
-        │   ├── InstituteGate.jsx              ← Create / join institute gateway
+        │   ├── Institutegate.jsx              ← Create / join institute gateway
         │   ├── CreateChannelModal.jsx         ← Channel creation form with validation
         │   ├── ChangePasswordModal.jsx        ← Password change form with current password verification
+        │   ├── CallModal.jsx                  ← Active call UI with video/audio, mute/camera controls
+        │   ├── IncomingCallModal.jsx          ← Incoming call notification with accept/reject
         │   ├── Avatar.jsx                     ← Reusable avatar component (image or initials fallback)
         │   └── Toast.jsx                      ← Toast notifications for user feedback
+        │
+        ├── hooks/
+        │   ├── useCallManager.js              ← WebRTC call state, media streams, ICE handling
+        │   └── useTheme.js                    ← Dark/light theme toggle with localStorage persistence
         │
         ├── services/
         │   ├── AuthContext.jsx                ← Auth state with updateUser and on-mount refresh
@@ -383,9 +407,9 @@ Mizuka-Connect/
         │   └── dateFormat.js                  ← Date formatting utilities
         │
         └── styles/
-            ├── globals.css                    ← Tailwind directives and custom utilities
+            ├── global.css                     ← Tailwind @theme, design tokens, base styles, animations
             ├── app.css                        ← Application-specific styles
-            └── Toast.css                      ← Toast and banner animations
+            └── LoginPage.css                  ← Login page animations and styling
 ```
 
 ---
@@ -529,7 +553,266 @@ Full Socket.io event documentation available in `backend/README.md`.
 
 ---
 
-## 🗄️ Database Schema & Indexes
+## 🎨 Frontend Components & Architecture
+
+### Core Components
+
+**Sidebar.jsx** — Navigation hub combining channel list, recent DM chats, and member search. Features:
+- Institute switcher with role-based visibility
+- Channel listing with active state highlighting
+- Inbox tab with unread badge counts
+- Backend-seeded recent chats that persist across devices
+- Member discovery search with full-text matching
+- User profile menu with logout
+
+**ChatArea.jsx** — Main chat container managing both channel and P2P conversations. Handles:
+- Message loading and infinite scroll pagination
+- Socket.io event listening for new messages
+- Typing indicator management
+- Message search across conversations
+- Call initiation for P2P chats
+- Proper cleanup on channel/room switches
+
+**ChatHeader.jsx** — Header component with context-aware controls:
+- Channel name with admin edit/rename capability
+- Channel deletion with confirmation modal (admin only)
+- P2P header with user avatar, profile popover trigger, and call buttons
+- Audio/video call initiation from header
+- Live channel rename updates via Socket.io
+
+**MessageList.jsx** — Scrollable message container with:
+- Automatic scroll-to-bottom on new messages
+- Lazy loading of older messages
+- Typing indicator display at bottom
+- Date dividers between message groups
+- Message highlight/jump-to functionality from search results
+
+**MessageItem.jsx** — Individual message wrapper with:
+- Message bubble rendering (text or audio)
+- Sender avatar with profile popover trigger
+- Timestamp and editing indicator
+- Mobile context menu (three dots) for copy/edit/delete
+- Desktop hover actions for quick access
+- Audio player for audio message types
+- Message deletion with Cloudinary cleanup
+
+**MessageInput.jsx** — Advanced input component featuring:
+- Auto-resizing textarea that grows with content
+- Send button with validation
+- Clear/cancel button with Escape key support
+- Voice recording button integration
+- Audio message preview and upload
+- Disabled state during send operations
+- Keyboard shortcuts (Enter to send, Shift+Enter for newline)
+
+**AudioRecorder.jsx** — Comprehensive audio recording UI with:
+- Mic permission request with user-friendly error messages
+- Three states: requesting → recording → preview
+- Live duration timer during recording
+- Audio preview player in preview mode
+- Send/discard buttons
+- Automatic upload to Cloudinary
+- Error handling and retry logic
+
+**AudioPlayer.jsx** — Full-featured audio playback component:
+- Play/pause button with visual feedback
+- Seekable progress bar with touch support
+- Current time and total duration display
+- Mute/unmute toggle
+- Playback speed control (0.5x, 1x, 1.5x, 2x)
+- Styling customization for message context (mine vs theirs)
+- Responsive mobile layout
+
+**VoiceRecorder.jsx** — Quick voice recording for message input:
+- Single-button interface integrated into MessageInput
+- Recording state indicator with duration
+- Stop/discard/send buttons
+- Minimal footprint when idle
+- Error states for mic access issues
+
+**UserProfilePanel.jsx** — Own profile management:
+- Avatar display with upload button
+- Username editing with validation
+- Email field display (read-only or editable)
+- Password change via modal
+- Profile picture upload via Cloudinary with preview
+- Live updates reflected across app without re-login
+
+**UserProfilePopover.jsx** — Other user profile view:
+- Avatar and basic user information
+- Direct message button to start P2P chat
+- Click-outside dismiss handling
+- Non-intrusive overlay design
+
+**CallModal.jsx** — Active call interface:
+- Local and remote video preview (for video calls)
+- Call duration timer
+- Mute/unmute button with visual indicator
+- Camera on/off toggle (video calls only)
+- End call button with confirmation
+- Minimal UI that doesn't obstruct conversation
+- Video call layout with local video in corner
+
+**IncomingCallModal.jsx** — Incoming call notification:
+- Caller avatar and name
+- Call type indicator (audio vs video)
+- Auto-decline timer (15 seconds)
+- Accept/decline buttons
+- Animates in from corner without blocking content
+- Persistent until user responds or timer expires
+
+**Avatar.jsx** — Reusable avatar component:
+- Image-based avatar from profile_picture
+- Fallback to initials with gradient background
+- Customizable size via CSS classes
+- Proper aspect ratio for all contexts
+- Used in: message bubbles, sidebar, DM list, headers
+
+**Toast.jsx** — Notification system:
+- Auto-dismiss after 3.5 seconds
+- Type variants: info, success, error, warning
+- Slide-in animation from top
+- Multiple toasts can queue (stacking)
+- Used for: copy confirmations, error messages, notifications
+
+**ChatSkeleton.jsx** — Loading placeholder:
+- Header skeleton
+- Multiple message line skeletons
+- Input area skeleton
+- Shimmer animation effect
+- Dimensions match actual chat layout
+
+**InstituteSidebar.jsx** — Admin panel:
+- Institute name display
+- Create channel form
+- Member list with roles
+- Institute key for member invitations
+- Admin-only visibility
+
+**InstituteGate.jsx** — Institute selection/creation:
+- Create new institute form
+- Join existing institute form (via UUID)
+- List existing institutes user belongs to
+- Navigation to first channel after selection
+
+**CreateChannelModal.jsx** — Channel creation form:
+- Channel name input with validation (lowercase, hyphens, underscores)
+- Private/public toggle
+- Form submission and error handling
+- Modal backdrop with click-outside dismiss
+
+**ChangePasswordModal.jsx** — Password change form:
+- Current password verification
+- New password input with confirmation
+- Form validation and error display
+- Loading state during submission
+
+**DateDivider.jsx** — Date separator:
+- Shows date between message groups
+- Centered, subtle styling
+- Useful for temporal context in long conversations
+
+**TypingIndicator.jsx** — Typing animation:
+- Three animated dots
+- Shows who is typing (username)
+- Appears above message input area
+- Clears when typing stops
+
+### Hooks
+
+**useCallManager.js** — Complex WebRTC call management:
+- State management for call phases (incoming, outgoing, active)
+- Media stream acquisition (audio + video with echo cancellation)
+- RTCPeerConnection creation and configuration
+- Offer/answer/ICE candidate exchange
+- Mute and camera toggle functionality
+- Duration timer for active calls
+- Automatic cleanup on disconnect
+- Error handling for permission denials
+
+**useTheme.js** — Theme persistence:
+- Light/dark theme toggle
+- localStorage persistence
+- DOM attribute updates (`data-theme`)
+- Hook returns `{ theme, toggle }`
+
+### Services
+
+**AuthContext.jsx** — Global authentication state:
+- User data management (id, username, email, profile_picture, institutes)
+- Active institute tracking
+- Login/logout state
+- User profile refresh on mount
+- updateUser function for profile updates
+- isActiveAdmin() helper to check admin role in current institute
+
+**api.js** — Axios HTTP client:
+- Base URL configuration from VITE_API_URL
+- JWT interceptor for Authorization header
+- All REST endpoints wrapped with error handling
+- Auth endpoints: login, register, password reset, profile update
+- Channel endpoints: create, update, delete, fetch, search
+- Institute endpoints: create, search members, get dashboard
+- Message endpoints: delete, upload audio
+- P2P endpoints: room creation, message operations, unread tracking
+
+**p2p-api.js** — Specialized P2P API calls (merged into main api.js)
+- Chatroom CRUD operations
+- P2P message fetch and search
+- Unread count tracking
+- Room read status marking
+- Recent chatroom seeding
+
+**socket.js** — Socket.io singleton:
+- Connection establishment with auto-reconnect
+- Event listener registration
+- Connection state management
+- Manual connection/disconnection
+- Used throughout app for real-time events
+
+### Styling & Theme System
+
+**global.css** — Base styles with Tailwind integration:
+- CSS custom properties for design tokens (colors, spacing, radius)
+- Tailwind @theme directive mapping tokens to utilities
+- Dark mode support via `[data-theme="dark"]`
+- Base layer: reset, typography, scrollbar
+- Utilities layer: animations (card-enter, msg-in, bounce-dot, etc.)
+- Body overflow hidden for full-viewport chat
+- Scrollbar styling with teal accent
+
+**app.css** — Component-specific styles:
+- Chat layout flexbox structures
+- Sidebar drawer animations
+- Modal backdrop and positioning
+- Button and input base styles
+- Focus states with outlines
+
+**LoginPage.css** — Authentication page styles:
+- Gradient backgrounds
+- Form animations
+- Input field styling
+- Button hover states
+- Error message display
+
+### State Management Pattern
+
+The app uses React Context (AuthContext) for global state and component-level useState for local state:
+- **Global**: User, institutes, active institute, authentication
+- **Component-level**: Active channel, P2P room, sidebar open/closed, modal visibility
+- **Socket events** trigger component updates via listeners
+- **localStorage** persists JWT token and user data across sessions
+- **Refs** used for: WebRTC connections, media streams, timers, input focus
+
+### Message Flow & Real-Time Updates
+
+1. **Channel Messages**: User sends → Socket `send_message` → Backend saves + broadcasts → `receive_message` event → Component state update
+2. **P2P Messages**: User sends → Socket `send_p2p_message` → Backend saves + broadcasts to room → `receive_p2p_message` → Both participants receive
+3. **Typing Indicator**: User types → emit `Display_typing` → Other clients receive and show indicator → User stops → emit `hide_typing`
+4. **Call Initiation**: User calls → Socket `call:user` with offer → Recipient gets `call:incoming` → Starts ringing
+5. **Profile Updates**: Upload photo → API call → Backend returns URL → localStorage update → visible immediately across app
+
+---
 
 ### Complete Schema
 
@@ -848,6 +1131,363 @@ The `/api/p2p/rooms` endpoint seeds recent chats on login. Verify:
 
 ---
 
+## 🎨 Frontend Components & Architecture
+
+### Core Components
+
+**Sidebar.jsx** — Navigation hub combining channel list, recent DM chats, and member search. Features:
+- Institute switcher with role-based visibility
+- Channel listing with active state highlighting
+- Inbox tab with unread badge counts
+- Backend-seeded recent chats that persist across devices
+- Member discovery search with full-text matching
+- User profile menu with logout
+
+**ChatArea.jsx** — Main chat container managing both channel and P2P conversations. Handles:
+- Message loading and infinite scroll pagination
+- Socket.io event listening for new messages
+- Typing indicator management
+- Message search across conversations
+- Call initiation for P2P chats
+- Proper cleanup on channel/room switches
+
+**ChatHeader.jsx** — Header component with context-aware controls:
+- Channel name with admin edit/rename capability
+- Channel deletion with confirmation modal (admin only)
+- P2P header with user avatar, profile popover trigger, and call buttons
+- Audio/video call initiation from header
+- Live channel rename updates via Socket.io
+
+**MessageList.jsx** — Scrollable message container with:
+- Automatic scroll-to-bottom on new messages
+- Lazy loading of older messages
+- Typing indicator display at bottom
+- Date dividers between message groups
+- Message highlight/jump-to functionality from search results
+
+**MessageItem.jsx** — Individual message wrapper with:
+- Message bubble rendering (text or audio)
+- Sender avatar with profile popover trigger
+- Timestamp and editing indicator
+- Mobile context menu (three dots) for copy/edit/delete
+- Desktop hover actions for quick access
+- Audio player for audio message types
+- Message deletion with Cloudinary cleanup
+
+**MessageBubble.jsx** — Message content renderer:
+- Distinguishes between text and audio messages
+- Renders AudioPlayer component for audio types
+- Proper text formatting and word wrapping
+- Context-aware styling (mine vs theirs)
+
+**MessageInput.jsx** — Advanced input component featuring:
+- Auto-resizing textarea that grows with content
+- Send button with validation
+- Clear/cancel button with Escape key support
+- Voice recording button integration
+- Audio message preview and upload
+- Disabled state during send operations
+- Keyboard shortcuts (Enter to send, Shift+Enter for newline)
+
+**AudioRecorder.jsx** — Comprehensive audio recording UI with:
+- Mic permission request with user-friendly error messages
+- Three states: requesting → recording → preview
+- Live duration timer during recording
+- Audio preview player in preview mode
+- Send/discard buttons
+- Automatic upload to Cloudinary
+- Error handling and retry logic
+
+**AudioPlayer.jsx** — Full-featured audio playback component:
+- Play/pause button with visual feedback
+- Seekable progress bar with touch support
+- Current time and total duration display
+- Mute/unmute toggle
+- Playback speed control (0.5x, 1x, 1.5x, 2x)
+- Styling customization for message context (mine vs theirs)
+- Responsive mobile layout
+
+**VoiceRecorder.jsx** — Quick voice recording for message input:
+- Single-button interface integrated into MessageInput
+- Recording state indicator with duration
+- Stop/discard/send buttons
+- Minimal footprint when idle
+- Error states for mic access issues
+
+**UserProfilePanel.jsx** — Own profile management:
+- Avatar display with upload button
+- Username editing with validation
+- Email field display (read-only or editable)
+- Password change via modal
+- Profile picture upload via Cloudinary with preview
+- Live updates reflected across app without re-login
+
+**UserProfilePopover.jsx** — Other user profile view:
+- Avatar and basic user information
+- Direct message button to start P2P chat
+- Click-outside dismiss handling
+- Non-intrusive overlay design
+
+**CallModal.jsx** — Active call interface:
+- Local and remote video preview (for video calls)
+- Call duration timer
+- Mute/unmute button with visual indicator
+- Camera on/off toggle (video calls only)
+- End call button with confirmation
+- Minimal UI that doesn't obstruct conversation
+- Video call layout with local video in corner
+
+**IncomingCallModal.jsx** — Incoming call notification:
+- Caller avatar and name
+- Call type indicator (audio vs video)
+- Auto-decline timer (15 seconds)
+- Accept/decline buttons
+- Animates in from corner without blocking content
+- Persistent until user responds or timer expires
+
+**Avatar.jsx** — Reusable avatar component:
+- Image-based avatar from profile_picture
+- Fallback to initials with gradient background
+- Customizable size via CSS classes
+- Proper aspect ratio for all contexts
+- Used in: message bubbles, sidebar, DM list, headers
+
+**Toast.jsx** — Notification system:
+- Auto-dismiss after 3.5 seconds
+- Type variants: info, success, error, warning
+- Slide-in animation from top
+- Multiple toasts can queue (stacking)
+- Used for: copy confirmations, error messages, notifications
+
+**ChatSkeleton.jsx** — Loading placeholder:
+- Header skeleton
+- Multiple message line skeletons
+- Input area skeleton
+- Shimmer animation effect
+- Dimensions match actual chat layout
+
+**ChatWindow.jsx** — Chat container wrapper:
+- Consistent layout structure
+- Loading state management
+- Error boundary for message rendering
+
+**InstituteSidebar.jsx** — Admin panel:
+- Institute name display
+- Create channel form
+- Member list with roles
+- Institute key for member invitations
+- Admin-only visibility
+
+**InstituteGate.jsx** — Institute selection/creation:
+- Create new institute form
+- Join existing institute form (via UUID)
+- List existing institutes user belongs to
+- Navigation to first channel after selection
+
+**CreateChannelModal.jsx** — Channel creation form:
+- Channel name input with validation (lowercase, hyphens, underscores)
+- Private/public toggle
+- Form submission and error handling
+- Modal backdrop with click-outside dismiss
+
+**ChangePasswordModal.jsx** — Password change form:
+- Current password verification
+- New password input with confirmation
+- Form validation and error display
+- Loading state during submission
+
+**DateDivider.jsx** — Date separator:
+- Shows date between message groups
+- Centered, subtle styling
+- Useful for temporal context in long conversations
+
+**TypingIndicator.jsx** — Typing animation:
+- Three animated dots
+- Shows who is typing (username)
+- Appears above message input area
+- Clears when typing stops
+
+### Hooks
+
+**useCallManager.js** — Complex WebRTC call management:
+- State management for call phases (incoming, outgoing, active)
+- Media stream acquisition (audio + video with echo cancellation)
+- RTCPeerConnection creation and configuration
+- Offer/answer/ICE candidate exchange
+- Mute and camera toggle functionality
+- Duration timer for active calls
+- Automatic cleanup on disconnect
+- Error handling for permission denials
+
+**useTheme.js** — Theme persistence:
+- Light/dark theme toggle
+- localStorage persistence
+- DOM attribute updates (`data-theme`)
+- Hook returns `{ theme, toggle }`
+
+### Services & API
+
+**AuthContext.jsx** — Global authentication state:
+- User data management (id, username, email, profile_picture, institutes)
+- Active institute tracking
+- Login/logout state
+- User profile refresh on mount
+- updateUser function for profile updates
+- isActiveAdmin() helper to check admin role in current institute
+
+**api.js** — Axios HTTP client:
+- Base URL configuration from VITE_API_URL
+- JWT interceptor for Authorization header
+- All REST endpoints wrapped with error handling
+- Auth endpoints: login, register, password reset, profile update
+- Channel endpoints: create, update, delete, fetch, search
+- Institute endpoints: create, search members, get dashboard
+- Message endpoints: delete, upload audio
+- P2P endpoints: room creation, message operations, unread tracking
+
+**socket.js** — Socket.io singleton:
+- Connection establishment with auto-reconnect
+- Event listener registration
+- Connection state management
+- Manual connection/disconnection
+- Used throughout app for real-time events
+
+---
+
+## 🎨 Frontend Tailwind CSS & Design System
+
+### Design Tokens
+
+The frontend uses a comprehensive CSS custom property system with Tailwind integration. All colors, spacing, and radius values are token-based for consistency:
+
+**Color Scale** — Teal as primary accent:
+```css
+--teal-50 through --teal-900: Complete teal palette
+--accent: #0d9488 (teal-600)
+--accent-light: #99f6e4 (teal-200)
+--accent-dim: rgba(13, 148, 136, 0.1) for subtle backgrounds
+```
+
+**Surface Colors** — Warm beige base:
+```css
+--bg-base: #dedad4 (primary page background)
+--bg-surface: #e4e0da (cards, panels)
+--bg-panel: #ede9e3 (nested panels, modals)
+--bg-hover: #d4cfc8 (hover states)
+--bg-input: #d8d3cc (form inputs)
+```
+
+**Text Colors** — Proper contrast hierarchy:
+```css
+--text-primary: #1a1a1a (main body text)
+--text-secondary: #363636 (secondary information)
+--text-muted: #5e5e5e (tertiary, de-emphasized)
+--text-ghost: #8f8f8f (very faint, hints)
+```
+
+**Border Colors**:
+```css
+--border: rgba(0, 0, 0, 0.1) (subtle dividers)
+--border-strong: rgba(0, 0, 0, 0.18) (prominent dividers)
+```
+
+**Border Radius** — Consistent spacing:
+```css
+--radius-sm: 6px (buttons, small inputs)
+--radius-md: 10px (cards, modals)
+--radius-lg: 16px (larger panels)
+--radius-xl: 22px (rounded modals)
+```
+
+### Dark Mode Support
+
+Complete dark theme override using `[data-theme="dark"]` selector:
+
+```css
+[data-theme="dark"] {
+  --bg-base:    #1a1917;
+  --bg-surface: #211f1c;
+  --bg-panel:   #2a2724;
+  --text-primary:   #f0ece6;
+  --text-secondary: #c9c3bb;
+  /* ... more overrides ... */
+}
+```
+
+Theme toggle via `useTheme()` hook updates `document.documentElement.data-theme` attribute and persists to localStorage.
+
+### Typography
+
+**Fonts**:
+- **Sora** (sans-serif) — Primary UI font, modern and clean
+- **DM Mono** (monospace) — Timestamps, durations, code snippets
+
+**Font Sizes** — Tailwind hierarchy with semantic meaning:
+```
+text-[12px] — Small UI labels, timestamps, help text
+text-[13px] — Input placeholders, secondary buttons
+text-sm (14px) — Body text, message content
+text-base (16px) — Headers, emphasis
+text-lg (18px) — Page titles, modal headers
+```
+
+### Animations
+
+Defined in `global.css` `@layer utilities`:
+- **card-enter** — Fade + slide up for modals and cards (0.3s)
+- **msg-in** — Quick message appearance (0.2s)
+- **context-pop** — Scale + slide for context menus (0.15s)
+- **bounce-dot** — Typing indicator dots (1.2s loop)
+- **cpw-fade-in** — Profile popover fade (0.2s)
+- **cpw-slide-up** — Profile popover slide (0.2s)
+- **ccm-backdrop-in** — Modal backdrop (0.2s)
+- **ccm-card-in** — Modal card (0.2s)
+
+### Tailwind Configuration
+
+**tailwind.config.js** extends default Tailwind with custom values:
+- Color aliases for semantic meaning (e.g., `bg-base`, `text-muted`)
+- Radius aliases matching design tokens
+- Animation definitions for micro-interactions
+- Proper z-index scale for modals, toasts, popovers
+
+### CSS Classes Pattern
+
+The frontend exclusively uses Tailwind utility classes with custom properties:
+
+**Button Examples**:
+```jsx
+// Primary action
+className="bg-[var(--teal-600)] hover:bg-[var(--teal-700)] text-white"
+
+// Secondary action
+className="bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:bg-[var(--border)]"
+
+// Ghost/minimal
+className="text-[var(--text-ghost)] hover:bg-[var(--bg-hover)]"
+```
+
+**Layout Examples**:
+```jsx
+// Full height chat layout
+className="flex h-svh w-screen overflow-hidden"
+
+// Card surface
+className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-lg)]"
+
+// Responsive sidebar
+className="hidden md:flex w-64 border-r border-[var(--border)]"
+```
+
+This approach provides:
+- Single source of truth for all colors (CSS custom properties)
+- Easy dark mode toggling (swap all variables at once)
+- Consistency across components
+- Maintainability without custom CSS classes
+- Full Tailwind compiler support
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! Follow these steps:
@@ -962,4 +1602,4 @@ Have questions, found a bug, or want to suggest a feature?
 
 ---
 
-_Last updated: March 2026 — Comprehensive documentation with audio messaging, Tailwind CSS, and complete backend features_
+_Last updated: March 2026 — Complete documentation with audio messaging, voice/video calling, Tailwind CSS, WebRTC, and all backend features_
