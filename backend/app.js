@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -20,18 +21,6 @@ const io = new Server(httpServer, {
 	},
 });
 
-const authRoutes = require('./Routes/authRoutes');
-const messageRoutes = require('./Routes/messageRoutes');
-const instituteRoutes = require('./Routes/instituteRoutes');
-const channelRoutes = require('./Routes/channelRoutes');
-const p2pRoutes = require('./Routes/p2pRoutes');
-const socketController = require('./Socket-Controllers/messageController');
-const p2pSocketController = require('./Socket-Controllers/P2psocketcontroller');
-const { default: socket } = require('../frontend/src/services/socket');
-const webRtcSignaling = require('./handlers/videoHandler');
-const chatWebSocket = require('./handlers/chatHandler');
-const PORT = process.env.PORT || 3000;
-
 app.use(
 	cors({
 		origin: function (origin, callback) {
@@ -47,6 +36,16 @@ app.use(
 	}),
 );
 
+const authRoutes = require('./Routes/authRoutes');
+const messageRoutes = require('./Routes/messageRoutes');
+const instituteRoutes = require('./Routes/instituteRoutes');
+const channelRoutes = require('./Routes/channelRoutes');
+const p2pRoutes = require('./Routes/p2pRoutes');
+
+const webRtcSignaling = require('./handlers/videoHandler');
+const chatWebSocket = require('./handlers/chatHandler');
+
+// --- API Endpoints ---
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
@@ -56,10 +55,11 @@ app.use('/api/channel', channelRoutes);
 app.use('/api/p2p', p2pRoutes);
 app.get('/api/ping', (req, res) => res.sendStatus(200));
 
-// WEB SOCKET CHAT && GENERAL
+// --- WebSockets ---chatWebSocket(io);
 chatWebSocket(io);
-// WEB RTC SIGNALING
 webRtcSignaling(io);
+
+const PORT = process.env.PORT || 3000;
 
 httpServer.listen(PORT, '0.0.0.0', () => {
 	console.log(`Mizuka Engine Live on Port ${PORT}`);

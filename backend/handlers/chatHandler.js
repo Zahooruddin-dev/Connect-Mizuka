@@ -1,4 +1,6 @@
 const onlineUsers = new Map();
+const socketController = require('../Socket-Controllers/messageController');
+const p2pSocketController = require('../Socket-Controllers/P2psocketcontroller');
 
 module.exports = (io) => {
 	io.on('connection', (socket) => {
