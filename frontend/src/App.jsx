@@ -180,7 +180,12 @@ function App() {
 		setActiveP2P(null);
 	}, []);
 
-	const handleCloseP2P = useCallback(() => setActiveP2P(null), []);
+	const handleCloseP2P = useCallback(() => {
+		setActiveP2P(null);
+		if (defaultChannel) {
+			setActiveChannel(defaultChannel);
+		}
+	}, [defaultChannel]);
 	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
 	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
 
