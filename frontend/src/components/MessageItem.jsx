@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { formatTime } from '../utils/time';
 import Toast from './Toast';
 import AudioPlayer from './AudioPlayer';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 function MessageItem({
 	message,
@@ -16,6 +17,7 @@ function MessageItem({
 	const [editContent, setEditContent] = useState(message.content || '');
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [copied, setCopied] = useState(false);
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const menuRef = useRef(null);
 
 	const senderId = message.sender_id || message.userId || message.user_id;
@@ -36,8 +38,13 @@ function MessageItem({
 		};
 	}, [menuOpen]);
 
-	const handleDelete = async () => {
+	const handleDeleteClick = () => {
 		setMenuOpen(false);
+		setShowDeleteModal(true);
+	};
+
+	const handleConfirmDelete = async () => {
+		setShowDeleteModal(false);
 		if (deleting) return;
 		setDeleting(true);
 		try {
@@ -45,6 +52,10 @@ function MessageItem({
 		} catch {
 			setDeleting(false);
 		}
+	};
+
+	const handleCancelDelete = () => {
+		setShowDeleteModal(false);
 	};
 
 	const handleSaveEdit = async () => {
@@ -94,11 +105,11 @@ function MessageItem({
 	const mineInitial = message.username?.[0]?.toUpperCase() || '?';
 
 	const avatarBase =
-		'w-7 h-7 min-w-[28px] rounded-full flex items-center justify-center text-[11px] font-semibold text-white/85 mb-[18px] shrink-0';
+		'w-7 h-7 min-w-[28px] rounded-full flex items-center justify-center text-[11px] font-semibold text-white/90 mb-[18px] shrink-0';
 	const actionIconBase =
-		'p-[5px] rounded-[var(--radius-sm)] flex items-center cursor-pointer transition-[color,background] duration-150 text-[var(--text-ghost)] hover:text-[var(--text-muted)] hover:bg-white/[0.06] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
+		'p-[5px] rounded-md flex items-center cursor-pointer transition-colors duration-150 text-[var(--text-ghost)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
 	const contextItemBase =
-		'w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-[var(--text-secondary)] cursor-pointer transition-[background] duration-[120ms] text-left [-webkit-tap-highlight-color:transparent] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] disabled:opacity-50 disabled:pointer-events-none';
+		'w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-[var(--text-secondary)] cursor-pointer transition-colors duration-150 text-left hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] disabled:opacity-50 disabled:pointer-events-none';
 
 	const CopyIcon = () =>
 		copied ? (
@@ -134,9 +145,25 @@ function MessageItem({
 
 	return (
 		<>
+			<style>{`
+        @keyframes msg-in {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+
 			<div
-				className={`group flex items-end gap-2.5 py-[3px] animate-[msg-in_0.2s_cubic-bezier(0.16,1,0.3,1)] ${isMine ? 'flex-row-reverse' : ''}`}
+				className={`group flex items-end gap-2.5 py-[3px] animate-[msg-in_0.2s_ease-out] ${
+					isMine ? 'flex-row-reverse' : ''
+				}`}
 			>
+				{/* Avatar */}
 				<button
 					className='p-0 flex items-center rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 					onClick={handleUserClick}
@@ -171,7 +198,7 @@ function MessageItem({
 							className={avatarBase}
 							style={{
 								background:
-									'linear-gradient(135deg, var(--teal-900), var(--teal-700))',
+									'linear-gradient(135deg, var(--teal-800), var(--teal-600))',
 							}}
 						>
 							{theirInitial}
@@ -182,6 +209,7 @@ function MessageItem({
 				<div
 					className={`flex flex-col gap-[3px] max-w-[65%] ${isMine ? 'items-end' : ''}`}
 				>
+					{/* Username (others) */}
 					{!isMine && (
 						<button
 							className='px-1 py-0 m-0 text-[11px] font-medium text-[var(--text-secondary)] tracking-[0.01em] cursor-pointer transition-colors duration-150 text-left hover:text-[var(--text-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
@@ -195,8 +223,13 @@ function MessageItem({
 					<div
 						className={`flex items-center gap-1.5 ${isMine ? 'flex-row-reverse' : ''}`}
 					>
+						{/* Message bubble */}
 						<div
-							className={`px-3.5 py-2.5 relative ${isMine ? 'bg-[var(--teal-700)] rounded-[var(--radius-lg)] rounded-br-[4px]' : 'bg-[var(--bg-panel)] border border-[var(--border)] rounded-[var(--radius-lg)] rounded-bl-[4px]'}`}
+							className={`px-3.5 py-2.5 relative ${
+								isMine
+									? 'bg-teal-700 rounded-2xl rounded-br-md'
+									: 'bg-[var(--bg-panel)] border border-[var(--border)] rounded-2xl rounded-bl-md'
+							}`}
 						>
 							{isEditing ? (
 								<div className='flex flex-col gap-2 min-w-[180px]'>
@@ -209,18 +242,18 @@ function MessageItem({
 											if (e.key === 'Escape') setIsEditing(false);
 										}}
 										autoFocus
-										className='bg-black/20 border border-white/10 text-[var(--text-primary)] text-sm leading-[1.55] px-2.5 py-1.5 rounded-[var(--radius-sm)] outline-none font-[inherit] w-full transition-[border-color,background] duration-150 focus:border-teal-500/40 focus:bg-black/[0.28]'
+										className='bg-black/20 border border-white/10 text-[var(--text-primary)] text-sm leading-relaxed px-2.5 py-1.5 rounded-md outline-none font-[inherit] w-full transition-colors duration-150 focus:border-teal-500/40 focus:bg-black/30'
 									/>
 									<div className='flex justify-end gap-1.5'>
 										<button
 											onClick={handleSaveEdit}
-											className='text-teal-400 bg-teal-400/10 text-[11px] font-medium px-2.5 py-1 rounded transition-[background] duration-150 hover:bg-teal-400/[0.18]'
+											className='text-teal-400 bg-teal-400/10 text-[11px] font-medium px-2.5 py-1 rounded transition-colors duration-150 hover:bg-teal-400/20'
 										>
 											Save
 										</button>
 										<button
 											onClick={() => setIsEditing(false)}
-											className='text-[var(--text-ghost)] text-[11px] font-medium px-2.5 py-1 rounded transition-[background,color] duration-150 hover:bg-white/[0.06] hover:text-[var(--text-muted)]'
+											className='text-[var(--text-ghost)] text-[11px] font-medium px-2.5 py-1 rounded transition-colors duration-150 hover:bg-white/10 hover:text-[var(--text-muted)]'
 										>
 											Cancel
 										</button>
@@ -228,7 +261,9 @@ function MessageItem({
 								</div>
 							) : message.is_deleted ? (
 								<p
-									className={`text-sm leading-[1.55] italic ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}
+									className={`text-sm leading-relaxed italic ${
+										isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'
+									}`}
 								>
 									This message was deleted
 								</p>
@@ -236,12 +271,16 @@ function MessageItem({
 								<AudioPlayer src={message.content} isMine={isMine} />
 							) : (
 								<p
-									className={`text-sm leading-[1.55] break-words ${isMine ? 'text-white' : 'text-[var(--text-primary)]'}`}
+									className={`text-sm leading-relaxed break-words ${
+										isMine ? 'text-white/95' : 'text-[var(--text-primary)]'
+									}`}
 								>
 									{message.content}
 									{message.is_edited && (
 										<span
-											className={`text-[10px] italic ml-1.5 select-none ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}
+											className={`text-[10px] italic ml-1.5 select-none ${
+												isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'
+											}`}
 										>
 											(edited)
 										</span>
@@ -250,6 +289,7 @@ function MessageItem({
 							)}
 						</div>
 
+						{/* Desktop actions (own messages) */}
 						{isMine && !isEditing && (
 							<div className='hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150'>
 								<button
@@ -282,8 +322,8 @@ function MessageItem({
 									</svg>
 								</button>
 								<button
-									className={`${actionIconBase} hover:!text-red-400 hover:!bg-red-400/[0.08] ${deleting ? 'opacity-40 pointer-events-none' : ''}`}
-									onClick={handleDelete}
+									className={`${actionIconBase} hover:!text-red-400 hover:!bg-red-400/10`}
+									onClick={handleDeleteClick}
 									title='Delete'
 									aria-label='Delete message'
 								>
@@ -307,6 +347,7 @@ function MessageItem({
 							</div>
 						)}
 
+						{/* Desktop actions (others) – only copy */}
 						{!isMine && !isEditing && (
 							<div className='hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150'>
 								<button
@@ -320,13 +361,14 @@ function MessageItem({
 							</div>
 						)}
 
+						{/* Mobile menu */}
 						{!isEditing && (
 							<div
 								className='relative flex md:hidden items-center'
 								ref={menuRef}
 							>
 								<button
-									className='w-7 h-7 rounded-[var(--radius-sm)] text-[var(--text-ghost)] flex items-center justify-center cursor-pointer transition-[opacity,background,color] duration-150 [-webkit-tap-highlight-color:transparent] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]'
+									className='w-7 h-7 rounded-md text-[var(--text-ghost)] flex items-center justify-center cursor-pointer transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 									onClick={() => setMenuOpen((v) => !v)}
 									aria-label='Message options'
 									aria-expanded={menuOpen}
@@ -346,7 +388,9 @@ function MessageItem({
 
 								{menuOpen && (
 									<div
-										className={`absolute bottom-[calc(100%+6px)] z-[200] bg-[var(--bg-panel)] border border-[var(--border-strong)] rounded-[var(--radius-md)] shadow-md min-w-[130px] overflow-hidden animate-[context-pop_0.12s_cubic-bezier(0.16,1,0.3,1)] ${isMine ? 'right-0' : 'left-0'}`}
+										className={`absolute bottom-[calc(100%+6px)] z-[200] bg-[var(--bg-panel)] border border-[var(--border-strong)] rounded-lg shadow-md min-w-[130px] overflow-hidden animate-[context-pop_0.12s_cubic-bezier(0.16,1,0.3,1)] ${
+											isMine ? 'right-0' : 'left-0'
+										}`}
 									>
 										<button className={contextItemBase} onClick={handleCopy}>
 											<CopyIcon />
@@ -375,8 +419,8 @@ function MessageItem({
 													Edit
 												</button>
 												<button
-													className={`${contextItemBase} !text-red-600 hover:!bg-red-600/[0.06]`}
-													onClick={handleDelete}
+													className={`${contextItemBase} !text-red-600 hover:!bg-red-600/10`}
+													onClick={handleDeleteClick}
 													disabled={deleting}
 												>
 													<svg
@@ -405,6 +449,7 @@ function MessageItem({
 						)}
 					</div>
 
+					{/* Timestamp */}
 					<span className='text-[10px] text-[var(--text-ghost)] font-mono px-1'>
 						{formatTime(
 							message.created_at ||
@@ -417,6 +462,18 @@ function MessageItem({
 			</div>
 
 			<Toast message='Copied to clipboard' visible={copied} type='success' />
+
+			{/* Delete confirmation modal */}
+			{showDeleteModal && (
+				<DeleteConfirmModal
+					message={{
+						content:
+							message.type === 'audio' ? '[Voice message]' : message.content,
+					}}
+					onConfirm={handleConfirmDelete}
+					onCancel={handleCancelDelete}
+				/>
+			)}
 		</>
 	);
 }
