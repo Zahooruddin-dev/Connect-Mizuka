@@ -30,7 +30,7 @@ const p2pRoutes = require('./Routes/p2pRoutes');
 const socketController = require('./Socket-Controllers/messageController');
 const p2pSocketController = require('./Socket-Controllers/P2psocketcontroller');
 const { default: socket } = require('../frontend/src/services/socket');
-
+const webRtcSignaling = require('./videoHandler');
 const PORT = process.env.PORT || 3000;
 
 app.use(
@@ -204,21 +204,7 @@ io.on('connection', (socket) => {
 });
 
 // WEB RTC SIGNALING
-io.on('connection', (socket) => {
-	console.log(`User connected: ${socket.id}`);
-	socket.on('call:user', ({ to, offer }) => {
-		socket.to(to).emit('call:incoming', { from: socket.id, offer });
-	});
-	socket.on('call:accepted', ({ to, offer }) => {
-		socket.to(to).emit('call:answered', { from: socket.id, offer });
-	});
-	socket.on('ice-candidate', ({ to, candidate }) => {
-		socket.to(to).emit('ice-candidate', { from: socket.id, candidate });
-	});
-	socket.on('call:end', ({ to }) => {
-		socket.to(to).emit('call:ended');
-	});
-});
+webRtcSignaling(io);
 
 httpServer.listen(PORT, '0.0.0.0', () => {
 	console.log(`Mizuka Engine Live on Port ${PORT}`);
