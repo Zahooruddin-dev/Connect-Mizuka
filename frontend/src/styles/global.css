@@ -36,20 +36,20 @@
 	--radius-lg: 16px;
 	--radius-xl: 22px;
 }
-[data-theme="dark"] {
-  --bg-base:    #1a1917;
-  --bg-surface: #211f1c;
-  --bg-panel:   #2a2724;
-  --bg-hover:   #2e2b27;
-  --bg-input:   #262320;
+[data-theme='dark'] {
+	--bg-base: #1a1917;
+	--bg-surface: #211f1c;
+	--bg-panel: #2a2724;
+	--bg-hover: #2e2b27;
+	--bg-input: #262320;
 
-  --border:        rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
+	--border: rgba(255, 255, 255, 0.08);
+	--border-strong: rgba(255, 255, 255, 0.14);
 
-  --text-primary:   #f0ece6;
-  --text-secondary: #c9c3bb;
-  --text-muted:     #8a8278;
-  --text-ghost:     #5c5650;
+	--text-primary: #f0ece6;
+	--text-secondary: #c9c3bb;
+	--text-muted: #8a8278;
+	--text-ghost: #5c5650;
 }
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -146,7 +146,9 @@
 		background: var(--teal-400);
 	}
 }
+/* ── Global animations and utilities ── */
 @layer utilities {
+	/* Existing animations remain unchanged */
 	@keyframes card-enter {
 		from {
 			opacity: 0;
@@ -223,6 +225,97 @@
 		to {
 			opacity: 1;
 			transform: translateY(0);
+		}
+	}
+
+	/* NEW: Modal and overlay animations */
+	@keyframes overlay-fade-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	@keyframes modal-pop {
+		0% {
+			opacity: 0;
+			transform: scale(0.92);
+		}
+		60% {
+			opacity: 1;
+			transform: scale(1.02);
+		}
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	/* NEW: Spinner for loading states */
+	@keyframes spin-fast {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+	.animate-spin-fast {
+		animation: spin-fast 0.6s linear infinite;
+	}
+
+	/* NEW: Typing indicator fade-in */
+	@keyframes typing-fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* NEW: Shimmer effect for skeleton loading */
+	@keyframes shimmer {
+		0% {
+			background-position: 200% 0;
+		}
+		100% {
+			background-position: -200% 0;
+		}
+	}
+	.shimmer {
+		background: linear-gradient(
+			90deg,
+			var(--bg-hover) 0%,
+			var(--border) 50%,
+			var(--bg-hover) 100%
+		);
+		background-size: 200% 100%;
+		animation: shimmer 1.2s ease-in-out infinite;
+	}
+
+	/* NEW: Toast animations */
+	@keyframes toast-in {
+		0% {
+			opacity: 0;
+			transform: translate(-50%, 12px) scale(0.96);
+		}
+		100% {
+			opacity: 1;
+			transform: translate(-50%, 0) scale(1);
+		}
+	}
+	@keyframes toast-out {
+		0% {
+			opacity: 1;
+			transform: translate(-50%, 0) scale(1);
+		}
+		100% {
+			opacity: 0;
+			transform: translate(-50%, 8px) scale(0.96);
 		}
 	}
 }
