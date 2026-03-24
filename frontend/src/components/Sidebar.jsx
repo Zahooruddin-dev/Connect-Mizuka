@@ -84,9 +84,6 @@ const [panelOpen, setPanelOpen] = useState(false);
 		if (activeP2P?.roomId) setActiveTab('inbox');
 	}, [activeP2P?.roomId]);
 	useEffect(() => {
-		if (searchOpen) searchInputRef.current?.focus();
-	}, [searchOpen]);
-	useEffect(() => {
 		setSearchOpen(false);
 		setSearchTerm('');
 		setSearchResults([]);
@@ -436,7 +433,7 @@ const [panelOpen, setPanelOpen] = useState(false);
 	];
 
  return (
-    <SidebarContent
+  <SidebarContent
       isOpen={isOpen}
       onClose={onClose}
       activeInstitute={activeInstitute}

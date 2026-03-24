@@ -29,7 +29,7 @@ function WakingBanner({ visible }) {
 			aria-live='polite'
 		>
 			<span
-				className='w-3.5 h-3.5 rounded-full border-2 border-[var(--border-strong)] border-t-[var(--teal-600)] animate-spin-fast shrink-0'
+				className='w-3.5 h-3.5 rounded-full border-2 border-[var(--border-strong)] border-t-teal-600 animate-spin-fast shrink-0'
 				aria-hidden='true'
 			/>
 			Mizuka Engine is waking up — this takes about 30 seconds on first load.
@@ -57,7 +57,6 @@ function App() {
 
 	const lastKnownWidth = useRef(window.innerWidth);
 	const toastTimer = useRef(null);
-
 	const swipeStart = useRef({ x: 0, y: 0, active: false });
 
 	const showToast = useCallback((message, type = 'info') => {
@@ -186,6 +185,7 @@ function App() {
 			setActiveChannel(defaultChannel);
 		}
 	}, [defaultChannel]);
+
 	const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
 	const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
 
@@ -255,12 +255,20 @@ function App() {
 
 	const effectiveChannel = activeChannel ?? defaultChannel ?? null;
 	const isAdmin = isActiveAdmin();
-
-	// Is a real chat view active? If not, ChatSkeleton is showing.
 	const chatActive = !!(activeP2P || effectiveChannel);
 
 	return (
 		<>
+			<style>{`
+        @keyframes spin-fast {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-fast {
+          animation: spin-fast 0.6s linear infinite;
+        }
+      `}</style>
+
 			{banner}
 			<div className='flex h-svh w-screen overflow-hidden bg-[var(--bg-base)]'>
 				<Sidebar
@@ -290,11 +298,11 @@ function App() {
 				>
 					{!sidebarOpen && isMobile && !chatActive && (
 						<div
-							className='flex items-center gap-2.5 px-3.5 h-12 min-h-[48px] bg-[var(--bg-surface)] border-b border-[var(--border)] shrink-0'
+							className='flex items-center gap-2.5 px-3.5 h-12 bg-[var(--bg-surface)] border-b border-[var(--border)] shrink-0'
 							role='banner'
 						>
 							<button
-								className='flex items-center justify-center w-9 h-9 rounded-lg text-[var(--text-muted)] transition-[background,color] duration-150 shrink-0 hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] focus-visible:outline-offset-2'
+								className='flex items-center justify-center w-9 h-9 rounded-lg text-[var(--text-muted)] transition-colors duration-150 shrink-0 hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 								onClick={handleOpenSidebar}
 								aria-label='Open navigation menu'
 							>
@@ -305,7 +313,7 @@ function App() {
 
 					{!sidebarOpen && !isMobile && (
 						<button
-							className='fixed top-3 left-3 z-30 flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-muted)] shadow-sm transition-[background,color] duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+							className='fixed top-3 left-3 z-30 flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--bg-surface)] border border-[var(--border)] text-[var(--text-muted)] shadow-sm transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 							onClick={handleOpenSidebar}
 							aria-label='Open navigation'
 						>
