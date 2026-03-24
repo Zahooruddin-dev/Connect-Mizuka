@@ -15,6 +15,7 @@ export function useCallManager({ user, onToast }) {
 	const pcRef = useRef(null);
 	const localStreamRef = useRef(null);
 	const remoteSocketIdRef = useRef(null);
+	const remoteUserIdRef = useRef(null);
 	const iceCandidateQueue = useRef([]);
 	const callStateRef = useRef(null);
 	const durationInterval = useRef(null);
@@ -57,6 +58,7 @@ export function useCallManager({ user, onToast }) {
 		pcRef.current?.close();
 		pcRef.current = null;
 		remoteSocketIdRef.current = null;
+		remoteUserIdRef.current = null;
 		iceCandidateQueue.current = [];
 		setCallState(null);
 	}, [stopTimer, clearOutgoingTimer]);
@@ -92,7 +94,9 @@ export function useCallManager({ user, onToast }) {
 					noiseSuppression: true,
 					autoGainControl: true,
 					sampleRate: 48000,
+					sampleSize: 16,
 					channelCount: 1,
+					latency: 0,
 				},
 			});
 		} catch (err) {
@@ -146,6 +150,7 @@ export function useCallManager({ user, onToast }) {
 					callType,
 					offer,
 				});
+				remoteUserIdRef.current = String(targetUserId);
 				setCallState({
 					phase: 'outgoing',
 					callType,
@@ -159,8 +164,8 @@ export function useCallManager({ user, onToast }) {
 				outgoingTimer.current = setTimeout(() => {
 					const cs = callStateRef.current;
 					if (cs?.phase !== 'outgoing') return;
-					const to = remoteSocketIdRef.current;
-					if (to) socket.emit('call:end', { to });
+					const toUserId = remoteUserIdRef.current;
+					if (toUserId) socket.emit('call:cancel', { toUserId });
 					cleanup();
 					onToast('No answer', 'info');
 				}, 15000);
@@ -216,12 +221,17 @@ export function useCallManager({ user, onToast }) {
 	const endCall = useCallback(() => {
 		const cs = callStateRef.current;
 		if (!cs) return;
-		const to =
-			cs.remoteSocketId ??
-			remoteSocketIdRef.current ??
-			cs.callerSocketId ??
-			null;
-		if (to) socket.emit('call:end', { to });
+		if (cs.phase === 'outgoing') {
+			const toUserId = remoteUserIdRef.current;
+			if (toUserId) socket.emit('call:cancel', { toUserId });
+		} else {
+			const to =
+				cs.remoteSocketId ??
+				remoteSocketIdRef.current ??
+				cs.callerSocketId ??
+				null;
+			if (to) socket.emit('call:end', { to });
+		}
 		cleanup();
 		onToast('Call ended', 'info');
 	}, [cleanup, onToast]);
@@ -320,19 +330,18 @@ export function useCallManager({ user, onToast }) {
 		};
 
 		const onEnded = () => {
-			const cs = callStateRef.current;
-			const isIncoming = cs?.phase === 'incoming';
 			cleanup();
-			if (isIncoming) {
-				onToast('Caller cancelled the call', 'info');
-			} else {
-				onToast('Call ended', 'info');
-			}
+			onToast('Call ended', 'info');
 		};
 
 		const onUserOffline = () => {
 			cleanup();
 			onToast('User is offline', 'warning');
+		};
+
+		const onCancelled = () => {
+			cleanup();
+			onToast('Caller cancelled the call', 'info');
 		};
 
 		socket.on('call:incoming', onIncoming);
@@ -341,6 +350,7 @@ export function useCallManager({ user, onToast }) {
 		socket.on('call:rejected', onRejected);
 		socket.on('call:ended', onEnded);
 		socket.on('call:user_offline', onUserOffline);
+		socket.on('call:cancelled', onCancelled);
 
 		return () => {
 			socket.off('call:incoming', onIncoming);
@@ -349,6 +359,7 @@ export function useCallManager({ user, onToast }) {
 			socket.off('call:rejected', onRejected);
 			socket.off('call:ended', onEnded);
 			socket.off('call:user_offline', onUserOffline);
+			socket.off('call:cancelled', onCancelled);
 		};
 	}, [sendICE, flushICE, cleanup, clearOutgoingTimer, startTimer, onToast]);
 
