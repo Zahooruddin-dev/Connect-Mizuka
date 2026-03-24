@@ -1,4 +1,4 @@
-const onlineUsers = new Map();
+const onlineUsers = require('../stores/onlineUsers');
 const socketController = require('../Socket-Controllers/messageController');
 const p2pSocketController = require('../Socket-Controllers/P2psocketcontroller');
 
