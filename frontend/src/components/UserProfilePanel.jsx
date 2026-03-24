@@ -9,6 +9,7 @@ const infoLabelCls =
 	'text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-muted)]';
 const infoValueCls =
 	'text-sm text-[var(--text-primary)] flex items-center gap-2';
+
 function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 	const [userInfo, setUserInfo] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -144,16 +145,34 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 
 	return (
 		<>
+			<style>{`
+        @keyframes modal-pop {
+          0% {
+            opacity: 0;
+            transform: scale(0.92);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.02);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
+
 			<div
 				className='fixed inset-0 bg-black/50 backdrop-blur-[3px] z-[2000] flex items-center justify-center p-5 animate-[overlay-fade-in_0.2s_ease-out]'
 				onClick={handleOverlayClick}
 			>
 				<div
-					className='bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl w-full max-w-[420px] shadow-[0_8px_28px_rgba(0,0,0,0.32)] flex flex-col overflow-hidden animate-[panel-slide-up_0.25s_cubic-bezier(0.16,1,0.3,1)]'
+					className='bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl w-full max-w-[420px] shadow-[0_8px_28px_rgba(0,0,0,0.32)] flex flex-col overflow-hidden animate-[modal-pop_0.2s_cubic-bezier(0.16,1,0.3,1)]'
 					role='dialog'
 					aria-modal='true'
 					aria-labelledby='user-panel-title'
 				>
+					{/* rest of the component stays the same */}
 					<div className='px-5 py-4 border-b border-[var(--border)] flex items-center justify-between'>
 						<span
 							className='text-sm font-medium text-[var(--text-primary)]'
@@ -266,7 +285,7 @@ function UserProfilePanel({ userId, onClose, onUsernameChanged }) {
 											</div>
 											<div className='text-[11px] text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.06em] font-medium'>
 												{userInfo.role || 'Member'}
-											</div>{' '}
+											</div>
 										</div>
 
 										<div className={`${infoGroupCls} group`}>
