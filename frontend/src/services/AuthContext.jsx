@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+	createContext,
+	useContext,
+	useState,
+	useEffect,
+	useCallback,
+} from 'react';
 
 const AuthContext = createContext(null);
 
@@ -34,37 +40,41 @@ export function AuthProvider({ children }) {
 	}, []);
 
 	useEffect(() => {
-    const storedToken = localStorage.getItem('mizuka_token');
-    if (!storedToken) return;
+		const storedToken = localStorage.getItem('mizuka_token');
+		if (!storedToken) return;
 
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/user-info`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
-    })
-        .then((r) => {
-            if (!r.ok) {
-                clearSession();
-                return null;
-            }
-            return r.json();
-        })
-        .then((data) => {
-            if (!data?.user) return;
-            setUser((prev) => {
-                if (!prev) return prev;
-                const merged = { ...prev, ...data.user };
-                localStorage.setItem('mizuka_user', JSON.stringify(merged));
-                return merged;
-            });
-        })
-        .catch(() => {
-            clearSession();
-        });
-}, [clearSession]);
+		fetch(
+			`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/user-info`,
+			{
+				headers: { Authorization: `Bearer ${storedToken}` },
+			},
+		)
+			.then((r) => {
+				if (!r.ok) {
+					clearSession();
+					return null;
+				}
+				return r.json();
+			})
+			.then((data) => {
+				if (!data?.user) return;
+				setUser((prev) => {
+					if (!prev) return prev;
+					const merged = { ...prev, ...data.user };
+					localStorage.setItem('mizuka_user', JSON.stringify(merged));
+					return merged;
+				});
+			})
+			.catch(() => {
+				clearSession();
+			});
+	}, [clearSession]);
 
 	useEffect(() => {
 		const handleExpired = () => clearSession();
 		window.addEventListener('mizuka:session-expired', handleExpired);
-		return () => window.removeEventListener('mizuka:session-expired', handleExpired);
+		return () =>
+			window.removeEventListener('mizuka:session-expired', handleExpired);
 	}, [clearSession]);
 
 	function login(userData, tokenValue) {
@@ -83,7 +93,10 @@ export function AuthProvider({ children }) {
 			localStorage.setItem('mizuka_institutes', JSON.stringify(items));
 			if (items.length > 0) {
 				setActiveInstituteState(items[0]);
-				localStorage.setItem('mizuka_active_institute', JSON.stringify(items[0]));
+				localStorage.setItem(
+					'mizuka_active_institute',
+					JSON.stringify(items[0]),
+				);
 			}
 		}
 	}
@@ -110,7 +123,10 @@ export function AuthProvider({ children }) {
 		});
 		if (!activeInstitute) {
 			setActiveInstituteState(institute);
-			localStorage.setItem('mizuka_active_institute', JSON.stringify(institute));
+			localStorage.setItem(
+				'mizuka_active_institute',
+				JSON.stringify(institute),
+			);
 		}
 	}
 

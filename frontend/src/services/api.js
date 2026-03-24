@@ -269,7 +269,7 @@ export const searchAllChannels = async (channelIds, searchTerm) => {
 // ── MESSAGES ──────────────────────────────────────────────────────────────
 
 export const fetchMessages = (channelId, limit = 50, offset = 0) =>
-    api.get(`/messages/${channelId}`, { params: { limit, offset } });
+	api.get(`/messages/${channelId}`, { params: { limit, offset } });
 
 export const deleteChannelMessage = async (messageId) => {
 	try {
@@ -309,13 +309,13 @@ export const searchP2PMessages = async (roomId, searchTerm) => {
 	}
 };
 export const searchAllP2PChats = async (roomIds, searchTerm) => {
-  try {
-    const res = await api.post('/p2p/messages/search', { roomIds, searchTerm });
-    return res.data.messages || [];
-  } catch (err) {
-    console.error('Search Error:', err);
-    return [];
-  }
+	try {
+		const res = await api.post('/p2p/messages/search', { roomIds, searchTerm });
+		return res.data.messages || [];
+	} catch (err) {
+		console.error('Search Error:', err);
+		return [];
+	}
 };
 export const editP2PMessage = async (messageId, content) => {
 	try {

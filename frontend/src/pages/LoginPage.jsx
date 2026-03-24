@@ -169,7 +169,7 @@ export default function LoginPage() {
 			/>
 
 			<div className='relative w-full max-w-[420px] px-6 py-10 sm:px-10 bg-[var(--bg-surface)] border border-[var(--border)] rounded-[var(--radius-xl)] shadow-md flex flex-col animate-[card-enter_0.4s_cubic-bezier(0.16,1,0.3,1)_both]'>
-				<div className='flex items-baseline gap-0.5 mb-7' aria-label='Mizuka'>
+				<div className='flex items-baseline gap-0.5 mb-7' aria-label='Mizuka Connect'>
 					<span
 						className='text-[32px] font-semibold text-teal-400 leading-none tracking-[-1.5px]'
 						aria-hidden='true'
@@ -181,6 +181,21 @@ export default function LoginPage() {
 						aria-hidden='true'
 					>
 						izuka
+					</span>
+				<span></span>
+				<span></span>
+				<span></span>
+					<span
+						className='text-[32px] font-semibold text-teal-400 leading-none tracking-[-1.5px]'
+						aria-hidden='true'
+					>
+						C
+					</span>
+					<span
+						className='text-[26px] font-light text-[var(--text-primary)] tracking-[-0.5px]'
+						aria-hidden='true'
+					>
+						onnect
 					</span>
 				</div>
 
