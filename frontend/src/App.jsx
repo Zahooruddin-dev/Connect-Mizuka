@@ -127,7 +127,16 @@ function App() {
 		},
 		[activeInstitute?.id],
 	);
-
+useEffect(() => {
+    if (!user?.id) return;
+    
+    const register = () => socket.emit('user_online', user.id);
+    
+    if (socket.connected) register();
+    socket.on('connect', register);
+    
+    return () => socket.off('connect', register);
+}, [user?.id]);
 	useEffect(() => {
 		if (!activeInstitute) return;
 		const join = () => socket.emit('join_institute_room', activeInstitute.id);

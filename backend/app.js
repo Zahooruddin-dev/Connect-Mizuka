@@ -42,10 +42,9 @@ const instituteRoutes = require('./Routes/instituteRoutes');
 const channelRoutes = require('./Routes/channelRoutes');
 const p2pRoutes = require('./Routes/p2pRoutes');
 
-const webRtcSignaling = require('./handlers/videoHandler');
-const chatWebSocket = require('./handlers/chatHandler');
+const unifiedHandler = require('./handlers/unifiedHandler');
+unifiedHandler(io);
 
-// --- API Endpoints ---
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
@@ -55,9 +54,6 @@ app.use('/api/channel', channelRoutes);
 app.use('/api/p2p', p2pRoutes);
 app.get('/api/ping', (req, res) => res.sendStatus(200));
 
-// --- WebSockets ---chatWebSocket(io);
-chatWebSocket(io);
-webRtcSignaling(io);
 
 const PORT = process.env.PORT || 3000;
 

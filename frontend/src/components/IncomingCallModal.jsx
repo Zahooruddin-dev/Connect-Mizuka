@@ -21,7 +21,7 @@ export default function IncomingCallModal({
 					50%       { box-shadow: 0 0 0 10px rgba(20,184,166,0); }
 				}
 				.ring-pulse { animation: ring-pulse 1.2s ease-in-out infinite; }
-			`}</style> {'AI USED FOR THE KEY FRAMES'}
+			`}</style> 
 
 			<div className='flex items-center gap-3'>
 				<div

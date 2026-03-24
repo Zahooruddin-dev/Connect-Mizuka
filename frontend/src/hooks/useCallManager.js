@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import socket from '../services/socket';
 
 function createPC() {
@@ -52,12 +52,25 @@ export function useCallManager({ user, onToast }) {
 		setCallState(null);
 	}, [stopTimer]);
 
-	const flushICE = useCallback(async () => {
+	const sendICE = useCallback(() => {
+		const to = remoteSocketIdRef.current;
+		if (!to) return;
 		while (iceCandidateQueue.current.length > 0) {
-			const c = iceCandidateQueue.current.shift();
+			const candidate = iceCandidateQueue.current.shift();
+			socket.emit('ice-candidate', { to, candidate });
+		}
+	}, []);
+
+	const flushICE = useCallback(async () => {
+		const pc = pcRef.current;
+		if (!pc) return;
+		while (iceCandidateQueue.current.length > 0) {
+			const candidate = iceCandidateQueue.current.shift();
 			try {
-				await pcRef.current?.addIceCandidate(new RTCIceCandidate(c));
-			} catch {}
+				await pc.addIceCandidate(new RTCIceCandidate(candidate));
+			} catch (err) {
+				console.warn('Failed to add ICE candidate', err);
+			}
 		}
 	}, []);
 
@@ -75,11 +88,12 @@ export function useCallManager({ user, onToast }) {
 		pcRef.current = pc;
 		stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 		pc.onicecandidate = (e) => {
-			if (e.candidate && remoteSocketIdRef.current) {
-				socket.emit('ice-candidate', {
-					to: remoteSocketIdRef.current,
-					candidate: e.candidate,
-				});
+			if (!e.candidate) return;
+			const to = remoteSocketIdRef.current;
+			if (to) {
+				socket.emit('ice-candidate', { to, candidate: e.candidate });
+			} else {
+				iceCandidateQueue.current.push(e.candidate);
 			}
 		};
 		pc.ontrack = (e) => {
@@ -136,6 +150,7 @@ export function useCallManager({ user, onToast }) {
 			const answer = await pc.createAnswer();
 			await pc.setLocalDescription(answer);
 			socket.emit('call:accepted', { to: callerSocketId, answer, callType });
+			sendICE();
 			setCallState({
 				phase: 'active',
 				callType,
@@ -152,7 +167,7 @@ export function useCallManager({ user, onToast }) {
 			cleanup();
 			onToast('Could not access microphone/camera', 'error');
 		}
-	}, [getMedia, buildPC, flushICE, cleanup, startTimer, onToast]);
+	}, [getMedia, buildPC, flushICE, sendICE, cleanup, startTimer, onToast]);
 
 	const rejectCall = useCallback(() => {
 		const cs = callStateRef.current;
@@ -221,7 +236,7 @@ export function useCallManager({ user, onToast }) {
 				await pcRef.current.setRemoteDescription(
 					new RTCSessionDescription(answer),
 				);
-				await flushICE();
+				sendICE();
 				setCallState((prev) =>
 					prev?.phase === 'outgoing'
 						? {
@@ -277,7 +292,7 @@ export function useCallManager({ user, onToast }) {
 			socket.off('call:ended', onEnded);
 			socket.off('call:user_offline', onUserOffline);
 		};
-	}, [flushICE, cleanup, startTimer, onToast]);
+	}, [sendICE, flushICE, cleanup, startTimer, onToast]);
 
 	useEffect(
 		() => () => {

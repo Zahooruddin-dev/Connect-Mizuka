@@ -409,8 +409,7 @@ function Inbox({
 									{recentChats.map((chat) => {
 										const unread = getUnread(chat.roomId);
 										const lastMsg = chat.lastMessage;
-										console.log(lastMsg);
-										
+
 
 										return (
 											<button
