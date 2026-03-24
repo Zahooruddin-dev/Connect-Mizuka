@@ -8,6 +8,7 @@ export default function VideoCall() {
 	const localVideoRef = useRef();
 	const remoteVideoRef = useRef();
 	const remoteSocketIdRef = useRef('');
+	const iceCandidateQueue = useRef([]);
 
 	const pc = useRef(null);
 
@@ -26,6 +27,7 @@ export default function VideoCall() {
 	useEffect(() => {
 		if (remoteVideoRef.current && remoteStream) {
 			remoteVideoRef.current.srcObject = remoteStream;
+			remoteVideoRef.current.play().catch(() => {});
 		}
 	}, [remoteStream]);
 
@@ -33,6 +35,7 @@ export default function VideoCall() {
 		navigator.mediaDevices
 			.getUserMedia({ video: true, audio: true })
 			.then((stream) => {
+				if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 				setLocalStream(stream);
 				stream
 					.getTracks()
@@ -40,8 +43,16 @@ export default function VideoCall() {
 			});
 
 		pc.current.ontrack = (event) => {
-			console.log('Remote track received');
-			setRemoteStream(event.streams[0]);
+			console.log('Remote track received', event.streams);
+			const stream =
+				event.streams && event.streams[0]
+					? event.streams[0]
+					: new MediaStream([event.track]);
+			if (remoteVideoRef.current) {
+				remoteVideoRef.current.srcObject = stream;
+				remoteVideoRef.current.play().catch(() => {});
+			}
+			setRemoteStream(stream);
 		};
 
 		pc.current.onicecandidate = (event) => {
@@ -53,10 +64,22 @@ export default function VideoCall() {
 			}
 		};
 
+		const flushIceCandidateQueue = async () => {
+			while (iceCandidateQueue.current.length > 0) {
+				const candidate = iceCandidateQueue.current.shift();
+				try {
+					await pc.current.addIceCandidate(new RTCIceCandidate(candidate));
+				} catch (e) {
+					console.error('Error flushing queued ICE candidate', e);
+				}
+			}
+		};
+
 		const handleIncoming = async ({ from, offer }) => {
 			remoteSocketIdRef.current = from;
 			setRemoteSocketId(from);
 			await pc.current.setRemoteDescription(new RTCSessionDescription(offer));
+			await flushIceCandidateQueue();
 			const answer = await pc.current.createAnswer();
 			await pc.current.setLocalDescription(answer);
 			socket.emit('call:accepted', { to: from, answer });
@@ -64,15 +87,19 @@ export default function VideoCall() {
 
 		const handleAnswered = async ({ answer }) => {
 			await pc.current.setRemoteDescription(new RTCSessionDescription(answer));
+			await flushIceCandidateQueue();
 		};
 
 		const handleIceCandidate = async ({ candidate }) => {
+			if (!candidate) return;
 			try {
-				if (pc.current.remoteDescription && candidate) {
+				if (pc.current.remoteDescription) {
 					await pc.current.addIceCandidate(new RTCIceCandidate(candidate));
+				} else {
+					iceCandidateQueue.current.push(candidate);
 				}
 			} catch (e) {
-				console.error('Error adding ice candidate', e);
+				console.error('Error adding ICE candidate', e);
 			}
 		};
 
