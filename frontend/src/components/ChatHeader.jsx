@@ -1,5 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Pencil, Check, X, Trash2, Hash, ArrowLeft } from 'lucide-react';
+import {
+	Pencil,
+	Check,
+	X,
+	Trash2,
+	Hash,
+	ArrowLeft,
+	Phone,
+	Video,
+} from 'lucide-react';
 import { deleteChannel, updateChannel, getUserProfile } from '../services/api';
 import UserProfilePopover from './Userprofilepopover';
 import socket from '../services/socket';
@@ -18,6 +27,7 @@ function ChatHeader({
 	otherUsername,
 	otherUserId,
 	onCloseP2P,
+	onStartCall,
 }) {
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -45,16 +55,16 @@ function ChatHeader({
 			inputRef.current?.select();
 		}
 	}, [editing]);
-useEffect(() => {
-    if (!isP2P || !otherUserId) return;
-    setOtherPicture(null);
-    getUserProfile(otherUserId)
-        .then((data) => {
-            if (data?.user?.profile_picture)
-                setOtherPicture(data.user.profile_picture);
-        })
-        .catch(() => {});
-}, [isP2P, otherUserId]);
+	useEffect(() => {
+		if (!isP2P || !otherUserId) return;
+		setOtherPicture(null);
+		getUserProfile(otherUserId)
+			.then((data) => {
+				if (data?.user?.profile_picture)
+					setOtherPicture(data.user.profile_picture);
+			})
+			.catch(() => {});
+	}, [isP2P, otherUserId]);
 
 	useEffect(() => {
 		if (isP2P) return;
@@ -156,6 +166,7 @@ useEffect(() => {
 							<ArrowLeft size={16} strokeWidth={2} />
 						</button>
 					)}
+
 					<button
 						className='flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg px-1 py-1 transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 						onClick={() => setShowPopover(true)}
@@ -190,6 +201,39 @@ useEffect(() => {
 							</div>
 						</div>
 					</button>
+
+					{onStartCall && otherUserId && (
+						<div className='flex items-center gap-1 shrink-0'>
+							<button
+								className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--teal-500)]`}
+								onClick={() =>
+									onStartCall({
+										targetUserId: otherUserId,
+										targetUsername: otherUsername,
+										callType: 'audio',
+									})
+								}
+								aria-label='Start audio call'
+								title='Audio call'
+							>
+								<Phone size={16} strokeWidth={2} />
+							</button>
+							<button
+								className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--teal-500)]`}
+								onClick={() =>
+									onStartCall({
+										targetUserId: otherUserId,
+										targetUsername: otherUsername,
+										callType: 'video',
+									})
+								}
+								aria-label='Start video call'
+								title='Video call'
+							>
+								<Video size={16} strokeWidth={2} />
+							</button>
+						</div>
+					)}
 				</header>
 
 				{showPopover && otherUserId && (
@@ -265,7 +309,6 @@ useEffect(() => {
 					</div>
 				)}
 			</div>
-
 			<div className='flex items-center gap-2 shrink-0'>
 				{error && <span className='text-[12px] text-red-400'>{error}</span>}
 				{isAdmin &&
