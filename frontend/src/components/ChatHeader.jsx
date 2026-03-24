@@ -3,6 +3,7 @@ import { deleteChannel, updateChannel, getUserProfile } from '../services/api';
 import UserProfilePopover from './Userprofilepopover';
 import socket from '../services/socket';
 import ChatHeaderContent from './ChatHeaderContent';
+import CallConfirmModal from './CallConfirmModal';
 
 function ChatHeader({
   channelId,
@@ -27,6 +28,7 @@ function ChatHeader({
   const [displayName, setDisplayName] = useState(channelLabel || '');
   const [otherPicture, setOtherPicture] = useState(null);
   const [showPopover, setShowPopover] = useState(false);
+  const [callConfirm, setCallConfirm] = useState(null); // { type: 'audio' | 'video' }
 
   const inputRef = useRef(null);
   const channelIdRef = useRef(channelId);
@@ -146,6 +148,24 @@ function ChatHeader({
     }
   }, [channelId, instituteId, onChannelDeleted]);
 
+  const handleCallClick = useCallback((callType) => {
+    setCallConfirm({ type: callType });
+  }, []);
+
+  const handleConfirmCall = useCallback(() => {
+    if (!callConfirm) return;
+    onStartCall({
+      targetUserId: otherUserId,
+      targetUsername: otherUsername,
+      callType: callConfirm.type,
+    });
+    setCallConfirm(null);
+  }, [callConfirm, otherUserId, otherUsername, onStartCall]);
+
+  const handleCancelCall = useCallback(() => {
+    setCallConfirm(null);
+  }, []);
+
   return (
     <>
       <ChatHeaderContent
@@ -154,7 +174,7 @@ function ChatHeader({
         otherUsername={otherUsername}
         otherPicture={otherPicture}
         onShowPopover={() => setShowPopover(true)}
-        onStartCall={onStartCall}
+        onStartCall={handleCallClick}  // pass the modal opener
         otherUserId={otherUserId}
         onOpenSidebar={onOpenSidebar}
         editing={editing}
@@ -179,6 +199,14 @@ function ChatHeader({
           userId={otherUserId}
           onClose={() => setShowPopover(false)}
           onStartP2P={null}
+        />
+      )}
+      {callConfirm && (
+        <CallConfirmModal
+          callType={callConfirm.type}
+          targetUsername={otherUsername}
+          onConfirm={handleConfirmCall}
+          onCancel={handleCancelCall}
         />
       )}
     </>
