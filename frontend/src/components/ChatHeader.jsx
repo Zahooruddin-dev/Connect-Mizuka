@@ -15,7 +15,7 @@ import UserProfilePopover from './Userprofilepopover';
 import socket from '../services/socket';
 
 const iconBtnCls =
-	'flex items-center justify-center w-9 h-9 md:w-8 md:h-8 rounded-lg transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
+	'flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
 
 function ChatHeader({
 	channelId,
@@ -47,16 +47,19 @@ function ChatHeader({
 	useEffect(() => {
 		channelIdRef.current = channelId;
 	}, [channelId]);
+
 	useEffect(() => {
 		setNameInput(channelLabel || '');
 		setDisplayName(channelLabel || '');
 	}, [channelLabel]);
+
 	useEffect(() => {
 		if (editing) {
 			inputRef.current?.focus();
 			inputRef.current?.select();
 		}
 	}, [editing]);
+
 	useEffect(() => {
 		if (!isP2P || !otherUserId) return;
 		setOtherPicture(null);
@@ -92,6 +95,7 @@ function ChatHeader({
 		setError('');
 		setEditing(true);
 	}, [channelLabel]);
+
 	const handleEditCancel = useCallback(() => {
 		setEditing(false);
 		setNameInput(channelLabel || '');
@@ -158,7 +162,7 @@ function ChatHeader({
 	if (isP2P) {
 		return (
 			<>
-				<header className='flex items-center gap-2 px-3 md:px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
+				<header className='flex items-center gap-2 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
 					{onCloseP2P && (
 						<button
 							className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]`}
@@ -170,7 +174,7 @@ function ChatHeader({
 					)}
 
 					<button
-						className='flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg px-1 py-1 transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+						className='flex items-center gap-3 flex-1 min-w-0 rounded-lg px-1 py-1 transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 						onClick={() => setShowPopover(true)}
 						title={`View ${otherUsername}'s profile`}
 					>
@@ -178,11 +182,11 @@ function ChatHeader({
 							<img
 								src={otherPicture}
 								alt={otherUsername}
-								className='w-8 h-8 rounded-full object-cover shrink-0'
+								className='w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-[var(--border)]'
 							/>
 						) : (
 							<div
-								className='w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white/90 shrink-0'
+								className='w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold text-white/90 shrink-0 ring-1 ring-[var(--border)]'
 								style={{
 									background:
 										'linear-gradient(135deg, var(--teal-800), var(--teal-600))',
@@ -249,9 +253,8 @@ function ChatHeader({
 		);
 	}
 
-
 	return (
-		<header className='flex items-center gap-2 md:gap-3 px-3 md:px-5 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
+		<header className='flex items-center gap-3 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-surface)] shrink-0'>
 			{onOpenSidebar && (
 				<button
 					className={`${iconBtnCls} md:hidden text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)]`}
@@ -274,7 +277,7 @@ function ChatHeader({
 						/>
 						<input
 							ref={inputRef}
-							className='flex-1 min-w-0 bg-[var(--bg-input)] border border-[var(--teal-600)] rounded-lg px-2.5 py-1.5 text-sm text-[var(--text-primary)] outline-none shadow-[0_0_0_2px_rgba(20,184,166,0.07)] font-[inherit] transition-[border-color] duration-150 disabled:opacity-50'
+							className='flex-1 min-w-0 bg-[var(--bg-input)] border border-[var(--teal-600)] rounded-md px-2.5 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--teal-500)]/30 focus:border-[var(--teal-500)] transition-all duration-150 font-[inherit] disabled:opacity-50'
 							value={nameInput}
 							onChange={(e) => setNameInput(e.target.value)}
 							onKeyDown={handleKeyDown}
@@ -284,7 +287,7 @@ function ChatHeader({
 							spellCheck={false}
 						/>
 						<button
-							className={`${iconBtnCls} text-[var(--teal-600)] hover:bg-teal-500/[0.08] disabled:opacity-40`}
+							className={`${iconBtnCls} text-[var(--teal-600)] hover:bg-teal-500/10 disabled:opacity-40`}
 							onClick={handleEditSave}
 							disabled={saving}
 							aria-label='Save name'
@@ -313,7 +316,7 @@ function ChatHeader({
 						</span>
 						{isAdmin && (
 							<button
-								className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-[opacity,background,color] duration-150`}
+								className={`${iconBtnCls} text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-all duration-150`}
 								onClick={handleEditStart}
 								aria-label='Rename channel'
 							>
@@ -338,14 +341,14 @@ function ChatHeader({
 								Delete channel?
 							</span>
 							<button
-								className='px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 text-[12px] font-medium hover:bg-red-500/20 transition-[background] duration-150 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-400'
+								className='px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 text-[12px] font-medium hover:bg-red-500/20 transition-colors duration-150 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-red-400'
 								onClick={handleDeleteChannel}
 								disabled={deleting}
 							>
 								{deleting ? 'Deleting…' : 'Yes'}
 							</button>
 							<button
-								className='px-2.5 py-1 rounded-md bg-[var(--bg-hover)] text-[var(--text-muted)] text-[12px] font-medium hover:bg-[var(--border)] transition-[background] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+								className='px-2.5 py-1 rounded-md bg-[var(--bg-hover)] text-[var(--text-muted)] text-[12px] font-medium hover:bg-[var(--border)] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 								onClick={() => setShowConfirm(false)}
 							>
 								No
@@ -353,7 +356,7 @@ function ChatHeader({
 						</div>
 					) : (
 						<button
-							className='flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-[var(--text-ghost)] hover:text-red-400 hover:bg-red-400/[0.06] transition-[background,color] duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+							className='flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-[var(--text-ghost)] hover:text-red-400 hover:bg-red-400/5 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 							onClick={() => setShowConfirm(true)}
 							title='Delete channel'
 						>
