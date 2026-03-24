@@ -28,7 +28,7 @@ function ChatHeader({
   const [displayName, setDisplayName] = useState(channelLabel || '');
   const [otherPicture, setOtherPicture] = useState(null);
   const [showPopover, setShowPopover] = useState(false);
-  const [callConfirm, setCallConfirm] = useState(null); // { type: 'audio' | 'video' }
+  const [callData, setCallData] = useState(null); // { targetUserId, targetUsername, callType }
 
   const inputRef = useRef(null);
   const channelIdRef = useRef(channelId);
@@ -148,22 +148,18 @@ function ChatHeader({
     }
   }, [channelId, instituteId, onChannelDeleted]);
 
-  const handleCallClick = useCallback((callType) => {
-    setCallConfirm({ type: callType });
+  const handleCallClick = useCallback((data) => {
+    setCallData(data);
   }, []);
 
   const handleConfirmCall = useCallback(() => {
-    if (!callConfirm) return;
-    onStartCall({
-      targetUserId: otherUserId,
-      targetUsername: otherUsername,
-      callType: callConfirm.type,
-    });
-    setCallConfirm(null);
-  }, [callConfirm, otherUserId, otherUsername, onStartCall]);
+    if (!callData) return;
+    onStartCall(callData);
+    setCallData(null);
+  }, [callData, onStartCall]);
 
   const handleCancelCall = useCallback(() => {
-    setCallConfirm(null);
+    setCallData(null);
   }, []);
 
   return (
@@ -174,7 +170,7 @@ function ChatHeader({
         otherUsername={otherUsername}
         otherPicture={otherPicture}
         onShowPopover={() => setShowPopover(true)}
-        onStartCall={handleCallClick}  // pass the modal opener
+        onStartCall={handleCallClick}
         otherUserId={otherUserId}
         onOpenSidebar={onOpenSidebar}
         editing={editing}
@@ -201,10 +197,10 @@ function ChatHeader({
           onStartP2P={null}
         />
       )}
-      {callConfirm && (
+      {callData && (
         <CallConfirmModal
-          callType={callConfirm.type}
-          targetUsername={otherUsername}
+          callType={callData.callType}
+          targetUsername={callData.targetUsername}
           onConfirm={handleConfirmCall}
           onCancel={handleCancelCall}
         />
