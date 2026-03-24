@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import socket from '../services/socket';
-export default VideoCall = () => {
+export default function VideoCall   () {
 	const [remoteSocketId, setRemoteSocketId] = useState('');
 	const localVideoRef = useRef();
 	const remoteVideoRef = useRef();
