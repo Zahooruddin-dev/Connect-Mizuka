@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Phone, PhoneOff, Video } from 'lucide-react';
 
 export default function IncomingCallModal({
@@ -7,6 +8,22 @@ export default function IncomingCallModal({
 	onReject,
 }) {
 	const initial = callerUsername?.[0]?.toUpperCase() || '?';
+	const [remaining, setRemaining] = useState(15);
+	const intervalRef = useRef(null);
+
+	useEffect(() => {
+		intervalRef.current = setInterval(() => {
+			setRemaining((prev) => {
+				if (prev <= 1) {
+					clearInterval(intervalRef.current);
+					onReject();
+					return 0;
+				}
+				return prev - 1;
+			});
+		}, 1000);
+		return () => clearInterval(intervalRef.current);
+	}, [onReject]);
 
 	return (
 		<div className='fixed bottom-6 right-6 z-[1500] w-72 bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-4 flex flex-col gap-4 animate-in'>
@@ -50,6 +67,9 @@ export default function IncomingCallModal({
 							</>
 						)}
 					</div>
+				</div>
+				<div className='ml-auto shrink-0 text-[12px] font-medium text-[var(--text-ghost)]'>
+					{remaining}s
 				</div>
 			</div>
 

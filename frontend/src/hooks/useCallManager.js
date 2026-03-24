@@ -18,6 +18,7 @@ export function useCallManager({ user, onToast }) {
 	const iceCandidateQueue = useRef([]);
 	const callStateRef = useRef(null);
 	const durationInterval = useRef(null);
+	const outgoingTimer = useRef(null);
 
 	useEffect(() => {
 		callStateRef.current = callState;
@@ -27,6 +28,13 @@ export function useCallManager({ user, onToast }) {
 		if (durationInterval.current) {
 			clearInterval(durationInterval.current);
 			durationInterval.current = null;
+		}
+	}, []);
+
+	const clearOutgoingTimer = useCallback(() => {
+		if (outgoingTimer.current) {
+			clearTimeout(outgoingTimer.current);
+			outgoingTimer.current = null;
 		}
 	}, []);
 
@@ -42,52 +50,32 @@ export function useCallManager({ user, onToast }) {
 	}, [stopTimer]);
 
 	const cleanup = useCallback(() => {
-		console.log('[cleanup] Cleaning up call resources');
 		stopTimer();
-		localStreamRef.current?.getTracks().forEach((t) => {
-			console.log(`[cleanup] Stopping track: ${t.kind} enabled=${t.enabled}`);
-			t.stop();
-		});
+		clearOutgoingTimer();
+		localStreamRef.current?.getTracks().forEach((t) => t.stop());
 		localStreamRef.current = null;
 		pcRef.current?.close();
 		pcRef.current = null;
 		remoteSocketIdRef.current = null;
 		iceCandidateQueue.current = [];
 		setCallState(null);
-	}, [stopTimer]);
+	}, [stopTimer, clearOutgoingTimer]);
 
 	const sendICE = useCallback(() => {
 		const to = remoteSocketIdRef.current;
-		console.log(
-			`[sendICE] to=${to}, queued=${iceCandidateQueue.current.length}`,
-		);
-		if (!to) {
-			console.warn('[sendICE] No remote socket ID, cannot send ICE candidates');
-			return;
-		}
+		if (!to) return;
 		while (iceCandidateQueue.current.length > 0) {
 			const candidate = iceCandidateQueue.current.shift();
-			console.log(
-				`[sendICE] Emitting ice-candidate to ${to}:`,
-				candidate?.candidate,
-			);
 			socket.emit('ice-candidate', { to, candidate });
 		}
 	}, []);
 
 	const flushICE = useCallback(async () => {
 		const pc = pcRef.current;
-		console.log(
-			`[flushICE] pc=${!!pc}, queued=${iceCandidateQueue.current.length}`,
-		);
 		if (!pc) return;
 		while (iceCandidateQueue.current.length > 0) {
 			const candidate = iceCandidateQueue.current.shift();
 			try {
-				console.log(
-					'[flushICE] Adding queued ICE candidate:',
-					candidate?.candidate,
-				);
 				await pc.addIceCandidate(new RTCIceCandidate(candidate));
 			} catch (err) {
 				console.warn('[flushICE] Failed to add ICE candidate', err);
@@ -96,9 +84,8 @@ export function useCallManager({ user, onToast }) {
 	}, []);
 
 	const getMedia = useCallback(async (callType) => {
-		console.log(`[getMedia] Requesting media for callType=${callType}`);
 		try {
-			const stream = await navigator.mediaDevices.getUserMedia({
+			return await navigator.mediaDevices.getUserMedia({
 				video: callType === 'video',
 				audio: {
 					echoCancellation: true,
@@ -108,86 +95,35 @@ export function useCallManager({ user, onToast }) {
 					channelCount: 1,
 				},
 			});
-			console.log(`[getMedia] Got stream id=${stream.id}`);
-			stream
-				.getTracks()
-				.forEach((t) =>
-					console.log(
-						`[getMedia] Track: kind=${t.kind} enabled=${t.enabled} readyState=${t.readyState} label=${t.label}`,
-					),
-				);
-			return stream;
 		} catch (err) {
-			console.error('[getMedia] Failed to get media:', err.name, err.message);
 			throw err;
 		}
 	}, []);
 
 	const buildPC = useCallback((stream) => {
-		console.log('[buildPC] Creating RTCPeerConnection');
 		const pc = createPC();
 		pcRef.current = pc;
 
-		stream.getTracks().forEach((track) => {
-			console.log(`[buildPC] Adding track to PC: kind=${track.kind}`);
-			pc.addTrack(track, stream);
-		});
+		stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
 		pc.onicecandidate = (e) => {
-			if (!e.candidate) {
-				console.log('[onicecandidate] ICE gathering complete');
-				return;
-			}
+			if (!e.candidate) return;
 			const to = remoteSocketIdRef.current;
-			console.log(
-				`[onicecandidate] Got candidate, remote=${to}, type=${e.candidate.type}, protocol=${e.candidate.protocol}`,
-			);
 			if (to) {
-				console.log(`[onicecandidate] Sending immediately to ${to}`);
 				socket.emit('ice-candidate', { to, candidate: e.candidate });
 			} else {
-				console.log('[onicecandidate] No remote yet, queuing candidate');
 				iceCandidateQueue.current.push(e.candidate);
 			}
 		};
 
-		pc.onicegatheringstatechange = () => {
-			console.log(`[PC] ICE gathering state: ${pc.iceGatheringState}`);
-		};
-
 		pc.oniceconnectionstatechange = () => {
-			console.log(`[PC] ICE connection state: ${pc.iceConnectionState}`);
 			if (pc.iceConnectionState === 'failed') {
-				console.error('[PC] ICE connection FAILED - no audio/video possible');
+				console.error('[PC] ICE connection FAILED');
 			}
-			if (
-				pc.iceConnectionState === 'connected' ||
-				pc.iceConnectionState === 'completed'
-			) {
-				console.log('[PC] ICE connected successfully!');
-			}
-		};
-
-		pc.onconnectionstatechange = () => {
-			console.log(`[PC] Connection state: ${pc.connectionState}`);
-		};
-
-		pc.onsignalingstatechange = () => {
-			console.log(`[PC] Signaling state: ${pc.signalingState}`);
 		};
 
 		pc.ontrack = (e) => {
-			console.log(
-				`[ontrack] Received remote track: kind=${e.track.kind} streams=${e.streams.length}`,
-			);
-			e.track.onunmute = () =>
-				console.log(`[ontrack] Track unmuted: ${e.track.kind}`);
-			e.track.onended = () =>
-				console.log(`[ontrack] Track ended: ${e.track.kind}`);
 			const remoteStream = e.streams?.[0] ?? new MediaStream([e.track]);
-			console.log(
-				`[ontrack] Remote stream id=${remoteStream.id} tracks=${remoteStream.getTracks().length}`,
-			);
 			setCallState((prev) => (prev ? { ...prev, remoteStream } : prev));
 		};
 
@@ -196,22 +132,13 @@ export function useCallManager({ user, onToast }) {
 
 	const startCall = useCallback(
 		async ({ targetUserId, targetUsername, callType }) => {
-			console.log(
-				`[startCall] target=${targetUserId} (${targetUsername}), type=${callType}`,
-			);
-			if (callStateRef.current) {
-				console.warn('[startCall] Already in a call, ignoring');
-				return;
-			}
+			if (callStateRef.current) return;
 			try {
 				const stream = await getMedia(callType);
 				localStreamRef.current = stream;
 				const pc = buildPC(stream);
-				console.log('[startCall] Creating offer...');
 				const offer = await pc.createOffer();
-				console.log('[startCall] Offer created, setting local description...');
 				await pc.setLocalDescription(offer);
-				console.log('[startCall] Local description set, emitting call:user');
 				socket.emit('call:user', {
 					toUserId: targetUserId,
 					callerId: user.id,
@@ -228,8 +155,16 @@ export function useCallManager({ user, onToast }) {
 					isMuted: false,
 					isCameraOff: false,
 				});
+
+				outgoingTimer.current = setTimeout(() => {
+					const cs = callStateRef.current;
+					if (cs?.phase !== 'outgoing') return;
+					const to = remoteSocketIdRef.current;
+					if (to) socket.emit('call:end', { to });
+					cleanup();
+					onToast('No answer', 'info');
+				}, 15000);
 			} catch (err) {
-				console.error('[startCall] Error:', err);
 				cleanup();
 				onToast('Could not access microphone/camera', 'error');
 			}
@@ -239,29 +174,17 @@ export function useCallManager({ user, onToast }) {
 
 	const acceptCall = useCallback(async () => {
 		const cs = callStateRef.current;
-		console.log(`[acceptCall] phase=${cs?.phase}`);
 		if (!cs || cs.phase !== 'incoming') return;
 		try {
 			const { callType, callerSocketId, offer, callerUsername } = cs;
-			console.log(
-				`[acceptCall] Accepting from socket=${callerSocketId}, type=${callType}`,
-			);
 			const stream = await getMedia(callType);
 			localStreamRef.current = stream;
 			remoteSocketIdRef.current = callerSocketId;
-			console.log(`[acceptCall] remoteSocketId set to ${callerSocketId}`);
 			const pc = buildPC(stream);
-			console.log('[acceptCall] Setting remote description (offer)...');
 			await pc.setRemoteDescription(new RTCSessionDescription(offer));
-			console.log(
-				'[acceptCall] Remote description set, flushing queued ICE...',
-			);
 			await flushICE();
-			console.log('[acceptCall] Creating answer...');
 			const answer = await pc.createAnswer();
-			console.log('[acceptCall] Answer created, setting local description...');
 			await pc.setLocalDescription(answer);
-			console.log(`[acceptCall] Emitting call:accepted to ${callerSocketId}`);
 			socket.emit('call:accepted', { to: callerSocketId, answer, callType });
 			sendICE();
 
@@ -278,7 +201,6 @@ export function useCallManager({ user, onToast }) {
 			}));
 			startTimer();
 		} catch (err) {
-			console.error('[acceptCall] Error:', err);
 			cleanup();
 			onToast('Could not access microphone/camera', 'error');
 		}
@@ -287,7 +209,6 @@ export function useCallManager({ user, onToast }) {
 	const rejectCall = useCallback(() => {
 		const cs = callStateRef.current;
 		if (!cs || cs.phase !== 'incoming') return;
-		console.log(`[rejectCall] Rejecting call from ${cs.callerSocketId}`);
 		socket.emit('call:rejected', { to: cs.callerSocketId });
 		setCallState(null);
 	}, []);
@@ -300,7 +221,6 @@ export function useCallManager({ user, onToast }) {
 			remoteSocketIdRef.current ??
 			cs.callerSocketId ??
 			null;
-		console.log(`[endCall] Ending call, notifying ${to}`);
 		if (to) socket.emit('call:end', { to });
 		cleanup();
 		onToast('Call ended', 'info');
@@ -310,7 +230,6 @@ export function useCallManager({ user, onToast }) {
 		if (!localStreamRef.current) return;
 		localStreamRef.current.getAudioTracks().forEach((t) => {
 			t.enabled = !t.enabled;
-			console.log(`[toggleMute] Audio track enabled=${t.enabled}`);
 		});
 		setCallState((prev) => (prev ? { ...prev, isMuted: !prev.isMuted } : prev));
 	}, []);
@@ -319,7 +238,6 @@ export function useCallManager({ user, onToast }) {
 		if (!localStreamRef.current) return;
 		localStreamRef.current.getVideoTracks().forEach((t) => {
 			t.enabled = !t.enabled;
-			console.log(`[toggleCamera] Video track enabled=${t.enabled}`);
 		});
 		setCallState((prev) =>
 			prev ? { ...prev, isCameraOff: !prev.isCameraOff } : prev,
@@ -334,11 +252,7 @@ export function useCallManager({ user, onToast }) {
 			callType,
 			offer,
 		}) => {
-			console.log(
-				`[socket:call:incoming] from=${from}, callType=${callType}, hasOffer=${!!offer}`,
-			);
 			if (callStateRef.current) {
-				console.warn('[socket:call:incoming] Already in call, rejecting');
 				socket.emit('call:rejected', { to: from });
 				return;
 			}
@@ -353,25 +267,14 @@ export function useCallManager({ user, onToast }) {
 		};
 
 		const onAnswered = async ({ from, answer }) => {
-			console.log(`[socket:call:answered] from=${from}, hasAnswer=${!!answer}`);
+			clearOutgoingTimer();
 			remoteSocketIdRef.current = from;
-			if (!pcRef.current) {
-				console.error('[socket:call:answered] No PC exists!');
-				return;
-			}
+			if (!pcRef.current) return;
 			try {
-				console.log(
-					'[socket:call:answered] Setting remote description (answer)...',
-				);
 				await pcRef.current.setRemoteDescription(
 					new RTCSessionDescription(answer),
 				);
-				console.log(
-					'[socket:call:answered] Remote description set, flushing ICE...',
-				);
 				sendICE();
-
-				// FIX: Removed `remoteStream: null` from this block
 				setCallState((prev) =>
 					prev?.phase === 'outgoing'
 						? {
@@ -395,19 +298,11 @@ export function useCallManager({ user, onToast }) {
 		const onIceCandidate = async ({ candidate }) => {
 			if (!candidate) return;
 			const pc = pcRef.current;
-			console.log(
-				`[socket:ice-candidate] received, pc=${!!pc}, hasRemoteDesc=${!!pc?.remoteDescription}, type=${candidate.type}`,
-			);
-			if (!pc) {
-				console.warn('[socket:ice-candidate] No PC, dropping candidate');
-				return;
-			}
+			if (!pc) return;
 			try {
 				if (pc.remoteDescription) {
-					console.log('[socket:ice-candidate] Adding directly to PC');
 					await pc.addIceCandidate(new RTCIceCandidate(candidate));
 				} else {
-					console.log('[socket:ice-candidate] No remote desc yet, queuing');
 					iceCandidateQueue.current.push(candidate);
 				}
 			} catch (err) {
@@ -416,17 +311,26 @@ export function useCallManager({ user, onToast }) {
 		};
 
 		const onRejected = () => {
-			console.log('[socket:call:rejected] Call was rejected');
+			const cs = callStateRef.current;
+			const name = cs?.targetUsername
+				? cs.targetUsername[0].toUpperCase() + cs.targetUsername.slice(1)
+				: 'User';
 			cleanup();
-			onToast('Call declined', 'info');
+			onToast(`${name} declined the call`, 'info');
 		};
+
 		const onEnded = () => {
-			console.log('[socket:call:ended] Remote ended the call');
+			const cs = callStateRef.current;
+			const isIncoming = cs?.phase === 'incoming';
 			cleanup();
-			onToast('Call ended', 'info');
+			if (isIncoming) {
+				onToast('Caller cancelled the call', 'info');
+			} else {
+				onToast('Call ended', 'info');
+			}
 		};
+
 		const onUserOffline = () => {
-			console.log('[socket:call:user_offline] Target user is offline');
 			cleanup();
 			onToast('User is offline', 'warning');
 		};
@@ -446,7 +350,7 @@ export function useCallManager({ user, onToast }) {
 			socket.off('call:ended', onEnded);
 			socket.off('call:user_offline', onUserOffline);
 		};
-	}, [sendICE, flushICE, cleanup, startTimer, onToast]);
+	}, [sendICE, flushICE, cleanup, clearOutgoingTimer, startTimer, onToast]);
 
 	useEffect(
 		() => () => {
