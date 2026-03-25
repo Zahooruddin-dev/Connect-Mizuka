@@ -1,6 +1,8 @@
 const socketController = require('../Socket-Controllers/messageController');
 const p2pSocketController = require('../Socket-Controllers/P2psocketcontroller');
 const onlineUsers = new Map();
+const db = require('../db/queryP2P');
+const activeCalls = new Map();
 
 module.exports = (io) => {
 	io.on('connection', (socket) => {
@@ -134,9 +136,19 @@ module.exports = (io) => {
 
 		socket.on(
 			'call:user',
-			({ toUserId, offer, callType, callerUsername, callerId }) => {
+			async ({ toUserId, offer, callType, callerUsername, callerId }) => {
 				const targetSocketId = onlineUsers.get(String(toUserId));
+
 				if (!targetSocketId) {
+					const room = await db.findExistingRoomQuery(callerId, toUserId);
+					if (room) {
+						await db.saveP2PMessage(
+							room.id,
+							callerId,
+							'Missed call',
+							'call_missed',
+						);
+					}
 					socket.emit('call:user_offline');
 					return;
 				}
@@ -149,21 +161,42 @@ module.exports = (io) => {
 				});
 			},
 		);
-
-		socket.on('call:cancel', ({ toUserId }) => {
-			const targetSocketId = onlineUsers.get(String(toUserId));
-			if (targetSocketId) {
-				io.to(targetSocketId).emit('call:cancelled');
-			}
-		});
-
-		socket.on('call:accepted', ({ to, answer, callType }) => {
+		socket.on(
+			'call:cancel',
+			async ({ toUserId, fromUserId, roomId, callType }) => {
+				const targetSocketId = onlineUsers.get(String(toUserId));
+				if (roomId && fromUserId) {
+					const content = 'Called'; // Simplified text
+					await db.saveP2PMessage(
+						roomId,
+						fromUserId,
+						content,
+						'call_cancelled',
+					);
+				}
+				if (targetSocketId) {
+					io.to(targetSocketId).emit('call:cancelled');
+				}
+				activeCalls.delete(socket.id);
+			},
+		);
+		socket.on('call:accepted', ({ to, answer, callType, roomId }) => {
+			activeCalls.set(to, { startTime: Date.now(), roomId });
 			socket
 				.to(to)
 				.emit('call:answered', { from: socket.id, answer, callType });
 		});
 
-		socket.on('call:rejected', ({ to }) => {
+		socket.on('call:rejected', async ({ to, fromUserId, toUserId }) => {
+			const room = await db.findExistingRoomQuery(fromUserId, toUserId);
+			if (room) {
+				await db.saveP2PMessage(
+					room.id,
+					fromUserId,
+					'Rejected',
+					'call_rejected',
+				);
+			}
 			socket.to(to).emit('call:rejected');
 		});
 
@@ -171,7 +204,26 @@ module.exports = (io) => {
 			socket.to(to).emit('ice-candidate', { candidate });
 		});
 
-		socket.on('call:end', ({ to }) => {
+		socket.on('call:end', async ({ to, fromUserId, toUserId, roomId }) => {
+			const callData = activeCalls.get(to) || activeCalls.get(socket.id);
+
+			let durationText = 'Call ended';
+			let logType = 'call_ended';
+
+			if (callData) {
+				const durationMs = Date.now() - callData.startTime;
+				const seconds = Math.floor(durationMs / 1000);
+				const minutes = Math.floor(seconds / 60);
+				durationText = `Call lasted ${minutes}m ${seconds % 60}s`;
+				logType = 'call_accepted';
+				activeCalls.delete(to);
+				activeCalls.delete(socket.id);
+			}
+
+			if (roomId) {
+				await db.saveP2PMessage(roomId, fromUserId, durationText, logType);
+			}
+
 			socket.to(to).emit('call:ended');
 		});
 	});
