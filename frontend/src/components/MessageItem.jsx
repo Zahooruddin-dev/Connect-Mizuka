@@ -4,6 +4,335 @@ import Toast from './Toast';
 import AudioPlayer from './AudioPlayer';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
+const CALL_TYPES = new Set([
+	'call_missed',
+	'call_accepted',
+	'call_rejected',
+	'call_ended',
+]);
+
+const CALL_CONFIG = {
+	call_missed: {
+		color: '#f87171',
+		bg: 'rgba(239,68,68,0.08)',
+		border: 'rgba(239,68,68,0.2)',
+		label: 'Missed call',
+		crossed: true,
+	},
+	call_accepted: {
+		color: '#34d399',
+		bg: 'rgba(52,211,153,0.08)',
+		border: 'rgba(52,211,153,0.2)',
+		label: 'Call accepted',
+		crossed: false,
+	},
+	call_rejected: {
+		color: '#9ca3af',
+		bg: 'rgba(156,163,175,0.08)',
+		border: 'rgba(156,163,175,0.2)',
+		label: 'Call declined',
+		crossed: true,
+	},
+	call_ended: {
+		color: '#9ca3af',
+		bg: 'rgba(156,163,175,0.08)',
+		border: 'rgba(156,163,175,0.2)',
+		label: 'Call ended',
+		crossed: true,
+	},
+};
+
+const DELETE_LABELS = {
+	audio: '[Voice message]',
+	image: '[Image]',
+	video: '[Video]',
+	file: '[File]',
+	document: '[File]',
+};
+
+function PhoneIcon({ crossed }) {
+	return (
+		<svg
+			width='13'
+			height='13'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2.5'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<path d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z' />
+			{crossed && <line x1='3' y1='3' x2='21' y2='21' />}
+		</svg>
+	);
+}
+
+function VideoCallIcon({ crossed }) {
+	return (
+		<svg
+			width='13'
+			height='13'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2.5'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<polygon points='23 7 16 12 23 17 23 7' />
+			<rect x='1' y='5' width='15' height='14' rx='2' ry='2' />
+			{crossed && <line x1='3' y1='3' x2='21' y2='21' />}
+		</svg>
+	);
+}
+
+function TrashIcon() {
+	return (
+		<svg
+			width='13'
+			height='13'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<polyline points='3,6 5,6 21,6' />
+			<path d='M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6' />
+			<path d='M10,11v6M14,11v6' />
+			<path d='M9,6V4h6v2' />
+		</svg>
+	);
+}
+
+function EditIcon() {
+	return (
+		<svg
+			width='13'
+			height='13'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<path d='M12 20h9' />
+			<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z' />
+		</svg>
+	);
+}
+
+function DotsIcon() {
+	return (
+		<svg
+			width='14'
+			height='14'
+			viewBox='0 0 24 24'
+			fill='currentColor'
+			aria-hidden='true'
+		>
+			<circle cx='5' cy='12' r='2' />
+			<circle cx='12' cy='12' r='2' />
+			<circle cx='19' cy='12' r='2' />
+		</svg>
+	);
+}
+
+function DownloadIcon() {
+	return (
+		<svg
+			width='14'
+			height='14'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' />
+			<polyline points='7,10 12,15 17,10' />
+			<line x1='12' y1='15' x2='12' y2='3' />
+		</svg>
+	);
+}
+
+function CopyIcon({ done }) {
+	return done ? (
+		<svg
+			width='13'
+			height='13'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<polyline points='20,6 9,17 4,12' />
+		</svg>
+	) : (
+		<svg
+			width='13'
+			height='13'
+			viewBox='0 0 24 24'
+			fill='none'
+			stroke='currentColor'
+			strokeWidth='2'
+			strokeLinecap='round'
+			strokeLinejoin='round'
+			aria-hidden='true'
+		>
+			<rect x='9' y='9' width='13' height='13' rx='2' ry='2' />
+			<path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' />
+		</svg>
+	);
+}
+
+function CallBadge({ type, content, timestamp }) {
+	const cfg = CALL_CONFIG[type] || CALL_CONFIG.call_ended;
+	const isVideo = type?.includes('video');
+	const Icon = isVideo ? VideoCallIcon : PhoneIcon;
+
+	return (
+		<div className='flex flex-col items-center gap-1 py-2.5'>
+			<div
+				className='flex items-center gap-2 px-4 py-[7px] rounded-full text-[12px] font-medium tracking-[0.01em]'
+				style={{
+					color: cfg.color,
+					background: cfg.bg,
+					border: `1px solid ${cfg.border}`,
+				}}
+			>
+				<Icon crossed={cfg.crossed} />
+				<span>{cfg.label}</span>
+				{content && content !== cfg.label && (
+					<span className='opacity-50 font-normal'>· {content}</span>
+				)}
+			</div>
+			<span className='text-[10px] text-[var(--text-ghost)] font-mono'>
+				{formatTime(timestamp || Date.now())}
+			</span>
+		</div>
+	);
+}
+
+function ImageMessage({ src }) {
+	const [loaded, setLoaded] = useState(false);
+	const [lightbox, setLightbox] = useState(false);
+
+	return (
+		<>
+			<div
+				className='relative overflow-hidden rounded-[inherit] cursor-zoom-in'
+				style={{ maxWidth: 280, minWidth: 100 }}
+				onClick={() => setLightbox(true)}
+				role='button'
+				tabIndex={0}
+				onKeyDown={(e) => e.key === 'Enter' && setLightbox(true)}
+				aria-label='View image'
+			>
+				{!loaded && (
+					<div
+						className='w-[220px] h-[160px] animate-pulse'
+						style={{ background: 'rgba(255,255,255,0.07)' }}
+					/>
+				)}
+				<img
+					src={src}
+					alt='Shared image'
+					className={`block max-w-full transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0 w-full h-full object-cover'}`}
+					style={{ maxHeight: 320 }}
+					onLoad={() => setLoaded(true)}
+				/>
+			</div>
+
+			{lightbox && (
+				<div
+					className='fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-sm cursor-zoom-out'
+					onClick={() => setLightbox(false)}
+					onKeyDown={(e) => e.key === 'Escape' && setLightbox(false)}
+					role='dialog'
+					aria-modal='true'
+					tabIndex={-1}
+				>
+					<img
+						src={src}
+						alt='Shared image'
+						className='max-w-[92vw] max-h-[92vh] rounded-xl shadow-2xl'
+					/>
+				</div>
+			)}
+		</>
+	);
+}
+
+function VideoMessage({ src }) {
+	return (
+		<div
+			className='overflow-hidden rounded-[inherit]'
+			style={{ maxWidth: 300 }}
+		>
+			<video
+				src={src}
+				controls
+				className='block w-full'
+				style={{ maxHeight: 280 }}
+				preload='metadata'
+			/>
+		</div>
+	);
+}
+
+function FileMessage({ src, name, isMine }) {
+	const filename = name || src?.split('/').pop() || 'File';
+	const ext = filename.split('.').pop()?.toUpperCase()?.slice(0, 5) || 'FILE';
+
+	return (
+		<a
+			href={src}
+			target='_blank'
+			rel='noopener noreferrer'
+			download={filename}
+			className={`flex items-center gap-3 no-underline transition-opacity duration-150 hover:opacity-75 ${isMine ? 'text-white/90' : 'text-[var(--text-primary)]'}`}
+			style={{ minWidth: 180, maxWidth: 260 }}
+		>
+			<div
+				className='w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 tracking-wide'
+				style={{
+					background: isMine ? 'rgba(255,255,255,0.15)' : 'var(--bg-hover)',
+				}}
+			>
+				{ext}
+			</div>
+			<div className='flex flex-col gap-0.5 overflow-hidden flex-1 min-w-0'>
+				<span className='text-sm font-medium truncate leading-snug'>
+					{filename}
+				</span>
+				<span
+					className={`text-[11px] ${isMine ? 'text-white/45' : 'text-[var(--text-ghost)]'}`}
+				>
+					Tap to download
+				</span>
+			</div>
+			<span
+				className={`shrink-0 opacity-40 ${isMine ? 'text-white' : 'text-[var(--text-muted)]'}`}
+			>
+				<DownloadIcon />
+			</span>
+		</a>
+	);
+}
+
 function MessageItem({
 	message,
 	currentUserId,
@@ -23,7 +352,12 @@ function MessageItem({
 	const senderId = message.sender_id || message.userId || message.user_id;
 	const msgId = message.id || message._id;
 	const isMine = senderId === currentUserId;
-
+	const isCallMessage = CALL_TYPES.has(message.type);
+	const isTextMessage = !message.type || message.type === 'text';
+	const isMediaBubble = message.type === 'image' || message.type === 'video';
+	const canCopy = isTextMessage && !message.is_deleted;
+	const canEdit = isMine && isTextMessage && !message.is_deleted;
+	const [messageCopy, setMessageCopy] = useState(false);
 	useEffect(() => {
 		if (!menuOpen) return;
 		const handler = (e) => {
@@ -54,10 +388,6 @@ function MessageItem({
 		}
 	};
 
-	const handleCancelDelete = () => {
-		setShowDeleteModal(false);
-	};
-
 	const handleSaveEdit = async () => {
 		if (!editContent.trim() || editContent === message.content) {
 			setIsEditing(false);
@@ -75,8 +405,6 @@ function MessageItem({
 		setMenuOpen(false);
 		try {
 			await navigator.clipboard.writeText(message.content || '');
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
 		} catch {
 			const el = document.createElement('textarea');
 			el.value = message.content || '';
@@ -84,9 +412,9 @@ function MessageItem({
 			el.select();
 			document.execCommand('copy');
 			document.body.removeChild(el);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
 		}
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
 	};
 
 	const handleStartEdit = () => {
@@ -111,59 +439,124 @@ function MessageItem({
 	const contextItemBase =
 		'w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-[var(--text-secondary)] cursor-pointer transition-colors duration-150 text-left hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] disabled:opacity-50 disabled:pointer-events-none';
 
-	const CopyIcon = () =>
-		copied ? (
-			<svg
-				width='13'
-				height='13'
-				viewBox='0 0 24 24'
-				fill='none'
-				stroke='currentColor'
-				strokeWidth='2'
-				strokeLinecap='round'
-				strokeLinejoin='round'
-				aria-hidden='true'
-			>
-				<polyline points='20,6 9,17 4,12' />
-			</svg>
-		) : (
-			<svg
-				width='13'
-				height='13'
-				viewBox='0 0 24 24'
-				fill='none'
-				stroke='currentColor'
-				strokeWidth='2'
-				strokeLinecap='round'
-				strokeLinejoin='round'
-				aria-hidden='true'
-			>
-				<rect x='9' y='9' width='13' height='13' rx='2' ry='2' />
-				<path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' />
-			</svg>
+	if (isCallMessage) {
+		return (
+			<>
+				<CallBadge
+					type={message.type}
+					content={message.content}
+					timestamp={
+						message.created_at || message.createdAt || message.timestamp
+					}
+				/>
+				{showDeleteModal && (
+					<DeleteConfirmModal
+						message={{
+							content: `[${CALL_CONFIG[message.type]?.label || 'Call'}]`,
+						}}
+						onConfirm={handleConfirmDelete}
+						onCancel={() => setShowDeleteModal(false)}
+					/>
+				)}
+			</>
 		);
+	}
+
+	const renderBubbleContent = () => {
+		if (isEditing) {
+			return (
+				<div className='flex flex-col gap-2 min-w-[180px]'>
+					<input
+						type='text'
+						value={editContent}
+						onChange={(e) => setEditContent(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === 'Enter') handleSaveEdit();
+							if (e.key === 'Escape') setIsEditing(false);
+						}}
+						autoFocus
+						className='bg-black/20 border border-white/10 text-[var(--text-primary)] text-sm leading-relaxed px-2.5 py-1.5 rounded-md outline-none font-[inherit] w-full transition-colors duration-150 focus:border-teal-500/40 focus:bg-black/30'
+					/>
+					<div className='flex justify-end gap-1.5'>
+						<button
+							onClick={handleSaveEdit}
+							className='text-teal-400 bg-teal-400/10 text-[11px] font-medium px-2.5 py-1 rounded transition-colors duration-150 hover:bg-teal-400/20'
+						>
+							Save
+						</button>
+						<button
+							onClick={() => setIsEditing(false)}
+							className='text-[var(--text-ghost)] text-[11px] font-medium px-2.5 py-1 rounded transition-colors duration-150 hover:bg-white/10 hover:text-[var(--text-muted)]'
+						>
+							Cancel
+						</button>
+					</div>
+				</div>
+			);
+		}
+
+		if (message.is_deleted) {
+			return (
+				<p
+					className={`text-sm leading-relaxed italic ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}
+				>
+					This message was deleted
+				</p>
+			);
+		}
+
+		if (message.type === 'audio') {
+			return <AudioPlayer src={message.content} isMine={isMine} />;
+		}
+
+		if (message.type === 'image') {
+			return <ImageMessage src={message.content} isMine={isMine} />;
+		}
+
+		if (message.type === 'video') {
+			return <VideoMessage src={message.content} />;
+		}
+
+		if (message.type === 'file' || message.type === 'document') {
+			return (
+				<FileMessage
+					src={message.content}
+					name={message.filename || message.name}
+					isMine={isMine}
+				/>
+			);
+		}
+
+		return (
+			<p
+				className={`text-sm leading-relaxed break-words ${isMine ? 'text-white/95' : 'text-[var(--text-primary)]'}`}
+			>
+				{message.content}
+				{message.is_edited && (
+					<span
+						className={`text-[10px] italic ml-1.5 select-none ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}
+					>
+						(edited)
+					</span>
+				)}
+			</p>
+		);
+	};
+
+	const deleteModalContent = DELETE_LABELS[message.type] || message.content;
 
 	return (
 		<>
 			<style>{`
-        @keyframes msg-in {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+				@keyframes msg-in {
+					from { opacity: 0; transform: translateY(6px); }
+					to   { opacity: 1; transform: translateY(0); }
+				}
+			`}</style>
 
 			<div
-				className={`group flex items-end gap-2.5 py-[3px] animate-[msg-in_0.2s_ease-out] ${
-					isMine ? 'flex-row-reverse' : ''
-				}`}
+				className={`group flex items-end gap-2.5 py-[3px] animate-[msg-in_0.2s_ease-out] ${isMine ? 'flex-row-reverse' : ''}`}
 			>
-				{/* Avatar */}
 				<button
 					className='p-0 flex items-center rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
 					onClick={handleUserClick}
@@ -209,7 +602,6 @@ function MessageItem({
 				<div
 					className={`flex flex-col gap-[3px] max-w-[65%] ${isMine ? 'items-end' : ''}`}
 				>
-					{/* Username (others) */}
 					{!isMine && (
 						<button
 							className='px-1 py-0 m-0 text-[11px] font-medium text-[var(--text-secondary)] tracking-[0.01em] cursor-pointer transition-colors duration-150 text-left hover:text-[var(--text-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
@@ -223,233 +615,103 @@ function MessageItem({
 					<div
 						className={`flex items-center gap-1.5 ${isMine ? 'flex-row-reverse' : ''}`}
 					>
-						{/* Message bubble */}
 						<div
-							className={`px-3.5 py-2.5 relative ${
+							className={`relative ${isMediaBubble && !message.is_deleted ? 'p-0' : 'px-3.5 py-2.5'} overflow-hidden ${
 								isMine
 									? 'bg-teal-700 rounded-2xl rounded-br-md'
 									: 'bg-[var(--bg-panel)] border border-[var(--border)] rounded-2xl rounded-bl-md'
 							}`}
 						>
-							{isEditing ? (
-								<div className='flex flex-col gap-2 min-w-[180px]'>
-									<input
-										type='text'
-										value={editContent}
-										onChange={(e) => setEditContent(e.target.value)}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter') handleSaveEdit();
-											if (e.key === 'Escape') setIsEditing(false);
-										}}
-										autoFocus
-										className='bg-black/20 border border-white/10 text-[var(--text-primary)] text-sm leading-relaxed px-2.5 py-1.5 rounded-md outline-none font-[inherit] w-full transition-colors duration-150 focus:border-teal-500/40 focus:bg-black/30'
-									/>
-									<div className='flex justify-end gap-1.5'>
-										<button
-											onClick={handleSaveEdit}
-											className='text-teal-400 bg-teal-400/10 text-[11px] font-medium px-2.5 py-1 rounded transition-colors duration-150 hover:bg-teal-400/20'
-										>
-											Save
-										</button>
-										<button
-											onClick={() => setIsEditing(false)}
-											className='text-[var(--text-ghost)] text-[11px] font-medium px-2.5 py-1 rounded transition-colors duration-150 hover:bg-white/10 hover:text-[var(--text-muted)]'
-										>
-											Cancel
-										</button>
-									</div>
-								</div>
-							) : message.is_deleted ? (
-								<p
-									className={`text-sm leading-relaxed italic ${
-										isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'
-									}`}
-								>
-									This message was deleted
-								</p>
-							) : message.type === 'audio' ? (
-								<AudioPlayer src={message.content} isMine={isMine} />
-							) : (
-								<p
-									className={`text-sm leading-relaxed break-words ${
-										isMine ? 'text-white/95' : 'text-[var(--text-primary)]'
-									}`}
-								>
-									{message.content}
-									{message.is_edited && (
-										<span
-											className={`text-[10px] italic ml-1.5 select-none ${
-												isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'
-											}`}
-										>
-											(edited)
-										</span>
-									)}
-								</p>
-							)}
+							{renderBubbleContent()}
 						</div>
 
-						{/* Desktop actions (own messages) */}
-						{isMine && !isEditing && (
-							<div className='hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150'>
-								<button
-									className={actionIconBase}
-									onClick={handleCopy}
-									title={copied ? 'Copied!' : 'Copy'}
-									aria-label={copied ? 'Copied' : 'Copy message'}
-								>
-									<CopyIcon />
-								</button>
-								<button
-									className={actionIconBase}
-									onClick={handleStartEdit}
-									title='Edit'
-									aria-label='Edit message'
-								>
-									<svg
-										width='13'
-										height='13'
-										viewBox='0 0 24 24'
-										fill='none'
-										stroke='currentColor'
-										strokeWidth='2'
-										strokeLinecap='round'
-										strokeLinejoin='round'
-										aria-hidden='true'
-									>
-										<path d='M12 20h9' />
-										<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z' />
-									</svg>
-								</button>
-								<button
-									className={`${actionIconBase} hover:!text-red-400 hover:!bg-red-400/10`}
-									onClick={handleDeleteClick}
-									title='Delete'
-									aria-label='Delete message'
-								>
-									<svg
-										width='13'
-										height='13'
-										viewBox='0 0 24 24'
-										fill='none'
-										stroke='currentColor'
-										strokeWidth='2'
-										strokeLinecap='round'
-										strokeLinejoin='round'
-										aria-hidden='true'
-									>
-										<polyline points='3,6 5,6 21,6' />
-										<path d='M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6' />
-										<path d='M10,11v6M14,11v6' />
-										<path d='M9,6V4h6v2' />
-									</svg>
-								</button>
-							</div>
-						)}
-
-						{/* Desktop actions (others) – only copy */}
-						{!isMine && !isEditing && (
-							<div className='hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150'>
-								<button
-									className={actionIconBase}
-									onClick={handleCopy}
-									title={copied ? 'Copied!' : 'Copy'}
-									aria-label={copied ? 'Copied' : 'Copy message'}
-								>
-									<CopyIcon />
-								</button>
-							</div>
-						)}
-
-						{/* Mobile menu */}
 						{!isEditing && (
-							<div
-								className='relative flex md:hidden items-center'
-								ref={menuRef}
-							>
-								<button
-									className='w-7 h-7 rounded-md text-[var(--text-ghost)] flex items-center justify-center cursor-pointer transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
-									onClick={() => setMenuOpen((v) => !v)}
-									aria-label='Message options'
-									aria-expanded={menuOpen}
-								>
-									<svg
-										width='14'
-										height='14'
-										viewBox='0 0 24 24'
-										fill='currentColor'
-										aria-hidden='true'
-									>
-										<circle cx='5' cy='12' r='2' />
-										<circle cx='12' cy='12' r='2' />
-										<circle cx='19' cy='12' r='2' />
-									</svg>
-								</button>
-
-								{menuOpen && (
-									<div
-										className={`absolute bottom-[calc(100%+6px)] z-[200] bg-[var(--bg-panel)] border border-[var(--border-strong)] rounded-lg shadow-md min-w-[130px] overflow-hidden animate-[context-pop_0.12s_cubic-bezier(0.16,1,0.3,1)] ${
-											isMine ? 'right-0' : 'left-0'
-										}`}
-									>
-										<button className={contextItemBase} onClick={handleCopy}>
-											<CopyIcon />
-											{copied ? 'Copied!' : 'Copy'}
+							<>
+								<div className='hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150'>
+									{canCopy && (
+										<button
+											className={actionIconBase}
+											onClick={handleCopy}
+											title={copied ? 'Copied!' : 'Copy'}
+											aria-label={copied ? 'Copied' : 'Copy message'}
+										>
+											<CopyIcon done={copied} />
 										</button>
-										{isMine && (
-											<>
+									)}
+									{canEdit && (
+										<button
+											className={actionIconBase}
+											onClick={handleStartEdit}
+											title='Edit'
+											aria-label='Edit message'
+										>
+											<EditIcon />
+										</button>
+									)}
+									{isMine && (
+										<button
+											className={`${actionIconBase} hover:!text-red-400 hover:!bg-red-400/10`}
+											onClick={handleDeleteClick}
+											title='Delete'
+											aria-label='Delete message'
+										>
+											<TrashIcon />
+										</button>
+									)}
+								</div>
+
+								<div
+									className='relative flex md:hidden items-center'
+									ref={menuRef}
+								>
+									<button
+										className='w-7 h-7 rounded-md text-[var(--text-ghost)] flex items-center justify-center cursor-pointer transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+										onClick={() => setMenuOpen((v) => !v)}
+										aria-label='Message options'
+										aria-expanded={menuOpen}
+									>
+										<DotsIcon />
+									</button>
+
+									{menuOpen && (
+										<div
+											className={`absolute bottom-[calc(100%+6px)] z-[200] bg-[var(--bg-panel)] border border-[var(--border-strong)] rounded-lg shadow-md min-w-[130px] overflow-hidden animate-[context-pop_0.12s_cubic-bezier(0.16,1,0.3,1)] ${isMine ? 'right-0' : 'left-0'}`}
+										>
+											{canCopy && (
+												<button
+													className={contextItemBase}
+													onClick={handleCopy}
+												>
+													<CopyIcon done={copied} />
+													{copied ? 'Copied!' : 'Copy'}
+												</button>
+											)}
+											{canEdit && (
 												<button
 													className={contextItemBase}
 													onClick={handleStartEdit}
 												>
-													<svg
-														width='13'
-														height='13'
-														viewBox='0 0 24 24'
-														fill='none'
-														stroke='currentColor'
-														strokeWidth='2'
-														strokeLinecap='round'
-														strokeLinejoin='round'
-														aria-hidden='true'
-													>
-														<path d='M12 20h9' />
-														<path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z' />
-													</svg>
+													<EditIcon />
 													Edit
 												</button>
+											)}
+											{isMine && (
 												<button
-													className={`${contextItemBase} !text-red-600 hover:!bg-red-600/10`}
+													className={`${contextItemBase} !text-red-500 hover:!bg-red-500/10`}
 													onClick={handleDeleteClick}
 													disabled={deleting}
 												>
-													<svg
-														width='13'
-														height='13'
-														viewBox='0 0 24 24'
-														fill='none'
-														stroke='currentColor'
-														strokeWidth='2'
-														strokeLinecap='round'
-														strokeLinejoin='round'
-														aria-hidden='true'
-													>
-														<polyline points='3,6 5,6 21,6' />
-														<path d='M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6' />
-														<path d='M10,11v6M14,11v6' />
-														<path d='M9,6V4h6v2' />
-													</svg>
+													<TrashIcon />
 													{deleting ? 'Deleting…' : 'Delete'}
 												</button>
-											</>
-										)}
-									</div>
-								)}
-							</div>
+											)}
+										</div>
+									)}
+								</div>
+							</>
 						)}
 					</div>
 
-					{/* Timestamp */}
 					<span className='text-[10px] text-[var(--text-ghost)] font-mono px-1'>
 						{formatTime(
 							message.created_at ||
@@ -461,17 +723,14 @@ function MessageItem({
 				</div>
 			</div>
 
-			<Toast message='Copied to clipboard' visible={copied} type='success' />
-
-			{/* Delete confirmation modal */}
+			{copied && (
+				<Toast message='Copied to clipboard' visible={copied} type='success' />
+			)}
 			{showDeleteModal && (
 				<DeleteConfirmModal
-					message={{
-						content:
-							message.type === 'audio' ? '[Voice message]' : message.content,
-					}}
+					message={{ content: deleteModalContent }}
 					onConfirm={handleConfirmDelete}
-					onCancel={handleCancelDelete}
+					onCancel={() => setShowDeleteModal(false)}
 				/>
 			)}
 		</>
