@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import api from '../services/api';
 import { formatTime } from '../utils/time';
 import Toast from './Toast';
 import AudioPlayer from './AudioPlayer';
@@ -529,20 +530,52 @@ function MessageItem({
 		}
 
 		return (
-			<p
-				className={`text-sm leading-relaxed break-words ${isMine ? 'text-white/95' : 'text-[var(--text-primary)]'}`}
-			>
-				{message.content}
-				{message.is_edited && (
-					<span
-						className={`text-[10px] italic ml-1.5 select-none ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}
-					>
-						(edited)
-					</span>
+			<div>
+				{/** Render reply preview if available */}
+				{(message.reply_to_message || replyPreview) && (
+					<div className={`mb-2 p-2 rounded-md border text-[12px] ${isMine ? 'bg-white/5 border-white/8' : 'bg-[var(--bg-panel)] border-[var(--border)]'}`}>
+						<div className='text-[11px] text-[var(--text-secondary)] font-medium truncate'>
+							{(message.reply_to_message && message.reply_to_message.username) || replyPreview?.username || 'Unknown'}
+						</div>
+						<div className='text-[13px] text-[var(--text-ghost)] italic truncate'>
+							{(message.reply_to_message && message.reply_to_message.type && message.reply_to_message.type !== 'text')
+								? '[' + (message.reply_to_message.type || replyPreview?.type || 'media') + ']'
+								: (message.reply_to_message?.content || replyPreview?.content)}
+						</div>
+					</div>
 				)}
-			</p>
+				<p className={`text-sm leading-relaxed break-words ${isMine ? 'text-white/95' : 'text-[var(--text-primary)]'}`}>
+					{message.content}
+					{message.is_edited && (
+						<span className={`text-[10px] italic ml-1.5 select-none ${isMine ? 'text-white/50' : 'text-[var(--text-ghost)]'}`}>(edited)</span>
+					)}
+				</p>
+			</div>
 		);
 	};
+
+	// replyPreview holds fetched preview when message.reply_to exists but no reply_to_message provided
+	const [replyPreview, setReplyPreview] = useState(null);
+
+	useEffect(() => {
+		let mounted = true;
+		const replyId = message.reply_to || message.reply_to || (message.reply_to_message && message.reply_to_message.id);
+		if (!replyId || message.reply_to_message) return;
+		(async () => {
+			try {
+				const isP2P = !!message.chatroom_id;
+				const url = isP2P ? `/p2p/message/${replyId}` : `/messages/message/${replyId}`;
+				const res = await api.get(url);
+				if (!mounted) return;
+				if (res?.data?.message) setReplyPreview(res.data.message);
+			} catch (err) {
+				// ignore
+			}
+		})();
+		return () => {
+			mounted = false;
+		};
+	}, [message.reply_to, message.reply_to_message, message.chatroom_id]);
 
 	const deleteModalContent = DELETE_LABELS[message.type] || message.content;
 

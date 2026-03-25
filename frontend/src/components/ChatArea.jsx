@@ -154,6 +154,8 @@ function ChatArea({
 							username: msg.username,
 							profile_picture: msg.profile_picture || null,
 							created_at: msg.created_at,
+							reply_to: msg.reply_to || null,
+							reply_to_message: msg.reply_to_message || null,
 						};
 						return next;
 					});
@@ -179,6 +181,8 @@ function ChatArea({
 							username: msg.username,
 							profile_picture: msg.profile_picture || null,
 							created_at: msg.timestamp ?? msg.created_at,
+							reply_to: msg.reply_to || null,
+							reply_to_message: msg.reply_to_message || null,
 						};
 						return next;
 					});
@@ -194,6 +198,8 @@ function ChatArea({
 				username: msg.username,
 				profile_picture: msg.profile_picture || null,
 				created_at: msg.timestamp ?? msg.created_at,
+				reply_to: msg.reply_to || null,
+				reply_to_message: msg.reply_to_message || null,
 			};
 
 			setAndCache((prev) => {

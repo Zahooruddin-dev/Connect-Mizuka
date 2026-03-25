@@ -51,6 +51,23 @@ async function getMessages(req, res) {
 	}
 }
 
+async function getSingleP2PMessage(req, res) {
+	const { messageId } = req.params;
+	const myUserId = req.user.id;
+	try {
+		const message = await db.getSingleP2PMessageQuery(messageId);
+		if (!message) return res.status(404).json({ error: 'Message not found' });
+		// verify participant
+		const roomId = message.chatroom_id;
+		if (!(await isParticipant(roomId, myUserId))) {
+			return res.status(403).json({ error: 'Access Denied' });
+		}
+		res.status(200).json({ message });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to fetch message' });
+	}
+}
+
 async function searchP2PMessages(req, res) {
 	const { roomId } = req.params;
 	const { searchTerm } = req.query;
@@ -184,4 +201,5 @@ module.exports = {
 	editMsg,
 	getUserChatrooms,
 	searchAllP2PMessages,
+	getSingleP2PMessage,
 };

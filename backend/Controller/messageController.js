@@ -96,9 +96,21 @@ async function uploadAudioFile(req, res) {
 	}
 }
 
+async function getSingleMessage(req, res) {
+	const { messageId } = req.params;
+	try {
+		const message = await db.getSingleMessageQuery(messageId);
+		if (!message) return res.status(404).json({ error: 'Message not found' });
+		res.status(200).json({ message });
+	} catch (error) {
+		res.status(500).json({ error: 'Failed to fetch message' });
+	}
+}
+
 module.exports = {
 	getChatHistory,
 	deleteMessage,
 	deleteChannel,
 	uploadAudioFile,
+	getSingleMessage,
 };
