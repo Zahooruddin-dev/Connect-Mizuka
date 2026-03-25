@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 
 const SPEEDS = [0.5, 1, 1.5, 2];
 
-export default function AudioPlayer({ src, isMine }) {
+export default function AudioPlayer({ src, isMine, compact = false }) {
 	const audioRef = useRef(null);
 	const [playing, setPlaying] = useState(false);
 	const [progress, setProgress] = useState(0);
@@ -108,12 +108,14 @@ export default function AudioPlayer({ src, isMine }) {
 		? 'text-white/90 hover:bg-white/10'
 		: 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]';
 
+	const outerClass = compact ? 'flex items-center gap-2 min-w-[120px] max-w-[180px]' : 'flex items-center gap-2.5 min-w-[200px] max-w-[260px]';
+
 	return (
-		<div className='flex items-center gap-2.5 min-w-[200px] max-w-[260px]'>
+		<div className={outerClass}>
 			<audio ref={audioRef} src={src} preload='metadata' />
 
 			<button
-				className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-[background] duration-150 ${btnColor}`}
+				className={`${compact ? 'w-7 h-7' : 'w-8 h-8'} rounded-full flex items-center justify-center shrink-0 transition-[background] duration-150 ${btnColor}`}
 				onClick={togglePlay}
 				aria-label={playing ? 'Pause' : 'Play'}
 			>
@@ -152,33 +154,35 @@ export default function AudioPlayer({ src, isMine }) {
 				</div>
 			</div>
 
-			<div className='flex flex-col items-center gap-1 shrink-0'>
-				<button
-					className={`w-6 h-6 rounded flex items-center justify-center transition-[background] duration-150 ${btnColor}`}
-					onClick={toggleMute}
-					aria-label={muted ? 'Unmute' : 'Mute'}
-				>
-					{muted ? (
-						<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
-							<polygon points='11,5 6,9 2,9 2,15 6,15 11,19' />
-							<line x1='23' y1='9' x2='17' y2='15' /><line x1='17' y1='9' x2='23' y2='15' />
-						</svg>
-					) : (
-						<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
-							<polygon points='11,5 6,9 2,9 2,15 6,15 11,19' />
-							<path d='M15.54 8.46a5 5 0 0 1 0 7.07' />
-							<path d='M19.07 4.93a10 10 0 0 1 0 14.14' />
-						</svg>
-					)}
-				</button>
-				<button
-					className={`text-[9px] font-semibold font-mono px-1 py-0.5 rounded transition-[background] duration-150 ${btnColor}`}
-					onClick={cycleSpeed}
-					aria-label={`Playback speed ${SPEEDS[speedIdx]}x`}
-				>
-					{SPEEDS[speedIdx]}x
-				</button>
-			</div>
+			{!compact && (
+				<div className='flex flex-col items-center gap-1 shrink-0'>
+					<button
+						className={`w-6 h-6 rounded flex items-center justify-center transition-[background] duration-150 ${btnColor}`}
+						onClick={toggleMute}
+						aria-label={muted ? 'Unmute' : 'Mute'}
+					>
+						{muted ? (
+							<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
+								<polygon points='11,5 6,9 2,9 2,15 6,15 11,19' />
+								<line x1='23' y1='9' x2='17' y2='15' /><line x1='17' y1='9' x2='23' y2='15' />
+							</svg>
+						) : (
+							<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
+								<polygon points='11,5 6,9 2,9 2,15 6,15 11,19' />
+								<path d='M15.54 8.46a5 5 0 0 1 0 7.07' />
+								<path d='M19.07 4.93a10 10 0 0 1 0 14.14' />
+							</svg>
+						)}
+					</button>
+					<button
+						className={`text-[9px] font-semibold font-mono px-1 py-0.5 rounded transition-[background] duration-150 ${btnColor}`}
+						onClick={cycleSpeed}
+						aria-label={`Playback speed ${SPEEDS[speedIdx]}x`}
+					>
+						{SPEEDS[speedIdx]}x
+					</button>
+				</div>
+			)}
 		</div>
 	);
 }

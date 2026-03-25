@@ -532,18 +532,28 @@ function MessageItem({
 		return (
 			<div>
 				{/** Render reply preview if available */}
-				{(message.reply_to_message || replyPreview) && (
-					<div className={`mb-2 p-2 rounded-md border text-[12px] ${isMine ? 'bg-white/5 border-white/8' : 'bg-[var(--bg-panel)] border-[var(--border)]'}`}>
-						<div className='text-[11px] text-[var(--text-secondary)] font-medium truncate'>
-							{(message.reply_to_message && message.reply_to_message.username) || replyPreview?.username || 'Unknown'}
+				{(message.reply_to_message || replyPreview) && (() => {
+					const replied = message.reply_to_message || replyPreview;
+					const isAudio = replied?.type === 'audio';
+					return (
+						<div className={`mb-2 p-2 rounded-md border text-[12px] ${isMine ? 'bg-[var(--accent-dim)] border-[var(--accent-dim)] text-white/80' : 'bg-[var(--bg-panel)] border-[var(--border)] text-[var(--text-secondary)]'}`}>
+							<div className='text-[11px] text-[var(--text-secondary)] font-medium truncate'>
+								{replied?.username || 'Unknown'}
+							</div>
+							<div className='mt-1'>
+								{isAudio ? (
+									<AudioPlayer src={replied.content} isMine={isMine} compact />
+								) : (
+									<div className='text-[13px] text-[var(--text-ghost)] italic truncate'>
+										{replied?.type && replied.type !== 'text'
+											? '[' + (replied.type || 'media') + ']'
+											: replied?.content}
+									</div>
+								)}
+							</div>
 						</div>
-						<div className='text-[13px] text-[var(--text-ghost)] italic truncate'>
-							{(message.reply_to_message && message.reply_to_message.type && message.reply_to_message.type !== 'text')
-								? '[' + (message.reply_to_message.type || replyPreview?.type || 'media') + ']'
-								: (message.reply_to_message?.content || replyPreview?.content)}
-						</div>
-					</div>
-				)}
+					);
+				})()}
 				<p className={`text-sm leading-relaxed break-words ${isMine ? 'text-white/95' : 'text-[var(--text-primary)]'}`}>
 					{message.content}
 					{message.is_edited && (
@@ -682,7 +692,7 @@ function MessageItem({
 				</button>
 
 				<div
-					className={`flex flex-col gap-[3px] max-w-[65%] ${isMine ? 'items-end' : ''}`}
+					className={`flex flex-col gap-[3px] max-w-[85%] sm:max-w-[65%] ${isMine ? 'items-end' : ''}`}
 				>
 					{!isMine && (
 						<button
