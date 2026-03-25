@@ -597,15 +597,24 @@ function MessageItem({
 	const [dragOffset, setDragOffset] = useState(0);
 	const startXRef = useRef(0);
 	const draggingRef = useRef(false);
+	const movedRef = useRef(false);
+	const longPressTimerRef = useRef(null);
 	const THRESHOLD = 80;
 
 	const handleTouchStart = (e) => {
 		startXRef.current = e.touches[0].clientX;
 		draggingRef.current = true;
+		movedRef.current = false;
+		clearTimeout(longPressTimerRef.current);
+		longPressTimerRef.current = setTimeout(() => {
+			if (!movedRef.current) setMenuOpen(true);
+		}, 520);
 	};
 
 	const handleTouchMove = (e) => {
 		if (!draggingRef.current) return;
+		movedRef.current = true;
+		clearTimeout(longPressTimerRef.current);
 		const cx = e.touches[0].clientX;
 		const delta = cx - startXRef.current;
 		if (delta > 0) {
@@ -615,6 +624,7 @@ function MessageItem({
 
 	const handleTouchEnd = () => {
 		draggingRef.current = false;
+		clearTimeout(longPressTimerRef.current);
 		if (dragOffset > THRESHOLD) {
 			if (typeof onReply === 'function') onReply(message);
 		}
@@ -640,6 +650,12 @@ function MessageItem({
 		}
 		setDragOffset(0);
 	};
+
+	useEffect(() => {
+		return () => {
+			clearTimeout(longPressTimerRef.current);
+		};
+	}, []);
 
 	return (
 		<>
