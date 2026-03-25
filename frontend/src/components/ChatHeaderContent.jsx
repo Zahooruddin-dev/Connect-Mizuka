@@ -15,7 +15,6 @@ const iconBtnCls =
 
 export default function ChatHeaderContent({
   isP2P,
-  onCloseP2P,
   otherUsername,
   otherPicture,
   onShowPopover,
@@ -76,7 +75,7 @@ if (isP2P) {
               {otherUsername?.[0]?.toUpperCase() || 'U'}
             </div>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 text-left">
             <div className="text-sm font-medium text-[var(--text-primary)] truncate leading-tight">
               {otherUsername
                 ? otherUsername[0].toUpperCase() + otherUsername.slice(1)

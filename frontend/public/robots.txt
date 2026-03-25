@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://connect-mizuka.vercel.app/sitemap.xml
+Host: connect-mizuka.vercel.app
