@@ -12,12 +12,64 @@ export default function MessageList({
 	onStartP2P,
 	loading,
 }) {
+	const scrollContainerRef = useRef(null);
 	const bottomRef = useRef(null);
 	const [selectedUser, setSelectedUser] = useState(null);
+	const [showScrollButton, setShowScrollButton] = useState(false);
+	const [isNearBottom, setIsNearBottom] = useState(true);
+	const [prevMessageCount, setPrevMessageCount] = useState(messages.length);
 
+	// Check if scroll position is within 100px of the bottom
+	const checkIfNearBottom = () => {
+		if (!scrollContainerRef.current) return false;
+		const { scrollTop, scrollHeight, clientHeight } =
+			scrollContainerRef.current;
+		return scrollHeight - scrollTop - clientHeight < 100;
+	};
+
+	// Smoothly scroll to the bottom of the container
+	const scrollToBottom = () => {
+		if (scrollContainerRef.current) {
+			scrollContainerRef.current.scrollTo({
+				top: scrollContainerRef.current.scrollHeight,
+				behavior: 'smooth',
+			});
+		}
+	};
+
+	// Handle scroll events to toggle the arrow button and track near-bottom state
+	const handleScroll = () => {
+		if (!scrollContainerRef.current) return;
+		const nearBottom = checkIfNearBottom();
+		setIsNearBottom(nearBottom);
+		setShowScrollButton(!nearBottom);
+	};
+
+	// Auto‑scroll when new messages arrive only if the user was already near the bottom
 	useEffect(() => {
-		bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-	}, [messages, typingUsers]);
+		const newMessageCount = messages.length;
+		const isNewMessage = newMessageCount > prevMessageCount;
+		const typingChanged =
+			typingUsers.length > 0 && prevMessageCount === newMessageCount; // just in case
+		if ((isNewMessage || typingChanged) && isNearBottom) {
+			scrollToBottom();
+		}
+		setPrevMessageCount(newMessageCount);
+	}, [messages, typingUsers, isNearBottom, prevMessageCount]);
+
+	// Attach scroll listener
+	useEffect(() => {
+		const container = scrollContainerRef.current;
+		if (!container) return;
+		container.addEventListener('scroll', handleScroll);
+		handleScroll(); // initial check
+		return () => container.removeEventListener('scroll', handleScroll);
+	}, []);
+
+	// Re‑check when messages change (e.g., image loads, height changes)
+	useEffect(() => {
+		handleScroll();
+	}, [messages]);
 
 	return (
 		<>
@@ -58,7 +110,7 @@ export default function MessageList({
         }
       `}</style>
 
-			<div className='flex-1 overflow-y-auto py-4'>
+			<div ref={scrollContainerRef} className='flex-1 overflow-y-auto py-4'>
 				<div className='flex flex-col gap-0.5 px-5 min-h-full justify-end'>
 					{/* Loading skeleton */}
 					{loading && messages.length === 0 && (
@@ -149,6 +201,29 @@ export default function MessageList({
 					<div ref={bottomRef} />
 				</div>
 			</div>
+
+			{/* Floating scroll button */}
+			{showScrollButton && (
+				<button
+					onClick={scrollToBottom}
+					className='fixed left-6 bottom-6 z-50 bg-[var(--bg-panel)] border border-[var(--border)] rounded-full p-3 shadow-lg hover:bg-[var(--bg-hover)] transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-teal-500'
+					aria-label='Scroll to latest message'
+				>
+					<svg
+						width='20'
+						height='20'
+						viewBox='0 0 24 24'
+						fill='none'
+						stroke='currentColor'
+						strokeWidth='2'
+						strokeLinecap='round'
+						strokeLinejoin='round'
+						className='text-[var(--text-primary)] group-hover:scale-110 transition-transform'
+					>
+						<polyline points='6 9 12 15 18 9' />
+					</svg>
+				</button>
+			)}
 
 			{selectedUser && (
 				<UserProfilePopover
