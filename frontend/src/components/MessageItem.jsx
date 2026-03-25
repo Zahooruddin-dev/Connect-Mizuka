@@ -535,16 +535,20 @@ function MessageItem({
 				{(message.reply_to_message || replyPreview) && (() => {
 					const replied = message.reply_to_message || replyPreview;
 					const isAudio = replied?.type === 'audio';
+					const isP2P = !!message.chatroom_id;
+					const quotedTextClass = isMine ? 'text-white/95' : 'text-[var(--text-primary)]';
 					return (
 						<div className={`mb-2 p-2 rounded-md border text-[12px] ${isMine ? 'bg-[var(--accent-dim)] border-[var(--accent-dim)] text-white/80' : 'bg-[var(--bg-panel)] border-[var(--border)] text-[var(--text-secondary)]'}`}>
-							<div className='text-[11px] text-[var(--text-secondary)] font-medium truncate'>
-								{replied?.username || 'Unknown'}
-							</div>
+							{!isP2P && (
+								<div className='text-[11px] text-[var(--text-secondary)] font-medium truncate'>
+									{replied?.username || 'Unknown'}
+								</div>
+							)}
 							<div className='mt-1'>
 								{isAudio ? (
 									<AudioPlayer src={replied.content} isMine={isMine} compact />
 								) : (
-									<div className='text-[13px] text-[var(--text-ghost)] italic truncate'>
+									<div className={`text-[13px] italic truncate ${quotedTextClass}`}>
 										{replied?.type && replied.type !== 'text'
 											? '[' + (replied.type || 'media') + ']'
 											: replied?.content}
