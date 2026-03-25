@@ -49,6 +49,7 @@ function App() {
 	const [defaultChannel, setDefaultChannel] = useState(
 		() => firstChannelCache.get(activeInstitute?.id) ?? null,
 	);
+	const ringtoneRef = (useRef < HTMLAudioElement) | (null > null);
 	const [toast, setToast] = useState({
 		message: '',
 		visible: false,
@@ -77,6 +78,29 @@ function App() {
 		toggleMute,
 		toggleCamera,
 	} = useCallManager({ user: user ?? {}, onToast: showToast });
+
+	useEffect(() => {
+		if (callState?.phase === 'incoming') {
+			if (!ringtoneRef.current) {
+				ringtoneRef.current = new Audio('/ringtone.mp3');
+				ringtoneRef.current.loop = true;
+			}
+			ringtoneRef.current.play().catch((err) => {
+				console.error('Failed to play ringtone:', err);
+			});
+		} else {
+			if (ringtoneRef.current) {
+				ringtoneRef.current.pause();
+				ringtoneRef.current.currentTime = 0;
+			}
+		}
+		return () => {
+			if (ringtoneRef.current) {
+				ringtoneRef.current.pause();
+				ringtoneRef.current.currentTime = 0;
+			}
+		};
+	}, [callState?.phase]);
 
 	useEffect(() => {
 		if (pingFired) return;

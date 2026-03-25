@@ -158,7 +158,7 @@ export default function MessageList({
 					{showScrollButton && (
 						<button
 							onClick={scrollToBottom}
-							class='fixed right-5 mt-[42px] bottom-26 z-50 p-2 text-[var(--text-primary)] hover:text-teal-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-full'
+							className='fixed right-5 mt-[42px] bottom-26 z-50 p-2 text-[var(--text-primary)] hover:text-teal-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-full'
 							aria-label='Scroll to latest message'
 						>
 							<svg
