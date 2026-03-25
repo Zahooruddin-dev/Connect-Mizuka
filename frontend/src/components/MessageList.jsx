@@ -19,7 +19,6 @@ export default function MessageList({
 	const [isNearBottom, setIsNearBottom] = useState(true);
 	const [prevMessageCount, setPrevMessageCount] = useState(messages.length);
 
-
 	const checkIfNearBottom = () => {
 		if (!scrollContainerRef.current) return false;
 		const { scrollTop, scrollHeight, clientHeight } =
@@ -44,7 +43,6 @@ export default function MessageList({
 		setShowScrollButton(!nearBottom);
 	};
 
-	
 	useEffect(() => {
 		const newMessageCount = messages.length;
 		const isNewMessage = newMessageCount > prevMessageCount;
@@ -157,6 +155,26 @@ export default function MessageList({
 							<span>No messages yet. Start the conversation.</span>
 						</div>
 					)}
+					{showScrollButton && (
+						<button
+							onClick={scrollToBottom}
+							class='fixed right-5 mt-[42px] bottom-26 z-50 p-2 text-[var(--text-primary)] hover:text-teal-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-full'
+							aria-label='Scroll to latest message'
+						>
+							<svg
+								width='20'
+								height='20'
+								viewBox='0 0 24 24'
+								fill='none'
+								stroke='currentColor'
+								strokeWidth='2'
+								strokeLinecap='round'
+								strokeLinejoin='round'
+							>
+								<polyline points='6 9 12 15 18 9' />
+							</svg>
+						</button>
+					)}
 
 					{/* Message list */}
 					{messages.filter(Boolean).map((msg) => (
@@ -198,28 +216,6 @@ export default function MessageList({
 					<div ref={bottomRef} />
 				</div>
 			</div>
-
-			{showScrollButton && (
-				<button
-					onClick={scrollToBottom}
-					className='fixed left-6 bottom-6 z-50 bg-[var(--bg-panel)] border border-[var(--border)] rounded-full p-3 shadow-lg hover:bg-[var(--bg-hover)] transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-teal-500'
-					aria-label='Scroll to latest message'
-				>
-					<svg
-						width='20'
-						height='20'
-						viewBox='0 0 24 24'
-						fill='none'
-						stroke='currentColor'
-						strokeWidth='2'
-						strokeLinecap='round'
-						strokeLinejoin='round'
-						className='text-[var(--text-primary)] group-hover:scale-110 transition-transform'
-					>
-						<polyline points='6 9 12 15 18 9' />
-					</svg>
-				</button>
-			)}
 
 			{selectedUser && (
 				<UserProfilePopover
