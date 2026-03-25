@@ -19,7 +19,7 @@ export default function MessageList({
 	const [isNearBottom, setIsNearBottom] = useState(true);
 	const [prevMessageCount, setPrevMessageCount] = useState(messages.length);
 
-	// Check if scroll position is within 100px of the bottom
+
 	const checkIfNearBottom = () => {
 		if (!scrollContainerRef.current) return false;
 		const { scrollTop, scrollHeight, clientHeight } =
@@ -37,7 +37,6 @@ export default function MessageList({
 		}
 	};
 
-	// Handle scroll events to toggle the arrow button and track near-bottom state
 	const handleScroll = () => {
 		if (!scrollContainerRef.current) return;
 		const nearBottom = checkIfNearBottom();
@@ -45,19 +44,18 @@ export default function MessageList({
 		setShowScrollButton(!nearBottom);
 	};
 
-	// Auto‑scroll when new messages arrive only if the user was already near the bottom
+	
 	useEffect(() => {
 		const newMessageCount = messages.length;
 		const isNewMessage = newMessageCount > prevMessageCount;
 		const typingChanged =
-			typingUsers.length > 0 && prevMessageCount === newMessageCount; // just in case
+			typingUsers.length > 0 && prevMessageCount === newMessageCount;
 		if ((isNewMessage || typingChanged) && isNearBottom) {
 			scrollToBottom();
 		}
 		setPrevMessageCount(newMessageCount);
 	}, [messages, typingUsers, isNearBottom, prevMessageCount]);
 
-	// Attach scroll listener
 	useEffect(() => {
 		const container = scrollContainerRef.current;
 		if (!container) return;
@@ -66,7 +64,6 @@ export default function MessageList({
 		return () => container.removeEventListener('scroll', handleScroll);
 	}, []);
 
-	// Re‑check when messages change (e.g., image loads, height changes)
 	useEffect(() => {
 		handleScroll();
 	}, [messages]);
@@ -202,7 +199,6 @@ export default function MessageList({
 				</div>
 			</div>
 
-			{/* Floating scroll button */}
 			{showScrollButton && (
 				<button
 					onClick={scrollToBottom}
