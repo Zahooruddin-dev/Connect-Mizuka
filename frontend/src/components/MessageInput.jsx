@@ -5,10 +5,12 @@ import AudioRecorder from './AudioRecorder';
 function MessageInput({ onSend, onTyping, onStopTyping }) {
 	const [text, setText] = useState('');
 	const [isRecording, setIsRecording] = useState(false);
+	const [autoSend, setAutoSend] = useState(false);
 
 	const typingRef = useRef(false);
 	const typingTimer = useRef(null);
 	const textareaRef = useRef(null);
+	const isHoldingRef = useRef(false);
 
 	const triggerStopTyping = useCallback(() => {
 		if (typingRef.current) {
@@ -65,6 +67,7 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 		(url) => {
 			onSend(url, 'audio');
 			setIsRecording(false);
+			setAutoSend(false);
 			setTimeout(() => textareaRef.current?.focus(), 50);
 		},
 		[onSend],
@@ -72,7 +75,25 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 
 	const handleRecorderCancel = useCallback(() => {
 		setIsRecording(false);
+		setAutoSend(false);
 		setTimeout(() => textareaRef.current?.focus(), 50);
+	}, []);
+
+	const handleMicClick = useCallback(() => {
+		if (isHoldingRef.current) return;
+		setAutoSend(false);
+		setIsRecording(true);
+	}, []);
+
+	const handleMicTouchStart = useCallback((e) => {
+		isHoldingRef.current = true;
+		setAutoSend(false);
+		setIsRecording(true);
+	}, []);
+
+	const handleMicTouchEnd = useCallback((e) => {
+		isHoldingRef.current = false;
+		setAutoSend(true);
 	}, []);
 
 	const hasText = text.trim().length > 0;
@@ -114,6 +135,7 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 					<AudioRecorder
 						onAudioSent={handleAudioSent}
 						onCancel={handleRecorderCancel}
+						autoSend={autoSend}
 					/>
 				) : (
 					<>
@@ -143,10 +165,12 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 							{!hasText && (
 								<button
 									type='button'
-									onClick={() => setIsRecording(true)}
-									className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] transition-[background,color] duration-200 m-0.5 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] focus-visible:outline-offset-2'
-									title='Record voice message'
-									aria-label='Record a voice message'
+									onClick={handleMicClick}
+									onTouchStart={handleMicTouchStart}
+									onTouchEnd={handleMicTouchEnd}
+									className='w-[34px] h-[34px] min-w-[34px] rounded-[var(--radius-md)] flex items-center justify-center text-[var(--text-ghost)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] transition-[background,color] duration-200 m-0.5 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)] focus-visible:outline-offset-2 touch-manipulation'
+									title='Hold to record'
+									aria-label='Hold to record a voice message'
 								>
 									<svg
 										width='18'

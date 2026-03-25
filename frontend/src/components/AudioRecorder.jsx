@@ -124,7 +124,7 @@ function AudioPreviewPlayer({ src }) {
 	);
 }
 
-export default function AudioRecorder({ onAudioSent, onCancel }) {
+export default function AudioRecorder({ onAudioSent, onCancel, autoSend }) {
 	const [state, setState] = useState('requesting');
 	const startedRef = useRef(false);
 	const [duration, setDuration] = useState(0);
@@ -136,6 +136,11 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 	const chunksRef = useRef([]);
 	const timerRef = useRef(null);
 	const streamRef = useRef(null);
+	const autoSendRef = useRef(autoSend);
+
+	useEffect(() => {
+		autoSendRef.current = autoSend;
+	}, [autoSend]);
 
 	useEffect(() => {
 		return () => {
@@ -144,6 +149,47 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 			if (audioUrl) URL.revokeObjectURL(audioUrl);
 		};
 	}, [audioUrl]);
+
+	const uploadAndSend = useCallback(
+		async (blob, url) => {
+			setState('uploading');
+			setError('');
+			try {
+				const form = new FormData();
+				const ext = blob.type.includes('ogg')
+					? 'ogg'
+					: blob.type.includes('mp4')
+						? 'm4a'
+						: 'webm';
+				form.append('audio', blob, `voice.${ext}`);
+				const res = await api.post('/messages/upload-audio', form, {
+					headers: { 'Content-Type': 'multipart/form-data' },
+				});
+				URL.revokeObjectURL(url);
+				if (res.data?.url) {
+					onAudioSent(res.data.url);
+				} else {
+					setError('Upload failed. Try again.');
+					setState('preview');
+				}
+			} catch {
+				setError('Upload failed. Try again.');
+				setState('preview');
+			}
+		},
+		[onAudioSent],
+	);
+
+	const stop = useCallback(() => {
+		clearInterval(timerRef.current);
+		mediaRecorderRef.current?.stop();
+	}, []);
+
+	useEffect(() => {
+		if (autoSend && state === 'recording') {
+			stop();
+		}
+	}, [autoSend, state, stop]);
 
 	const start = useCallback(async () => {
 		setError('');
@@ -163,16 +209,25 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 					type: mimeType || 'audio/webm',
 				});
 				const url = URL.createObjectURL(blob);
-				setAudioBlob(blob);
-				setAudioUrl(url);
-				setState('preview');
 				streamRef.current?.getTracks().forEach((t) => t.stop());
 				streamRef.current = null;
+				if (autoSendRef.current) {
+					setAudioBlob(blob);
+					setAudioUrl(url);
+					uploadAndSend(blob, url);
+				} else {
+					setAudioBlob(blob);
+					setAudioUrl(url);
+					setState('preview');
+				}
 			};
 			mr.start(100);
 			setState('recording');
 			setDuration(0);
 			timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+			if (autoSendRef.current) {
+				stop();
+			}
 		} catch (err) {
 			streamRef.current?.getTracks().forEach((t) => t.stop());
 			streamRef.current = null;
@@ -185,18 +240,13 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 			);
 			setState('idle');
 		}
-	}, []);
+	}, [stop, uploadAndSend]);
 
 	useEffect(() => {
 		if (startedRef.current) return;
 		startedRef.current = true;
 		start();
 	}, [start]);
-
-	const stop = useCallback(() => {
-		clearInterval(timerRef.current);
-		mediaRecorderRef.current?.stop();
-	}, []);
 
 	const discard = useCallback(() => {
 		clearInterval(timerRef.current);
@@ -215,35 +265,11 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 
 	const send = useCallback(async () => {
 		if (!audioBlob) return;
-		setState('uploading');
-		setError('');
-		try {
-			const form = new FormData();
-			const ext = audioBlob.type.includes('ogg')
-				? 'ogg'
-				: audioBlob.type.includes('mp4')
-					? 'm4a'
-					: 'webm';
-			form.append('audio', audioBlob, `voice.${ext}`);
-			const res = await api.post('/messages/upload-audio', form, {
-				headers: { 'Content-Type': 'multipart/form-data' },
-			});
-			if (res.data?.url) {
-				URL.revokeObjectURL(audioUrl);
-				setAudioBlob(null);
-				setAudioUrl('');
-				setDuration(0);
-				setState('idle');
-				onAudioSent(res.data.url);
-			} else {
-				setError('Upload failed. Try again.');
-				setState('preview');
-			}
-		} catch {
-			setError('Upload failed. Try again.');
-			setState('preview');
-		}
-	}, [audioBlob, audioUrl, onAudioSent]);
+		await uploadAndSend(audioBlob, audioUrl);
+		setAudioBlob(null);
+		setAudioUrl('');
+		setDuration(0);
+	}, [audioBlob, audioUrl, uploadAndSend]);
 
 	const SendIcon = () => (
 		<svg
@@ -332,7 +358,19 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 		);
 	}
 
-	if (state === 'preview' || state === 'uploading') {
+	if (state === 'uploading') {
+		return (
+			<span
+				className='flex-1 text-[12px] text-[var(--text-ghost)] animate-pulse py-2'
+				role='status'
+				aria-live='polite'
+			>
+				Sending…
+			</span>
+		);
+	}
+
+	if (state === 'preview') {
 		return (
 			<>
 				{error ? (
@@ -358,31 +396,11 @@ export default function AudioRecorder({ onAudioSent, onCancel }) {
 					<button
 						type='button'
 						onClick={send}
-						disabled={state === 'uploading'}
-						className='w-9 h-9 rounded-md flex items-center justify-center bg-teal-600 text-white hover:bg-teal-700 transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
-						aria-label={
-							state === 'uploading'
-								? 'Sending voice message…'
-								: 'Send voice message'
-						}
-						title={state === 'uploading' ? 'Sending…' : 'Send'}
+						className='w-9 h-9 rounded-md flex items-center justify-center bg-teal-600 text-white hover:bg-teal-700 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]'
+						aria-label='Send voice message'
+						title='Send'
 					>
-						{state === 'uploading' ? (
-							<svg
-								className='animate-spin'
-								width='14'
-								height='14'
-								viewBox='0 0 24 24'
-								fill='none'
-								stroke='currentColor'
-								strokeWidth='2.5'
-								aria-hidden='true'
-							>
-								<path d='M21 12a9 9 0 1 1-6.219-8.56' />
-							</svg>
-						) : (
-							<SendIcon />
-						)}
+						<SendIcon />
 					</button>
 				</div>
 			</>
