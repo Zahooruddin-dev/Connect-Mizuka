@@ -11,6 +11,7 @@ import ChatSkeleton from './components/ChatSkeleton';
 import CallModal from './components/CallModal';
 import IncomingCallModal from './components/IncomingCallModal';
 import Toast from './components/Toast';
+import ringtoneUrl from './assets/ringtone/xiaomi.mp3';
 
 const firstChannelCache = new Map();
 let pingFired = false;
@@ -49,7 +50,7 @@ function App() {
 	const [defaultChannel, setDefaultChannel] = useState(
 		() => firstChannelCache.get(activeInstitute?.id) ?? null,
 	);
-	const ringtoneRef = (useRef < HTMLAudioElement) | (null > null);
+	const ringtoneRef = useRef(null);
 	const [toast, setToast] = useState({
 		message: '',
 		visible: false,
@@ -80,27 +81,58 @@ function App() {
 	} = useCallManager({ user: user ?? {}, onToast: showToast });
 
 	useEffect(() => {
-		if (callState?.phase === 'incoming') {
+		let cancelled = false;
+		const ensureAndPlay = async () => {
 			if (!ringtoneRef.current) {
-				ringtoneRef.current = new Audio('/ringtone.mp3');
-				ringtoneRef.current.loop = true;
+				try {
+					const headResp = await fetch(ringtoneUrl, { method: 'HEAD' });
+					if (!headResp.ok) throw new Error('Ringtone not found');
+					const ct = headResp.headers.get('content-type') || '';
+					if (!ct.startsWith('audio')) throw new Error('Not an audio resource');
+					if (cancelled) return;
+					ringtoneRef.current = new Audio(ringtoneUrl);
+					ringtoneRef.current.loop = true;
+					await ringtoneRef.current.play();
+				} catch (err) {
+					try {
+						const getResp = await fetch(ringtoneUrl);
+						if (!getResp.ok) throw err;
+						if (cancelled) return;
+						ringtoneRef.current = new Audio(ringtoneUrl);
+						ringtoneRef.current.loop = true;
+						await ringtoneRef.current.play();
+					} catch (err2) {
+						showToast('Unable to play ringtone', 'warning');
+						console.warn('Failed to fetch/play ringtone:', err, err2);
+					}
+				}
+			} else {
+				try {
+					await ringtoneRef.current.play();
+				} catch (err) {
+					showToast('Unable to play ringtone', 'warning');
+					console.warn('Failed to play ringtone:', err);
+				}
 			}
-			ringtoneRef.current.play().catch((err) => {
-				console.error('Failed to play ringtone:', err);
-			});
+		};
+
+		if (callState?.phase === 'incoming') {
+			ensureAndPlay();
 		} else {
 			if (ringtoneRef.current) {
 				ringtoneRef.current.pause();
 				ringtoneRef.current.currentTime = 0;
 			}
 		}
+
 		return () => {
+			cancelled = true;
 			if (ringtoneRef.current) {
 				ringtoneRef.current.pause();
 				ringtoneRef.current.currentTime = 0;
 			}
 		};
-	}, [callState?.phase]);
+	}, [callState?.phase, showToast]);
 
 	useEffect(() => {
 		if (pingFired) return;
