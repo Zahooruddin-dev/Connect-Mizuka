@@ -46,6 +46,7 @@ function ChatArea({
 		channelLabel || otherUsername,
 	);
 	const [retryCount, setRetryCount] = useState(0);
+	const [replyingTo, setReplyingTo] = useState(null);
 
 	const activeIdRef = useRef(activeId);
 	const messagesRef = useRef(messages);
@@ -278,7 +279,7 @@ function ChatArea({
 	}, [channelId, roomId, isP2P, user.id, retryCount, onChannelRenamed]);
 
 	const handleSend = useCallback(
-		(content, explicitType) => {
+		(content, explicitType, replyTo = null) => {
 			const type = explicitType || 'text';
 			const tempMessage = {
 				id: `temp-${Date.now()}`,
@@ -287,6 +288,7 @@ function ChatArea({
 				sender_id: user.id,
 				username: user.username,
 				created_at: new Date().toISOString(),
+				reply_to: replyTo ? (replyTo.id || replyTo._id || null) : null,
 			};
 			setAndCache((prev) => [...prev, tempMessage]);
 			if (isP2P) {
@@ -296,6 +298,7 @@ function ChatArea({
 					sender_id: user.id,
 					username: user.username,
 					type,
+					reply_to: replyTo ? (replyTo.id || replyTo._id || null) : null,
 				});
 			} else {
 				socket.emit('send_message', {
@@ -304,8 +307,11 @@ function ChatArea({
 					sender_id: user.id,
 					username: user.username,
 					type,
+					reply_to: replyTo ? (replyTo.id || replyTo._id || null) : null,
 				});
 			}
+			// clear reply state after sending
+			setReplyingTo(null);
 		},
 		[channelId, roomId, isP2P, user, setAndCache],
 	);
@@ -407,6 +413,7 @@ function ChatArea({
 				onMessageDeleted={isP2P ? handleP2PDelete : handleChannelDelete}
 				onMessageEdited={handleP2PEdit}
 				onStartP2P={onStartP2P}
+				onReply={(msg) => setReplyingTo(msg)}
 				onRetry={handleRetry}
 				loading={loading}
 			/>
@@ -414,6 +421,8 @@ function ChatArea({
 				onSend={handleSend}
 				onTyping={handleTyping}
 				onStopTyping={handleStopTyping}
+				replyingTo={replyingTo}
+				onCancelReply={() => setReplyingTo(null)}
 			/>
 		</div>
 	);

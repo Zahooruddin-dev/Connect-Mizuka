@@ -10,6 +10,7 @@ export default function MessageList({
 	onMessageDeleted,
 	onMessageEdited,
 	onStartP2P,
+	onReply,
 	loading,
 }) {
 	const scrollContainerRef = useRef(null);
@@ -191,6 +192,7 @@ export default function MessageList({
 							onDeleted={onMessageDeleted}
 							onEdit={onMessageEdited}
 							onUserClick={(userId) => setSelectedUser(userId)}
+							onReply={onReply}
 						/>
 					))}
 

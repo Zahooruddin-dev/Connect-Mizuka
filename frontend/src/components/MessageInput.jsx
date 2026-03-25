@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
 import AudioRecorder from './AudioRecorder';
 
-function MessageInput({ onSend, onTyping, onStopTyping }) {
+function MessageInput({ onSend, onTyping, onStopTyping, replyingTo, onCancelReply }) {
 	const [text, setText] = useState('');
 	const [isRecording, setIsRecording] = useState(false);
 	const [autoSend, setAutoSend] = useState(false);
@@ -43,10 +43,10 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 		if (!trimmed) return;
 		clearTimeout(typingTimer.current);
 		triggerStopTyping();
-		onSend(trimmed);
+		onSend(trimmed, undefined, replyingTo);
 		setText('');
 		textareaRef.current?.focus();
-	}, [text, onSend, triggerStopTyping]);
+	}, [text, onSend, triggerStopTyping, replyingTo]);
 
 	const handleCancelText = useCallback(() => {
 		clearTimeout(typingTimer.current);
@@ -65,12 +65,12 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 
 	const handleAudioSent = useCallback(
 		(url) => {
-			onSend(url, 'audio');
+			onSend(url, 'audio', replyingTo);
 			setIsRecording(false);
 			setAutoSend(false);
 			setTimeout(() => textareaRef.current?.focus(), 50);
 		},
-		[onSend],
+		[onSend, replyingTo],
 	);
 
 	const handleRecorderCancel = useCallback(() => {
@@ -120,6 +120,18 @@ function MessageInput({ onSend, onTyping, onStopTyping }) {
 			className='px-3.5 pt-2.5 pb-3 md:px-5 md:pt-3 md:pb-3.5 border-t border-[var(--border)] bg-[var(--bg-surface)] flex flex-col gap-1.5 shrink-0'
 			aria-label='Message composer'
 		>
+			{/* Reply preview */}
+			{replyingTo && (
+				<div className='flex items-center justify-between gap-2 px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border)] rounded-md'>
+					<div className='flex-1 min-w-0'>
+						<div className='text-[12px] text-[var(--text-secondary)] truncate'>Replying to {replyingTo.username || 'someone'}</div>
+						<div className='text-[13px] text-[var(--text-ghost)] italic truncate'>
+							{(replyingTo.type && replyingTo.type !== 'text') ? '[' + (replyingTo.type || 'media') + ']' : replyingTo.content}
+						</div>
+					</div>
+					<button onClick={onCancelReply} className='ml-2 text-[var(--text-ghost)] hover:text-[var(--text-muted)]'>✕</button>
+				</div>
+			)}
 			<div
 				className={`flex gap-1.5 bg-[var(--bg-input)] border rounded-[var(--radius-lg)] pl-4 pr-1 py-1 transition-[border-color,box-shadow] duration-200 ${
 					isRecording ? 'items-center' : 'items-end'

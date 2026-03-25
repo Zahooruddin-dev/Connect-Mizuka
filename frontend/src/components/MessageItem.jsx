@@ -340,6 +340,7 @@ function MessageItem({
 	onDeleted,
 	onEdit,
 	onUserClick,
+	onReply,
 }) {
 	const [deleting, setDeleting] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
@@ -545,6 +546,54 @@ function MessageItem({
 
 	const deleteModalContent = DELETE_LABELS[message.type] || message.content;
 
+	// swipe-to-reply (mobile)
+	const [dragOffset, setDragOffset] = useState(0);
+	const startXRef = useRef(0);
+	const draggingRef = useRef(false);
+	const THRESHOLD = 80;
+
+	const handleTouchStart = (e) => {
+		startXRef.current = e.touches[0].clientX;
+		draggingRef.current = true;
+	};
+
+	const handleTouchMove = (e) => {
+		if (!draggingRef.current) return;
+		const cx = e.touches[0].clientX;
+		const delta = cx - startXRef.current;
+		if (delta > 0) {
+			setDragOffset(Math.min(delta, 140));
+		}
+	};
+
+	const handleTouchEnd = () => {
+		draggingRef.current = false;
+		if (dragOffset > THRESHOLD) {
+			if (typeof onReply === 'function') onReply(message);
+		}
+		setDragOffset(0);
+	};
+
+	// mouse support (optional)
+	const mouseDownRef = useRef(false);
+	const handleMouseDown = (e) => {
+		mouseDownRef.current = true;
+		startXRef.current = e.clientX;
+	};
+	const handleMouseMove = (e) => {
+		if (!mouseDownRef.current) return;
+		const delta = e.clientX - startXRef.current;
+		if (delta > 0) setDragOffset(Math.min(delta, 140));
+	};
+	const handleMouseUp = () => {
+		if (!mouseDownRef.current) return;
+		mouseDownRef.current = false;
+		if (dragOffset > THRESHOLD) {
+			if (typeof onReply === 'function') onReply(message);
+		}
+		setDragOffset(0);
+	};
+
 	return (
 		<>
 			<style>{`
@@ -621,7 +670,25 @@ function MessageItem({
 									? 'bg-teal-700 rounded-2xl rounded-br-md'
 									: 'bg-[var(--bg-panel)] border border-[var(--border)] rounded-2xl rounded-bl-md'
 							}`}
+							style={{
+								transform: `translateX(${dragOffset}px)`,
+								transition: draggingRef.current || mouseDownRef.current ? 'none' : 'transform 0.18s ease',
+							}}
+							onTouchStart={handleTouchStart}
+							onTouchMove={handleTouchMove}
+							onTouchEnd={handleTouchEnd}
+							onMouseDown={handleMouseDown}
+							onMouseMove={handleMouseMove}
+							onMouseUp={handleMouseUp}
 						>
+							{/* Reply indicator */}
+							<div
+								aria-hidden='true'
+								className='absolute left-[-44px] top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-[var(--text-muted)] pointer-events-none'
+								style={{ opacity: Math.min(dragOffset / THRESHOLD, 1) }}
+							>
+								<span className='text-[16px]'>↩</span>
+							</div>
 							{renderBubbleContent()}
 						</div>
 
