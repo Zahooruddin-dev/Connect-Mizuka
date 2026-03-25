@@ -1,19 +1,19 @@
 const pool = require('./Pool');
 
-async function saveSentMessages(channel_id, sender_id, message, type = 'text') {
+async function saveSentMessages(channel_id, sender_id, message, type = 'text', reply_to = null) {
 	const { rows } = await pool.query(
-		`INSERT INTO messages (channel_id, sender_id, content, type)
-		 VALUES ($1, $2, $3, $4)
-		 RETURNING *`,
-		[channel_id, sender_id, message, type],
+		`INSERT INTO messages (channel_id, sender_id, content, type, reply_to)
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, channel_id, sender_id, content, type, reply_to, created_at`,
+		[channel_id, sender_id, message, type, reply_to],
 	);
 	return rows[0] || null;
 }
 
 async function getChatHistoryQuery(channel_id, limit, offset) {
 	const { rows } = await pool.query(
-		`SELECT m.id, m.content, m.type, m.created_at, m.sender_id,
-		        u.username, u.profile_picture
+		`SELECT m.id, m.content, m.type, m.created_at, m.sender_id, m.reply_to,
+				u.username, u.profile_picture
 		 FROM messages m
 		 JOIN users u ON m.sender_id = u.id
 		 WHERE m.channel_id = $1

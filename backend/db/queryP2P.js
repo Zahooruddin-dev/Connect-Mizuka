@@ -46,7 +46,7 @@ async function createNewRoom(u1, u2) {
 async function getP2PMessagesQuery(roomId) {
 	try {
 		const { rows } = await pool.query(
-			`SELECT m.*, u.username, u.profile_picture
+			`SELECT m.*, m.reply_to, u.username, u.profile_picture
 			 FROM p2p_messages m
 			 JOIN users u ON m.sender_id = u.id
 			 WHERE m.chatroom_id = $1
@@ -115,13 +115,13 @@ async function editP2PMessagesQuery(message_id, userId, content) {
 		throw error;
 	}
 }
-async function saveP2PMessage(chatroom_id, sender_id, content, type = 'text') {
+async function saveP2PMessage(chatroom_id, sender_id, content, type = 'text', reply_to = null) {
 	try {
 		const { rows } = await pool.query(
-			`INSERT INTO p2p_messages (chatroom_id, sender_id, content, type, is_read, created_at) 
-       VALUES ($1, $2, $3, $4, FALSE, NOW()) 
-       RETURNING *`,
-			[chatroom_id, sender_id, content, type],
+			`INSERT INTO p2p_messages (chatroom_id, sender_id, content, type, is_read, reply_to, created_at) 
+	   VALUES ($1, $2, $3, $4, FALSE, $5, NOW()) 
+	   RETURNING *`,
+			[chatroom_id, sender_id, content, type, reply_to],
 		);
 		return rows[0] || null;
 	} catch (error) {

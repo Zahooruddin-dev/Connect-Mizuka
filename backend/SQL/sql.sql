@@ -112,3 +112,13 @@ ADD COLUMN type TEXT DEFAULT 'text';
 -- Update P2P Messages
 ALTER TABLE p2p_messages 
 ADD COLUMN type TEXT DEFAULT 'text';
+
+-- Add reply_to column to link replies to original messages
+ALTER TABLE messages
+ADD COLUMN IF NOT EXISTS reply_to UUID REFERENCES messages(id) ON DELETE SET NULL;
+
+ALTER TABLE p2p_messages
+ADD COLUMN IF NOT EXISTS reply_to UUID REFERENCES p2p_messages(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_messages_reply_to ON messages(reply_to);
+CREATE INDEX IF NOT EXISTS idx_p2p_messages_reply_to ON p2p_messages(reply_to);
