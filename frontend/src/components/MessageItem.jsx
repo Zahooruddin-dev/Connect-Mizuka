@@ -10,38 +10,28 @@ const CALL_TYPES = new Set([
 	'call_rejected',
 	'call_ended',
 ]);
-
 const CALL_CONFIG = {
 	call_missed: {
-		color: '#f87171',
-		bg: 'rgba(239,68,68,0.08)',
-		border: 'rgba(239,68,68,0.2)',
+		theme: 'text-red-400 bg-red-400/10 border-red-400/20',
 		label: 'Missed call',
 		crossed: true,
 	},
 	call_accepted: {
-		color: '#34d399',
-		bg: 'rgba(52,211,153,0.08)',
-		border: 'rgba(52,211,153,0.2)',
+		theme: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
 		label: 'Call accepted',
 		crossed: false,
 	},
 	call_rejected: {
-		color: '#9ca3af',
-		bg: 'rgba(156,163,175,0.08)',
-		border: 'rgba(156,163,175,0.2)',
+		theme: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
 		label: 'Call declined',
 		crossed: true,
 	},
 	call_ended: {
-		color: '#9ca3af',
-		bg: 'rgba(156,163,175,0.08)',
-		border: 'rgba(156,163,175,0.2)',
+		theme: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
 		label: 'Call ended',
 		crossed: true,
 	},
 };
-
 const DELETE_LABELS = {
 	audio: '[Voice message]',
 	image: '[Image]',
@@ -204,22 +194,21 @@ function CallBadge({ type, content, timestamp }) {
 	const Icon = isVideo ? VideoCallIcon : PhoneIcon;
 
 	return (
-		<div className='flex flex-col items-center gap-1 py-2.5'>
+		<div className='flex flex-col items-center gap-1.5 py-2'>
 			<div
-				className='flex items-center gap-2 px-4 py-[7px] rounded-full text-[12px] font-medium tracking-[0.01em]'
-				style={{
-					color: cfg.color,
-					background: cfg.bg,
-					border: `1px solid ${cfg.border}`,
-				}}
+				className={`flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-medium tracking-wide select-none ${cfg.theme}`}
 			>
-				<Icon crossed={cfg.crossed} />
+				<span className='shrink-0 flex items-center justify-center'>
+					<Icon crossed={cfg.crossed} />
+				</span>
 				<span>{cfg.label}</span>
 				{content && content !== cfg.label && (
-					<span className='opacity-50 font-normal'>· {content}</span>
+					<span className='opacity-60 font-normal truncate max-w-[120px]'>
+						· {content}
+					</span>
 				)}
 			</div>
-			<span className='text-[10px] text-[var(--text-ghost)] font-mono'>
+			<span className='text-[10px] text-[var(--text-ghost)] font-mono select-none'>
 				{formatTime(timestamp || Date.now())}
 			</span>
 		</div>
@@ -233,32 +222,31 @@ function ImageMessage({ src }) {
 	return (
 		<>
 			<div
-				className='relative overflow-hidden rounded-[inherit] cursor-zoom-in'
-				style={{ maxWidth: 280, minWidth: 100 }}
+				className='relative overflow-hidden rounded-[inherit] cursor-zoom-in bg-black/10'
+				style={{ maxWidth: 280, minWidth: 160 }}
 				onClick={() => setLightbox(true)}
 				role='button'
 				tabIndex={0}
 				onKeyDown={(e) => e.key === 'Enter' && setLightbox(true)}
-				aria-label='View image'
+				aria-label='View full image'
 			>
 				{!loaded && (
-					<div
-						className='w-[220px] h-[160px] animate-pulse'
-						style={{ background: 'rgba(255,255,255,0.07)' }}
-					/>
+					<div className='w-full aspect-[4/3] animate-pulse bg-white/5' />
 				)}
 				<img
 					src={src}
-					alt='Shared image'
-					className={`block max-w-full transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0 w-full h-full object-cover'}`}
-					style={{ maxHeight: 320 }}
+					alt='Shared media content'
+					className={`block w-full h-auto transition-opacity duration-300 ease-out-quint ${
+						loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'
+					}`}
+					style={{ maxHeight: 320, objectFit: 'cover' }}
 					onLoad={() => setLoaded(true)}
 				/>
 			</div>
 
 			{lightbox && (
 				<div
-					className='fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-sm cursor-zoom-out'
+					className='fixed inset-0 z-[999] flex items-center justify-center bg-black/90 backdrop-blur-md cursor-zoom-out transition-all duration-200'
 					onClick={() => setLightbox(false)}
 					onKeyDown={(e) => e.key === 'Escape' && setLightbox(false)}
 					role='dialog'
@@ -267,8 +255,8 @@ function ImageMessage({ src }) {
 				>
 					<img
 						src={src}
-						alt='Shared image'
-						className='max-w-[92vw] max-h-[92vh] rounded-xl shadow-2xl'
+						alt='Full screen media'
+						className='max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl object-contain'
 					/>
 				</div>
 			)}
@@ -303,29 +291,41 @@ function FileMessage({ src, name, isMine }) {
 			target='_blank'
 			rel='noopener noreferrer'
 			download={filename}
-			className={`flex items-center gap-3 no-underline transition-opacity duration-150 hover:opacity-75 ${isMine ? 'text-white/90' : 'text-[var(--text-primary)]'}`}
-			style={{ minWidth: 180, maxWidth: 260 }}
+			className={`group flex items-center gap-3 p-1 -m-1 rounded-xl no-underline transition-colors duration-200 ${
+				isMine
+					? 'text-white hover:bg-white/10'
+					: 'text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+			}`}
+			style={{ minWidth: 200, maxWidth: 260 }}
 		>
 			<div
-				className='w-9 h-9 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 tracking-wide'
+				className='w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 tracking-wider shadow-sm transition-transform duration-200 group-hover:scale-105'
 				style={{
-					background: isMine ? 'rgba(255,255,255,0.15)' : 'var(--bg-hover)',
+					background: isMine ? 'rgba(255,255,255,0.2)' : 'var(--bg-panel)',
 				}}
 			>
 				{ext}
 			</div>
-			<div className='flex flex-col gap-0.5 overflow-hidden flex-1 min-w-0'>
-				<span className='text-sm font-medium truncate leading-snug'>
+			<div className='flex flex-col overflow-hidden flex-1 min-w-0'>
+				<span className='text-sm font-medium truncate leading-tight'>
 					{filename}
 				</span>
 				<span
-					className={`text-[11px] ${isMine ? 'text-white/45' : 'text-[var(--text-ghost)]'}`}
+					className={`text-xs mt-0.5 transition-colors duration-200 ${
+						isMine
+							? 'text-white/60 group-hover:text-white/80'
+							: 'text-[var(--text-ghost)] group-hover:text-[var(--text-muted)]'
+					}`}
 				>
 					Tap to download
 				</span>
 			</div>
 			<span
-				className={`shrink-0 opacity-40 ${isMine ? 'text-white' : 'text-[var(--text-muted)]'}`}
+				className={`shrink-0 p-2 rounded-full transition-colors duration-200 ${
+					isMine
+						? 'text-white/50 group-hover:text-white group-hover:bg-white/20'
+						: 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)] group-hover:bg-[var(--border)]'
+				}`}
 			>
 				<DownloadIcon />
 			</span>
