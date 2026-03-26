@@ -11,7 +11,6 @@ import {
 	TrashIcon,
 	DotsIcon,
 	EditIcon,
-	DownloadIcon,
 	CopyIcon,
 } from './message-item/MessageIcons';
 import {
