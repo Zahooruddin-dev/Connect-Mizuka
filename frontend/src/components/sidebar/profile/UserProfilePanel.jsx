@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Pencil, Check, Loader, Camera } from 'lucide-react';
-import { fetchUserInfo, updateProfile } from '../../services/api';
+import { fetchUserInfo, updateProfile } from '../../../services/api';
 import ChangePasswordModal from './ChangePasswordModal';
 
 const infoGroupCls =

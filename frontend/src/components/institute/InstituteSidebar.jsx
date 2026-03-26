@@ -7,7 +7,7 @@ import {
 	createInstitute,
 } from '../../services/api';
 import Toast from '../Toast';
-import UserProfilePopover from '../profile/Userprofilepopover';
+import UserProfilePopover from '../sidebar/profile/Userprofilepopover';
 import SidebarHeader from './SidebarHeader';
 import InstitutesList from './InstitutesList';
 import JoinInstituteForm from './JoinInstituteForm';

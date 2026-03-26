@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { getUserProfile, getOrCreateP2PRoom } from '../../services/api';
-import { useAuth } from '../../services/AuthContext';
+import { getUserProfile, getOrCreateP2PRoom } from '../../../services/api';
+import { useAuth } from '../../../services/AuthContext';
 
 const infoGroupCls =
 	'flex flex-col gap-1.5 mb-4 pb-4 border-b border-[var(--border)] last:border-b-0 last:mb-0 last:pb-0';
