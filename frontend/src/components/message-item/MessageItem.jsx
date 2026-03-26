@@ -1,24 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import api from '../services/api';
-import CallConfirmModal from './CallConfirmModal';
-import { formatTime } from '../utils/time';
-import Toast from './Toast';
-import AudioPlayer from './AudioPlayer';
-import DeleteConfirmModal from './DeleteConfirmModal';
+import api from '../../services/api';
+import { formatTime } from '../../utils/time';
+import Toast from '../Toast';
+import AudioPlayer from '../AudioPlayer';
+import DeleteConfirmModal from '../DeleteConfirmModal';
 import {
-	PhoneIcon,
-	VideoCallIcon,
 	TrashIcon,
 	DotsIcon,
 	EditIcon,
 	CopyIcon,
-} from './message-item/MessageIcons';
+} from './MessageIcons';
 import {
 	FileMessage,
 	VideoMessage,
 	ImageMessage,
-} from './message-item/MessageMedia';
-import CallBadge from './message-item/CallBadge';
+} from './MessageMedia';
+import CallBadge from './CallBadge';
 
 const CALL_TYPES = new Set([
 	'call_missed',

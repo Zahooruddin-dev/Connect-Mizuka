@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { useAuth } from '../services/AuthContext';
+import { useAuth } from '../../services/AuthContext';
 import {
 	linkToInstitute,
 	getInstituteMembers,
 	createInstitute,
-} from '../services/api';
-import Toast from './Toast';
-import UserProfilePopover from './Userprofilepopover';
-import SidebarHeader from './institute/SidebarHeader';
-import InstitutesList from './institute/InstitutesList';
-import JoinInstituteForm from './institute/JoinInstituteForm';
-import CreateInstituteForm from './institute/CreateInstituteForm';
-import MembersSection from './institute/MembersSection';
-import LeaveConfirmDialog from './institute/LeaveConfirmDialog';
+} from '../../services/api';
+import Toast from '../Toast';
+import UserProfilePopover from '../profile/Userprofilepopover';
+import SidebarHeader from './SidebarHeader';
+import InstitutesList from './InstitutesList';
+import JoinInstituteForm from './JoinInstituteForm';
+import CreateInstituteForm from './CreateInstituteForm';
+import MembersSection from './MembersSection';
+import LeaveConfirmDialog from './LeaveConfirmDialog';
 
 const membersCache = new Map();
 

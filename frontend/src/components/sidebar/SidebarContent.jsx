@@ -9,10 +9,10 @@ import {
 	Search,
 } from 'lucide-react';
 import { useState } from 'react';
-import InstituteSidebar from './InstituteSidebar';
+import InstituteSidebar from '../institute/InstituteSidebar';
 import CreateChannelModal from './CreateChannelModal';
-import UserProfilePanel from './UserProfilePanel';
-import Inbox from './Inbox';
+import UserProfilePanel from '../profile/UserProfilePanel';
+import Inbox from '../Inbox';
 import LogoutConfirmModal from './LogoutConfirmModal';
 
 const iconBtnCls =

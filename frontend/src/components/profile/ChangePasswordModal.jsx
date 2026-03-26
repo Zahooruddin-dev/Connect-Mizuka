@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Loader, ShieldCheck } from 'lucide-react';
-import { changePassword } from '../services/api';
+import { changePassword } from '../../services/api';
 
 const labelCls = 'text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-ghost)]';
 const inputCls = 'w-full py-[9px] pl-3 pr-10 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] text-sm font-[inherit] outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-[var(--text-ghost)] focus:border-[var(--teal-600)] focus:shadow-[0_0_0_2px_rgba(20,184,166,0.07)] disabled:opacity-50 disabled:cursor-not-allowed';

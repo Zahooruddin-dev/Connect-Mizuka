@@ -1,4 +1,4 @@
-import { PhoneIcon, VideoCallIcon } from '../MessageIcons';
+import { PhoneIcon, VideoCallIcon } from './MessageIcons';
 import { formatTime } from '../../utils/time';
 
 export const CALL_CONFIG = {

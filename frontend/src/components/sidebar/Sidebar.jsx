@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Hash,
-  Plus,
-  ChevronDown,
-  X,
-  Building2,
   Inbox as InboxIcon,
-  Search,
 } from 'lucide-react';
 import {
   fetchChannelsByInstitute,
@@ -14,10 +9,10 @@ import {
   searchAllChannels,
   getInstituteMembers,
   fetchUserChatrooms,
-} from '../services/api';
-import { fetchUnreadCounts, markRoomAsRead } from '../services/p2p-api';
-import { useTheme } from '../hooks/useTheme';
-import socket from '../services/socket';
+} from '../../services/api';
+import { fetchUnreadCounts, markRoomAsRead } from '../../services/p2p-api';
+import { useTheme } from '../../hooks/useTheme';
+import socket from '../../services/socket';
 import SidebarContent from './SidebarContent';
 
 function loadStoredChats() {

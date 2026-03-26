@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useAuth } from '../services/AuthContext';
-import { createInstitute, linkToInstitute } from '../services/api';
+import { useAuth } from '../../services/AuthContext';
+import { createInstitute, linkToInstitute } from '../../services/api';
 
 const labelCls =
 	'block text-[11px] font-medium uppercase tracking-wide text-[var(--text-secondary)] mb-1.5';
