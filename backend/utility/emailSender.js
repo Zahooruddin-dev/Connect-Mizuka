@@ -56,8 +56,8 @@ const sendResetEmail = async (toEmail, resetCode) => {
     const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (error) {
-    // Bubble up the error so calling code can log/handle it appropriately
-    throw error;
+    console.error('Error sending reset email:', error);
+    throw new Error('Failed to send reset email');
   }
 };
 
