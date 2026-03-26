@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { searchInstituteMembers, searchAllP2PChats } from '../services/api';
-import { getOrCreateP2PRoom, markRoomAsRead } from '../services/p2p-api';
-import socket from '../services/socket';
+import { searchInstituteMembers, searchAllP2PChats } from '../../../services/api';
+import { getOrCreateP2PRoom, markRoomAsRead } from '../../../services/p2p-api';
+import socket from '../../../services/socket';
 import InboxContent from './InboxContent';
 
 function Inbox({
