@@ -399,6 +399,51 @@ Response:
 }
 ```
 
+---
+
+## ✅ Additional Notes
+
+- **Preserve secrets:** Never commit `.env` to source control. Use environment-specific configuration (secrets manager, CI/CD variables, or `.env` in ignored files).
+- **Keep `JWT_SECRET` long and random** (at least 32 characters) and rotate it if compromised.
+
+## 🧪 Testing
+
+- Use the included `test.rest` file (REST client) or Postman to exercise endpoints quickly.
+- Example curl to verify health/auth route:
+
+```bash
+curl -i http://localhost:3000/api/auth/user-info -H "Authorization: Bearer <TOKEN>"
+```
+
+## 🔐 Environment & Security
+
+- Production deployments should use a managed Postgres (Neon, RDS, etc.) and secure Cloudinary credentials.
+- For email, prefer using a transactional email provider (SendGrid, Mailgun) in production instead of Gmail app passwords.
+- Ensure CORS `FRONTEND_URL` is set to the deployed frontend origin.
+
+## 📦 Deployment
+
+1. Build and publish the frontend separately (if applicable).
+2. Ensure production environment variables are set in your host/CI.
+3. Run DB migrations/schema before starting the server.
+4. Start the server with `NODE_ENV=production npm start` or use a process manager (PM2, systemd).
+
+## 🛠 Troubleshooting
+
+- If socket connections fail, verify that the frontend is connecting to the correct Socket.io endpoint and that CORS/same-origin settings match.
+- If uploads fail, confirm Cloudinary credentials and that files meet size/type expectations.
+- For DB connection issues, check `DATABASE_URL` and network access (firewalls/VPC rules).
+
+## 🤝 Contributing
+
+- Contributions are welcome. Open issues for bugs or feature requests and submit pull requests with focused changes.
+- Follow existing code patterns and add validations for new endpoints.
+
+## 📬 Contact
+
+- Project maintainer: Zahooruddin (see repository for contact details)
+- Repo: https://github.com/zahooruddin-dev/Mizuka-Connect
+
 ### Channels — `/api/channel`
 
 **POST `/create`** — Create channel **[Admin]**
