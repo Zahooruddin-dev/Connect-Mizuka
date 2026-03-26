@@ -7,8 +7,8 @@ import {
 	deleteChannelMessage,
 	editP2PMessage,
 } from '../services/api';
-import MessageList from './MessageList';
-import MessageInput from './MessageInput';
+import MessageList from './chat-area/ChatList';
+import MessageInput from './chat-area/ChatInput';
 import ChatHeader from './chat-area/ChatHeader';
 
 const channelCache = new Map();

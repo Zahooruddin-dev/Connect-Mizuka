@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import MessageItem from './MessageItem';
-import UserProfilePopover from './Userprofilepopover';
+import MessageItem from '../MessageItem';
+import UserProfilePopover from '../Userprofilepopover';
 
 export default function MessageList({
 	messages,

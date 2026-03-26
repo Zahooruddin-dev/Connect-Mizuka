@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
-import AudioRecorder from './AudioRecorder';
+import AudioRecorder from '../AudioRecorder';
 
 function MessageInput({ onSend, onTyping, onStopTyping, replyingTo, onCancelReply }) {
 	const [text, setText] = useState('');
