@@ -1,5 +1,5 @@
-import { PhoneIcon, VideoCallIcon } from './MessageIcons';
-import { formatTime } from '../utils/time';
+import { PhoneIcon, VideoCallIcon } from '../MessageIcons';
+import { formatTime } from '../../utils/time';
 
 export const CALL_CONFIG = {
   call_missed: {

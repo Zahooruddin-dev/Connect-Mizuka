@@ -18,6 +18,7 @@ import {
 	VideoMessage,
 	ImageMessage,
 } from './message-item/MessageMedia';
+import CallBadge from './message-item/CallBadge';
 
 const CALL_TYPES = new Set([
 	'call_missed',
@@ -54,33 +55,6 @@ const DELETE_LABELS = {
 	file: '[File]',
 	document: '[File]',
 };
-
-function CallBadge({ type, content, timestamp }) {
-	const cfg = CALL_CONFIG[type] || CALL_CONFIG.call_ended;
-	const isVideo = type?.includes('video');
-	const Icon = isVideo ? VideoCallIcon : PhoneIcon;
-
-	return (
-		<div className='flex flex-col items-center gap-1.5 py-2'>
-			<div
-				className={`flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-medium tracking-wide select-none ${cfg.theme}`}
-			>
-				<span className='shrink-0 flex items-center justify-center'>
-					<Icon crossed={cfg.crossed} />
-				</span>
-				<span>{cfg.label}</span>
-				{content && content !== cfg.label && (
-					<span className='opacity-60 font-normal truncate max-w-[120px]'>
-						· {content}
-					</span>
-				)}
-			</div>
-			<span className='text-[10px] text-[var(--text-ghost)] font-mono select-none'>
-				{formatTime(timestamp || Date.now())}
-			</span>
-		</div>
-	);
-}
 
 function MessageItem({
 	message,
