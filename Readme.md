@@ -1603,3 +1603,50 @@ Have questions, found a bug, or want to suggest a feature?
 ---
 
 _Last updated: March 2026 — Complete documentation with audio messaging, voice/video calling, Tailwind CSS, WebRTC, and all backend features_
+
+---
+
+## ✅ Additional Notes
+
+- **Do not commit secrets:** Keep `.env` files out of source control. Use CI/CD secret stores for production environment variables.
+- **JWT security:** Use a long, randomly generated `JWT_SECRET` and rotate it if you suspect exposure.
+
+## 🧪 Testing & Verification
+
+- Use the `test.rest` file in the `backend/` folder or Postman to validate API endpoints while running the backend locally.
+- Verify critical flows manually during development: register/login, create/join institute, create channel, send message, record/upload audio, and initiate a call.
+
+## 📦 Deployment Checklist
+
+1. Build the frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
+2. Configure production environment vars in your host (Vercel/Netlify/GCP/AWS) for `VITE_API_URL`, `VITE_SOCKET_URL`, and backend secrets.
+3. Run database migrations or apply `SQL/sql.sql` to production Postgres before starting the backend.
+4. Start backend with a process manager (PM2, systemd) or use container orchestration (Docker, Kubernetes) with health checks.
+
+## 🔐 Production Security Recommendations
+
+- Use HTTPS for all frontend and backend traffic to protect WebRTC connections and JWTs in transit.
+- Prefer managed email/transactional providers (SendGrid, Mailgun) in production rather than Gmail app passwords.
+- Enforce file size/type limits on the client and validate on the server for uploads.
+
+## 🛠 Troubleshooting
+
+- Socket.io connection issues: verify `VITE_SOCKET_URL`, proxy settings in `vite.config.js`, and backend socket logs.
+- Audio recording problems: confirm browser microphone permissions and serve the app over HTTPS if required by the browser for media APIs.
+- Database connection errors: check `DATABASE_URL`, network/firewall rules, and that the Postgres service is reachable from the host.
+
+## 🤝 Contributing
+
+- Welcome PRs: open small, focused PRs with a clear description and screenshots for UI changes.
+- Add tests for new functionality and follow existing code patterns and validation rules.
+
+## 📬 Contact & Links
+
+- Maintainer: Zahooruddin — see the repository for contact details and the issue tracker.
+- Repo: https://github.com/zahooruddin-dev/Connect-Mizuka
