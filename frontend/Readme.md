@@ -399,6 +399,53 @@ Auto-dismisses after 3.5 seconds. Stacks multiple toasts.
 
 ### useCallManager.js
 
+---
+
+## ✅ Additional Notes
+
+- **Environment:** Keep `.env.local` out of source control and use CI/CD secrets for production values.
+- **API URL:** If deploying frontend separately, set `VITE_API_URL` to your backend origin and `VITE_SOCKET_URL` for Socket.io.
+
+## 🧪 Testing
+
+- Use `npm run dev` for local development with HMR and manual testing via browser.
+- Run UI smoke checks by interacting with flows: login, create channel, send message, record audio, and initiate a call.
+- Use the `test.rest` file from the backend folder or Postman to verify API endpoints while testing the UI.
+
+## 📦 Deployment
+
+1. Build the production bundle:
+
+```bash
+npm run build
+```
+
+2. Serve the `dist/` output with a static host (Vercel, Netlify, Surge, or any CDN-backed host).
+3. Ensure `VITE_API_URL` in production points to the live backend and that CORS allows the frontend origin.
+4. If using a separate socket server, enable `VITE_SOCKET_URL` and confirm WebSocket support.
+
+## 🔐 Security & Production Recommendations
+
+- Use HTTPS in production for both frontend and backend to secure WebRTC, cookies, and API traffic.
+- Use secure, same-site cookies or token storage best practices for JWTs.
+- Limit file sizes for uploads client-side and validate types before sending to the server.
+
+## 🛠 Troubleshooting
+
+- If HMR fails, delete `node_modules/.vite` and restart `npm run dev`.
+- If audio recording doesn't work, verify browser microphone permissions and HTTPS context (required on some browsers).
+- If Socket.io fails to connect, check `VITE_SOCKET_URL`, proxy settings in `vite.config.js`, and backend socket server logs.
+
+## 🤝 Contributing
+
+- Send focused PRs with clear descriptions and include screenshots or short recordings for UI changes.
+- Add unit tests for critical utilities and front-end integration tests for core flows.
+
+## 📬 Contact
+
+- Maintainer: Zahooruddin — see the repository for contact details and issue tracker.
+- Repo: https://github.com/zahooruddin-dev/Connect-Mizuka
+
 Manages complex WebRTC call state and media stream handling:
 
 ```javascript
