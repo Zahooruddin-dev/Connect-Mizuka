@@ -64,8 +64,6 @@ function MessageItem({
 	onEdit,
 	onUserClick,
 	onReply,
-	onStartP2P,
-	onStartCall,
 }) {
 	const [deleting, setDeleting] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
@@ -84,7 +82,6 @@ function MessageItem({
 	const isMediaBubble = message.type === 'image' || message.type === 'video';
 	const canCopy = isTextMessage && !message.is_deleted;
 	const canEdit = isMine && isTextMessage && !message.is_deleted;
-	const [messageCopy, setMessageCopy] = useState(false);
 	useEffect(() => {
 		if (!menuOpen) return;
 		const handler = (e) => {

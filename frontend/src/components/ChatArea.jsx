@@ -9,7 +9,7 @@ import {
 } from '../services/api';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import ChatHeader from './ChatHeader';
+import ChatHeader from './chat-area/ChatHeader';
 
 const channelCache = new Map();
 const p2pCache = new Map();
