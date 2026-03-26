@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import api from '../services/api';
+import CallConfirmModal from './CallConfirmModal';
 import { formatTime } from '../utils/time';
 import Toast from './Toast';
 import AudioPlayer from './AudioPlayer';
@@ -342,6 +343,8 @@ function MessageItem({
 	onEdit,
 	onUserClick,
 	onReply,
+	onStartP2P,
+	onStartCall,
 }) {
 	const [deleting, setDeleting] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
@@ -349,6 +352,7 @@ function MessageItem({
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [callData, setCallData] = useState(null);
 	const menuRef = useRef(null);
 
 	const senderId = message.sender_id || message.userId || message.user_id;
@@ -451,6 +455,16 @@ function MessageItem({
 						message.created_at || message.createdAt || message.timestamp
 					}
 				/>
+				{message.type === 'call_missed' && (
+					<div className='flex justify-center mt-2'>
+						<button
+							className='px-3 py-1.5 rounded-md bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors duration-150'
+							onClick={() => setCallData({ targetUserId: senderId, targetUsername: message.username, callType: 'audio' })}
+						>
+							Call back
+						</button>
+					</div>
+				)}
 				{showDeleteModal && (
 					<DeleteConfirmModal
 						message={{
