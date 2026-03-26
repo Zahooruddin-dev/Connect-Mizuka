@@ -1,5 +1,5 @@
 import { Search, X, MessageCircle, MessagesSquare } from 'lucide-react';
-import Avatar from '../../Avatar';
+import Avatar from './Avatar';
 
 const iconBtnCls =
 	'flex items-center justify-center w-6 h-6 rounded-md text-[var(--text-ghost)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-muted)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';

@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { useAuth } from '../../services/AuthContext';
+import { useAuth } from '../../../services/AuthContext';
 import {
 	linkToInstitute,
 	getInstituteMembers,
 	createInstitute,
-} from '../../services/api';
-import Toast from '../Toast';
-import UserProfilePopover from '../sidebar/profile/Userprofilepopover';
+} from '../../../services/api';
+import Toast from '../../global-components/Toast';
+import UserProfilePopover from '../profile/Userprofilepopover';
 import SidebarHeader from './SidebarHeader';
 import InstitutesList from './InstitutesList';
 import JoinInstituteForm from './JoinInstituteForm';

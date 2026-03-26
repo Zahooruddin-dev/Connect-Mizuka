@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import api from '../../services/api';
-import { formatTime } from '../../utils/time';
-import Toast from '../Toast';
-import AudioPlayer from '../AudioPlayer';
-import DeleteConfirmModal from '../DeleteConfirmModal';
+import api from '../../../services/api';
+import { formatTime } from '../../../utils/time';
+import Toast from '../../global-components/Toast';
+import AudioPlayer from './AudioPlayer';
+import DeleteConfirmModal from './DeleteConfirmModal';
 import {
 	TrashIcon,
 	DotsIcon,

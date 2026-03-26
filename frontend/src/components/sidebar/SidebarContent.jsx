@@ -9,7 +9,7 @@ import {
 	Search,
 } from 'lucide-react';
 import { useState } from 'react';
-import InstituteSidebar from '../institute/InstituteSidebar';
+import InstituteSidebar from './institute/InstituteSidebar';
 import CreateChannelModal from './CreateChannelModal';
 import UserProfilePanel from './profile/UserProfilePanel';
 import Inbox from './Inbox/Inbox';

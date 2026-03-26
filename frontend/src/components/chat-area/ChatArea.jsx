@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import socket from '../services/socket';
+import socket from '../../services/socket';
 import {
 	fetchMessages,
 	fetchP2PMessages,
 	deleteP2PMessage,
 	deleteChannelMessage,
 	editP2PMessage,
-} from '../services/api';
-import MessageList from './chat-area/ChatList';
-import MessageInput from './chat-area/ChatInput';
-import ChatHeader from './chat-area/ChatHeader';
+} from '../../services/api';
+import MessageList from './ChatList';
+import MessageInput from './ChatInput';
+import ChatHeader from './ChatHeader';
 
 const channelCache = new Map();
 const p2pCache = new Map();

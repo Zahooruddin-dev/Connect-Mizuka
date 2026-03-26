@@ -3,7 +3,7 @@ import { deleteChannel, updateChannel, getUserProfile } from '../../services/api
 import UserProfilePopover from '../sidebar/profile/Userprofilepopover';
 import socket from '../../services/socket';
 import ChatHeaderContent from './ChatHeaderContent';
-import CallConfirmModal from '../CallConfirmModal';
+import CallConfirmModal from './CallConfirmModal';
 
 function ChatHeader({
   channelId,

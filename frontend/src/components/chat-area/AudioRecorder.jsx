@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
-import api from '../services/api';
+import api from '../../services/api';
 
 function getSupportedMimeType() {
 	const types = [
