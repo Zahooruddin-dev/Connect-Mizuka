@@ -59,8 +59,7 @@ export function AuthProvider({ children }) {
 			.then((data) => {
 				if (!data?.user) return;
 				setUser((prev) => {
-					if (!prev) return prev;
-					const merged = { ...prev, ...data.user };
+					const merged = { ...(prev || {}), ...data.user };
 					localStorage.setItem('mizuka_user', JSON.stringify(merged));
 					return merged;
 				});

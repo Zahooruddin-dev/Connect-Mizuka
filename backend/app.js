@@ -45,7 +45,6 @@ const p2pRoutes = require('./Routes/p2pRoutes');
 const unifiedHandler = require('./handlers/unifiedHandler');
 unifiedHandler(io);
 
-app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);

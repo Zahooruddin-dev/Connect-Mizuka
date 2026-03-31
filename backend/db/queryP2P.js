@@ -177,28 +177,19 @@ async function getUserChatrooms(userId) {
 				u.profile_picture AS other_profile_picture,
 				u.role AS other_role,
 				u.email AS other_email,
-				(
-					SELECT content FROM p2p_messages
-					WHERE chatroom_id = c.id
-					ORDER BY created_at DESC LIMIT 1
-				) AS last_content,
-				(
-					SELECT type FROM p2p_messages
-					WHERE chatroom_id = c.id
-					ORDER BY created_at DESC LIMIT 1
-				) AS last_type,
-				(
-					SELECT sender_id FROM p2p_messages
-					WHERE chatroom_id = c.id
-					ORDER BY created_at DESC LIMIT 1
-				) AS last_sender_id,
-				(
-					SELECT created_at FROM p2p_messages
-					WHERE chatroom_id = c.id
-					ORDER BY created_at DESC LIMIT 1
-				) AS last_created_at
+				lm.content AS last_content,
+				lm.type AS last_type,
+				lm.sender_id AS last_sender_id,
+				lm.created_at AS last_created_at
 			FROM p2p_chatrooms c
 			JOIN users u ON u.id = CASE WHEN c.user_one_id = $1 THEN c.user_two_id ELSE c.user_one_id END
+			LEFT JOIN LATERAL (
+				SELECT content, type, sender_id, created_at
+				FROM p2p_messages pm
+				WHERE pm.chatroom_id = c.id
+				ORDER BY pm.created_at DESC
+				LIMIT 1
+			) lm ON TRUE
 			WHERE c.user_one_id = $1 OR c.user_two_id = $1
 			ORDER BY last_created_at DESC NULLS LAST`,
 			[userId],

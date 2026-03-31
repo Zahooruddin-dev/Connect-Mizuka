@@ -211,14 +211,13 @@ const [panelOpen, setPanelOpen] = useState(false);
 			.then(() => refreshUnreadCount())
 			.catch(() => {});
 		setRoomUnread((prev) => {
+			const consumed = prev[activeP2P.roomId] || 0;
 			const next = { ...prev };
 			delete next[activeP2P.roomId];
+			setUnreadCount((total) => Math.max(0, total - consumed));
 			return next;
 		});
-		setUnreadCount((prev) =>
-			Math.max(0, prev - (roomUnread[activeP2P.roomId] || 0)),
-		);
-	}, [activeP2P?.roomId, user?.id]);
+	}, [activeP2P?.roomId, user?.id, refreshUnreadCount]);
 
 	useEffect(() => {
 		const handleStatus = ({ userId, status }) => {

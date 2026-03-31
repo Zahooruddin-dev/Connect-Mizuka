@@ -1,5 +1,6 @@
 const db = require('../db/queryP2P');
 const pool = require('../db/Pool');
+const isDev = process.env.NODE_ENV !== 'production';
 
 async function handleSendP2PMessage(socket, io, data) {
 	const { chatroom_id, message, sender_id, username, type, reply_to } = data;
@@ -72,9 +73,11 @@ async function handleSendP2PMessage(socket, io, data) {
 			}
 		});
 
-		console.log(
-			`[Server] P2P message sent in room ${chatroom_id} by ${username}`,
-		);
+		if (isDev) {
+			console.log(
+				`[Server] P2P message sent in room ${chatroom_id} by ${username}`,
+			);
+		}
 	} catch (error) {
 		console.error('handleSendP2PMessage error:', error);
 	}

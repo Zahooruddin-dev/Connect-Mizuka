@@ -52,6 +52,8 @@ const DELETE_LABELS = {
 	file: '[File]',
 	document: '[File]',
 };
+const replyPreviewCache = new Map();
+const pendingReplyPreviewRequests = new Map();
 
 function MessageItem({
 	message,
@@ -68,8 +70,16 @@ function MessageItem({
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
-	const [callData, setCallData] = useState(null);
+	const [_callData, setCallData] = useState(null);
+	const [replyPreview, setReplyPreview] = useState(null);
+	const [dragOffset, setDragOffset] = useState(0);
 	const menuRef = useRef(null);
+	const startXRef = useRef(0);
+	const draggingRef = useRef(false);
+	const movedRef = useRef(false);
+	const longPressTimerRef = useRef(null);
+	const mouseDownRef = useRef(false);
+	const THRESHOLD = 80;
 
 	const senderId = message.sender_id || message.userId || message.user_id;
 	const msgId = message.id || message._id;
@@ -159,45 +169,6 @@ function MessageItem({
 		'p-[5px] rounded-md flex items-center cursor-pointer transition-colors duration-150 text-[var(--text-ghost)] hover:text-[var(--text-muted)] hover:bg-[var(--bg-hover)] focus-visible:outline-2 focus-visible:outline-[var(--teal-700)]';
 	const contextItemBase =
 		'w-full flex items-center gap-2 px-3.5 py-2.5 text-[13px] text-[var(--text-secondary)] cursor-pointer transition-colors duration-150 text-left hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] disabled:opacity-50 disabled:pointer-events-none';
-
-	if (isCallMessage) {
-		return (
-			<>
-				<CallBadge
-					type={message.type}
-					content={message.content}
-					timestamp={
-						message.created_at || message.createdAt || message.timestamp
-					}
-				/>
-				{message.type === 'call_missed' && (
-					<div className='flex justify-center mt-2'>
-						<button
-							className='px-3 py-1.5 rounded-md bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors duration-150'
-							onClick={() =>
-								setCallData({
-									targetUserId: senderId,
-									targetUsername: message.username,
-									callType: 'audio',
-								})
-							}
-						>
-							Call back
-						</button>
-					</div>
-				)}
-				{showDeleteModal && (
-					<DeleteConfirmModal
-						message={{
-							content: `[${CALL_CONFIG[message.type]?.label || 'Call'}]`,
-						}}
-						onConfirm={handleConfirmDelete}
-						onCancel={() => setShowDeleteModal(false)}
-					/>
-				)}
-			</>
-		);
-	}
 
 	const renderBubbleContent = () => {
 		if (isEditing) {
@@ -320,26 +291,41 @@ function MessageItem({
 		);
 	};
 
-	// replyPreview holds fetched preview when message.reply_to exists but no reply_to_message provided
-	const [replyPreview, setReplyPreview] = useState(null);
-
 	useEffect(() => {
 		let mounted = true;
 		const replyId =
 			message.reply_to ||
-			message.reply_to ||
 			(message.reply_to_message && message.reply_to_message.id);
-		if (!replyId || message.reply_to_message) return;
+		if (!replyId || message.reply_to_message) {
+			setReplyPreview(null);
+			return;
+		}
+
+		if (replyPreviewCache.has(replyId)) {
+			setReplyPreview(replyPreviewCache.get(replyId));
+			return;
+		}
+
 		(async () => {
 			try {
 				const isP2P = !!message.chatroom_id;
 				const url = isP2P
 					? `/p2p/message/${replyId}`
 					: `/messages/message/${replyId}`;
-				const res = await api.get(url);
+				let request = pendingReplyPreviewRequests.get(replyId);
+				if (!request) {
+					request = api.get(url);
+					pendingReplyPreviewRequests.set(replyId, request);
+				}
+				const res = await request;
+				pendingReplyPreviewRequests.delete(replyId);
 				if (!mounted) return;
-				if (res?.data?.message) setReplyPreview(res.data.message);
-			} catch (err) {
+				if (res?.data?.message) {
+					replyPreviewCache.set(replyId, res.data.message);
+					setReplyPreview(res.data.message);
+				}
+			} catch {
+				pendingReplyPreviewRequests.delete(replyId);
 				// ignore
 			}
 		})();
@@ -351,12 +337,6 @@ function MessageItem({
 	const deleteModalContent = DELETE_LABELS[message.type] || message.content;
 
 	// swipe-to-reply (mobile)
-	const [dragOffset, setDragOffset] = useState(0);
-	const startXRef = useRef(0);
-	const draggingRef = useRef(false);
-	const movedRef = useRef(false);
-	const longPressTimerRef = useRef(null);
-	const THRESHOLD = 80;
 
 	const handleTouchStart = (e) => {
 		startXRef.current = e.touches[0].clientX;
@@ -389,7 +369,6 @@ function MessageItem({
 	};
 
 	// mouse support (optional)
-	const mouseDownRef = useRef(false);
 	const handleMouseDown = (e) => {
 		mouseDownRef.current = true;
 		startXRef.current = e.clientX;
@@ -413,6 +392,45 @@ function MessageItem({
 			clearTimeout(longPressTimerRef.current);
 		};
 	}, []);
+
+	if (isCallMessage) {
+		return (
+			<>
+				<CallBadge
+					type={message.type}
+					content={message.content}
+					timestamp={
+						message.created_at || message.createdAt || message.timestamp
+					}
+				/>
+				{message.type === 'call_missed' && (
+					<div className='flex justify-center mt-2'>
+						<button
+							className='px-3 py-1.5 rounded-md bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors duration-150'
+							onClick={() =>
+								setCallData({
+									targetUserId: senderId,
+									targetUsername: message.username,
+									callType: 'audio',
+								})
+							}
+						>
+							Call back
+						</button>
+					</div>
+				)}
+				{showDeleteModal && (
+					<DeleteConfirmModal
+						message={{
+							content: `[${CALL_CONFIG[message.type]?.label || 'Call'}]`,
+						}}
+						onConfirm={handleConfirmDelete}
+						onCancel={() => setShowDeleteModal(false)}
+					/>
+				)}
+			</>
+		);
+	}
 
 	return (
 		<>
@@ -607,7 +625,7 @@ function MessageItem({
 							message.created_at ||
 								message.createdAt ||
 								message.timestamp ||
-								Date.now(),
+								0,
 						)}
 					</span>
 				</div>

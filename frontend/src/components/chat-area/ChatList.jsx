@@ -13,6 +13,11 @@ export default function MessageList({
 	onReply,
 	loading,
 }) {
+	const getMessageKey = (msg, idx) => {
+		if (msg._id || msg.id || msg.tempId) return msg._id || msg.id || msg.tempId;
+		return `${msg.sender_id || msg.user_id || 'unknown'}-${msg.created_at || msg.timestamp || idx}`;
+	};
+
 	const scrollContainerRef = useRef(null);
 	const bottomRef = useRef(null);
 	const [selectedUser, setSelectedUser] = useState(null);
@@ -178,14 +183,9 @@ export default function MessageList({
 					)}
 
 					{/* Message list */}
-					{messages.filter(Boolean).map((msg) => (
+					{messages.filter(Boolean).map((msg, idx) => (
 						<MessageItem
-							key={
-								msg._id ||
-								msg.id ||
-								msg.tempId ||
-								`temp-${Date.now()}-${Math.random()}`
-							}
+							key={getMessageKey(msg, idx)}
 							message={msg}
 							currentUserId={currentUserId}
 							currentUserPicture={currentUserPicture}

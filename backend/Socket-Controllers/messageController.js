@@ -1,9 +1,18 @@
 const db = require('../db/querySocketMessage');
 const pool = require('../db/Pool');
+const isDev = process.env.NODE_ENV !== 'production';
 
 async function handleSendMessage(socket, io, data) {
 	const { channel_id, sender_id, message, type, reply_to } = data;
-	console.log('[handleSendMessage] Received:', { channel_id, sender_id, message: message?.slice?.(0, 50), type, reply_to });
+	if (isDev) {
+		console.log('[handleSendMessage] Received:', {
+			channel_id,
+			sender_id,
+			message: message?.slice?.(0, 50),
+			type,
+			reply_to,
+		});
+	}
 	try {
 		const savedMessage = await db.saveSentMessages(channel_id, sender_id, message, type, reply_to);
 
@@ -55,9 +64,13 @@ async function handleSendMessage(socket, io, data) {
 			}
 		}
 
-		console.log('[handleSendMessage] Broadcasting to channel:', channel_id, payload);
+		if (isDev) {
+			console.log('[handleSendMessage] Broadcasting to channel:', channel_id, payload);
+		}
 		io.to(channel_id).emit('receive_message', payload);
-		console.log(`[handleSendMessage] Message saved and sent to room: ${channel_id}`);
+		if (isDev) {
+			console.log(`[handleSendMessage] Message saved and sent to room: ${channel_id}`);
+		}
 	} catch (error) {
 		console.error('[handleSendMessage] error:', error.message, error.stack);
 		socket.emit('error', { message: 'Failed to send message' });
